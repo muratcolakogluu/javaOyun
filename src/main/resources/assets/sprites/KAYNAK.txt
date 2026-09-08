@@ -44,3 +44,25 @@ yok; zırhlar gibi şekil çizimiyle geliyorlar.
 
 Kasklar (helmet_leather, helmet_chain, helmet_steel, helmet_crypt) da pakette
 yok; kalkanlar gibi şekil çizimiyle geliyorlar.
+
+--------------------------------------------------------------------
+İkinci kaynak: zırh ikonları
+--------------------------------------------------------------------
+
+Paket : 16x16 Assorted RPG Icons
+Yapan : Shade
+Adres : https://opengameart.org/content/16x16-assorted-rpg-icons
+Lisans: CC0. Sayfada "ticari ya da değil, serbestçe kullanın; kredi
+        vermenize gerek yok" yazıyor.
+
+Paket 16x16 ızgaralı spritesheet'ler halinde geliyor (armours.png 9 sütun
+x 19 satır: 9 tasarım, 19 renk/materyal). Kullandığımız hücreler
+scratchpad'deki SheetCut aracıyla kesildi:
+
+  armor_leather.png <- armours.png satir 0,  sutun 0  (kahve deri)
+  armor_chain.png   <- armours.png satir 10, sutun 6  (koyu çelik)
+  armor_plate.png   <- armours.png satir 14, sutun 8  (parlak çelik)
+  armor_crypt.png   <- armours.png satir 15, sutun 8  (altın, en üst kademe)
+
+Bu pakette yalnızca göğüs zırhı var; kask ve kalkan yok. Onlar hâlâ
+ShapeSprites içindeki şekil çizimleriyle görünüyor.
