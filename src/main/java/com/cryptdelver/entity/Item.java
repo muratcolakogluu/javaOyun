@@ -66,4 +66,14 @@ public abstract class Item extends Entity {
     public int getSaveValue() {
         return 0;
     }
+
+    /**
+     * Aynı türden eşyalar çantada tek slotu paylaşabilir mi.
+     *
+     * <p>İksir gibi tüketilenler yığılır ("3x"), ekipman yığılmaz: her kılıcın
+     * ve zırhın kendi kimliği var, kuşanılan parçanın hangisi olduğu önemli.</p>
+     */
+    public boolean isStackable() {
+        return false;
+    }
 }

@@ -41,3 +41,6 @@ silah çizimleri zaten elde tutulacak şekilde hazırlanmış.
 
 Kalkanlar (shield_wood, shield_iron, shield_steel, shield_crypt) da pakette
 yok; zırhlar gibi şekil çizimiyle geliyorlar.
+
+Kasklar (helmet_leather, helmet_chain, helmet_steel, helmet_crypt) da pakette
+yok; kalkanlar gibi şekil çizimiyle geliyorlar.

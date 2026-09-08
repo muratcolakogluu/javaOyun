@@ -161,8 +161,10 @@ class DropTest {
     @Test
     @DisplayName("Canta doluyken bosaltip yer acilabilir")
     void droppingFreesSpaceInTheBag() {
+        // Yigilmayan parcalarla dolduruyoruz: iksirler tek slotu paylasirdi.
+
         for (int i = 0; i < Inventory.CAPACITY; i++) {
-            game.getInventory().add(new Potion(0, 0));
+            game.getInventory().add(LootTable.weaponForTier(1, 0, 0));
         }
         assertTrue(game.getInventory().isFull());
 

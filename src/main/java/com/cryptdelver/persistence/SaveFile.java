@@ -30,8 +30,8 @@ import java.util.Optional;
  */
 public class SaveFile {
 
-    /** Yazılan dosya sürümü; kalkan slotu 2 ile geldi. */
-    private static final int VERSION = 2;
+    /** Yazılan dosya sürümü; kalkan 2, kask 3 ile geldi. */
+    private static final int VERSION = 3;
 
     private static final String SEPARATOR = "|";
     private static final String SPLIT_PATTERN = "\\|";
@@ -69,7 +69,8 @@ public class SaveFile {
                 String.valueOf(data.playerHp())));
         lines.add(line("equipped", String.valueOf(data.equippedWeaponSlot()),
                 String.valueOf(data.equippedArmorSlot()),
-                String.valueOf(data.equippedShieldSlot())));
+                String.valueOf(data.equippedShieldSlot()),
+                String.valueOf(data.equippedHelmetSlot())));
 
         for (SaveData.ItemData item : data.inventory()) {
             lines.add(itemLine("inv", item));
@@ -112,6 +113,7 @@ public class SaveFile {
         int weaponSlot = SaveData.NO_SLOT;
         int armorSlot = SaveData.NO_SLOT;
         int shieldSlot = SaveData.NO_SLOT;
+        int helmetSlot = SaveData.NO_SLOT;
         List<SaveData.ItemData> inventory = new ArrayList<>();
         List<SaveData.ItemData> ground = new ArrayList<>();
         List<SaveData.EnemyData> enemies = new ArrayList<>();
@@ -138,10 +140,9 @@ public class SaveFile {
                     case "equipped" -> {
                         weaponSlot = Integer.parseInt(parts[1]);
                         armorSlot = Integer.parseInt(parts[2]);
-                        // Kalkan slotu sürüm 2'de eklendi; eski kayıtlarda yok.
-                        shieldSlot = parts.length > 3
-                                ? Integer.parseInt(parts[3])
-                                : SaveData.NO_SLOT;
+                        // Kalkan sürüm 2, kask sürüm 3 ile geldi; eski kayıtlarda yoklar.
+                        shieldSlot = parts.length > 3 ? Integer.parseInt(parts[3]) : SaveData.NO_SLOT;
+                        helmetSlot = parts.length > 4 ? Integer.parseInt(parts[4]) : SaveData.NO_SLOT;
                     }
                     case "inv" -> inventory.add(parseItem(parts));
                     case "ground" -> ground.add(parseItem(parts));
@@ -154,7 +155,7 @@ public class SaveFile {
         }
 
         return Optional.of(new SaveData(depth, seed, generatorIndex, gold, elapsed,
-                playerX, playerY, playerHp, weaponSlot, armorSlot, shieldSlot,
+                playerX, playerY, playerHp, weaponSlot, armorSlot, shieldSlot, helmetSlot,
                 inventory, ground, enemies));
     }
 

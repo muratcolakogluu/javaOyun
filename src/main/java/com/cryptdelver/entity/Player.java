@@ -30,6 +30,7 @@ public class Player extends Combatant implements Actor {
     private Weapon equippedWeapon;
     private Armor equippedArmor;
     private Shield equippedShield;
+    private Helmet equippedHelmet;
 
     private int inputX;
     private int inputY;
@@ -89,12 +90,27 @@ public class Player extends Combatant implements Actor {
         this.equippedShield = null;
     }
 
-    /** Savunma, kuşanılan zırh ile kalkanın toplamı; çıplakken 0. */
+    /** Başındaki kask; hiçbiri takılmadıysa {@code null}. */
+    public Helmet getEquippedHelmet() {
+        return equippedHelmet;
+    }
+
+    public void equip(Helmet helmet) {
+        this.equippedHelmet = helmet;
+    }
+
+    /** Kaskı çıkarır. */
+    public void unequipHelmet() {
+        this.equippedHelmet = null;
+    }
+
+    /** Savunma; kuşanılan zırh, kalkan ve kaskın toplamı, çıplakken 0. */
     @Override
     public int getDefense() {
         int armorDefense = equippedArmor == null ? 0 : equippedArmor.getDefenseBonus();
         int shieldDefense = equippedShield == null ? 0 : equippedShield.getDefenseBonus();
-        return armorDefense + shieldDefense;
+        int helmetDefense = equippedHelmet == null ? 0 : equippedHelmet.getDefenseBonus();
+        return armorDefense + shieldDefense + helmetDefense;
     }
 
     /** Vuruş animasyonu şu an çizilmeli mi. */
@@ -131,6 +147,7 @@ public class Player extends Combatant implements Actor {
         equippedWeapon = null;
         equippedArmor = null;
         equippedShield = null;
+        equippedHelmet = null;
         attackCooldown = 0;
         swingTimer = 0;
         attackRequested = false;

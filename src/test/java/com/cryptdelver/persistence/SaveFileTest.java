@@ -28,12 +28,13 @@ class SaveFileTest {
         return new SaveData(
                 3, -4829157263L, 1, 137, 92.5,
                 12, 7, 14,
-                1, 0, 3,
+                1, 0, 3, 4,
                 List.of(
                         new SaveData.ItemData("ARMOR", 0, 0, "Deri Zırh", 1, "armor_leather"),
                         new SaveData.ItemData("WEAPON", 0, 0, "Çelik Kılıç", 4, "sword_steel"),
                         new SaveData.ItemData("POTION", 0, 0, "İksir", 0, "potion"),
-                        new SaveData.ItemData("SHIELD", 0, 0, "Demir Kalkan", 1, "shield_iron")),
+                        new SaveData.ItemData("SHIELD", 0, 0, "Demir Kalkan", 1, "shield_iron"),
+                        new SaveData.ItemData("HELMET", 0, 0, "Zincir Başlık", 1, "helmet_chain")),
                 List.of(new SaveData.ItemData("GOLD", 5, 6, "Altın", 17, "gold")),
                 List.of(
                         new SaveData.EnemyData("IMP", 10, 4, 3, 5, 2, 0),
@@ -129,6 +130,9 @@ class SaveFileTest {
         assertEquals(1, loaded.get().equippedArmorSlot());
         assertEquals(SaveData.NO_SLOT, loaded.get().equippedShieldSlot(),
                 "Eski kayitta kalkan yok");
+
+        assertEquals(SaveData.NO_SLOT, loaded.get().equippedHelmetSlot(),
+                "Eski kayitta kask yok");
     }
 
     @Test

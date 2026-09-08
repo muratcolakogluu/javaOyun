@@ -83,8 +83,10 @@ class ItemTest {
     @Test
     @DisplayName("Canta doluysa esya yerde kalir")
     void fullInventoryLeavesItemOnGround() {
+        // Yigilmayan parcalarla dolduruyoruz: iksirler tek slotu paylasirdi.
+
         for (int i = 0; i < Inventory.CAPACITY; i++) {
-            game.getInventory().add(new Potion(0, 0));
+            game.getInventory().add(LootTable.weaponForTier(1, 0, 0));
         }
         game.addGroundItem(new Potion(5, 4));
 
@@ -96,8 +98,10 @@ class ItemTest {
     @Test
     @DisplayName("Canta doluyken bile altin alinir")
     void goldIsPickedUpEvenWhenBagIsFull() {
+        // Yigilmayan parcalarla dolduruyoruz: iksirler tek slotu paylasirdi.
+
         for (int i = 0; i < Inventory.CAPACITY; i++) {
-            game.getInventory().add(new Potion(0, 0));
+            game.getInventory().add(LootTable.weaponForTier(1, 0, 0));
         }
         game.addGroundItem(new Gold(5, 4, 7));
 

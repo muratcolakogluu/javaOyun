@@ -53,14 +53,21 @@ public class GameRenderer {
     /** Giyilen zırh, gövdeyi kapatmayacak kadar küçük. */
     private static final double WORN_ARMOR_SCALE = 0.62;
 
+    /** Takılan kask, gövdeye göre biraz küçük. */
+    private static final double HELMET_SCALE = 0.5;
+
     /**
      * Kuşanılan parçaların kare merkezinden ne kadar yukarı çizileceği.
      *
-     * <p>Karakter sprite'ı karenin tabanına oturuyor ve bir kareden uzun
-     * (16×28 piksel), yani gövdenin göğüs hizası kare merkezinin epey
-     * üstünde kalıyor.</p>
+     * <p>Karakter sprite'ı karenin tabanına oturuyor ve bir kareden uzun:
+     * 16×28 piksellik resim 32 piksellik karede 32×56 piksele çıkıyor. Yani
+     * kafa kare merkezinin yaklaşık 0.9 kare, göğüs 0.3 kare üstünde kalıyor.
+     * Zırhı önce 0.55'e koymuştum ve göğüslük başa oturup kask gibi
+     * görünüyordu.</p>
      */
-    private static final double TORSO_LIFT = 0.55;
+    private static final double TORSO_LIFT = 0.30;
+    private static final double SHIELD_LIFT = 0.26;
+    private static final double HEAD_LIFT = 0.88;
 
     private static final int SLOT_SIZE = 30;
     private static final int SLOT_GAP = 4;
@@ -79,6 +86,7 @@ public class GameRenderer {
     private static final Color SLOT_BORDER = Color.web("#2f2f40");
     private static final Color SLOT_EQUIPPED = Color.web("#e8c46a");
     private static final Color SLOT_NUMBER = Color.web("#5a5a6e");
+    private static final Color STACK_COUNT = Color.web("#e0e0ee");
     private static final Color SWING_COLOR = Color.web("#e8c46a", 0.28);
     private static final Color HP_BAR_BACKGROUND = Color.web("#000000", 0.55);
     private static final Color HP_BAR_FILL = Color.web("#b64b45");
@@ -206,13 +214,18 @@ public class GameRenderer {
 
         if (player.getEquippedShield() != null) {
             sprites.get(player.getEquippedShield().getSpriteName()).draw(
-                    gc, centerX - TILE_SIZE * HELD_OFFSET, centerY - TILE_SIZE * TORSO_LIFT,
+                    gc, centerX - TILE_SIZE * HELD_OFFSET, centerY - TILE_SIZE * SHIELD_LIFT,
                     TILE_SIZE * SHIELD_SCALE);
         }
 
         if (player.getEquippedArmor() != null) {
             sprites.get(player.getEquippedArmor().getSpriteName()).draw(
                     gc, centerX, centerY - TILE_SIZE * TORSO_LIFT, TILE_SIZE * WORN_ARMOR_SCALE);
+        }
+
+        if (player.getEquippedHelmet() != null) {
+            sprites.get(player.getEquippedHelmet().getSpriteName()).draw(
+                    gc, centerX, centerY - TILE_SIZE * HEAD_LIFT, TILE_SIZE * HELMET_SCALE);
         }
 
         Weapon weapon = player.getEquippedWeapon();
@@ -326,6 +339,14 @@ public class GameRenderer {
             gc.setTextAlign(TextAlignment.LEFT);
             gc.setFill(SLOT_NUMBER);
             gc.fillText(String.valueOf(slot + 1), x + 3, top + 7);
+
+            // Yığılmış eşyalarda adet: "3x" gibi, sağ alt köşede.
+            int count = inventory.getCount(slot);
+            if (count > 1) {
+                gc.setTextAlign(TextAlignment.RIGHT);
+                gc.setFill(STACK_COUNT);
+                gc.fillText(count + "x", x + SLOT_SIZE - 3, top + SLOT_SIZE - 6);
+            }
         }
 
         // Kuşanılan takımın adları, slotların sağında.
@@ -342,6 +363,10 @@ public class GameRenderer {
         }
         if (game.getPlayer().getEquippedShield() != null) {
             gc.fillText(game.getPlayer().getEquippedShield().getName(), x + 170, top + 24);
+        }
+
+        if (game.getPlayer().getEquippedHelmet() != null) {
+            gc.fillText(game.getPlayer().getEquippedHelmet().getName(), x + 170, top + 8);
         }
     }
 

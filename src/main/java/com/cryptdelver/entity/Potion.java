@@ -33,6 +33,12 @@ public class Potion extends Item {
         return true;
     }
 
+    /** İksirler aynı slotta yığılır; birkaç tane taşımak çantayı tıkamasın. */
+    @Override
+    public boolean isStackable() {
+        return true;
+    }
+
     @Override
     public String getSaveKind() {
         return "POTION";

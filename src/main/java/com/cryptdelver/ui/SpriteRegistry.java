@@ -50,6 +50,12 @@ public class SpriteRegistry {
         register("sword_crypt", ShapeSprites.sword(Color.web("#b9a6f0"), Color.web("#e8c46a")));
 
         // Zırh kademeleri.
+        // Kask kademeleri; pakette kask çizimi de yok.
+        register("helmet_leather", ShapeSprites.helmet(Color.web("#7d5a3c"), Color.web("#a8794f")));
+        register("helmet_chain", ShapeSprites.helmet(Color.web("#6f7482"), Color.web("#9aa0ad")));
+        register("helmet_steel", ShapeSprites.helmet(Color.web("#8b98b4"), Color.web("#d6dcea")));
+        register("helmet_crypt", ShapeSprites.helmet(Color.web("#5f5090"), Color.web("#e8c46a")));
+
         // Kalkan kademeleri; pakette kalkan çizimi yok, hepsi şekilden geliyor.
         register("shield_wood", ShapeSprites.shield(Color.web("#7d5a3c"), Color.web("#a8794f")));
         register("shield_iron", ShapeSprites.shield(Color.web("#6f7482"), Color.web("#9aa0ad")));

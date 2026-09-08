@@ -6,6 +6,7 @@ import com.cryptdelver.entity.Combatant;
 import com.cryptdelver.entity.Enemy;
 import com.cryptdelver.entity.Entity;
 import com.cryptdelver.entity.Gold;
+import com.cryptdelver.entity.Helmet;
 import com.cryptdelver.entity.Imp;
 import com.cryptdelver.entity.Item;
 import com.cryptdelver.entity.Player;
@@ -526,15 +527,11 @@ public class Game {
 
         return new SaveData(depth, currentSeed, generatorIndex, gold, elapsedSeconds,
                 player.getTileX(), player.getTileY(), player.getHp(),
-                slotOf(carried, player.getEquippedWeapon()),
-                slotOf(carried, player.getEquippedArmor()),
-                slotOf(carried, player.getEquippedShield()),
+                inventory.slotOf(player.getEquippedWeapon()),
+                inventory.slotOf(player.getEquippedArmor()),
+                inventory.slotOf(player.getEquippedShield()),
+                inventory.slotOf(player.getEquippedHelmet()),
                 savedInventory, savedGround, savedEnemies);
-    }
-
-    /** Kuşanılmış parçanın çantadaki slotu; hiçbiri kuşanılmadıysa {@link SaveData#NO_SLOT}. */
-    private int slotOf(List<Item> carried, Item equipped) {
-        return equipped == null ? SaveData.NO_SLOT : carried.indexOf(equipped);
     }
 
     /**
@@ -597,6 +594,13 @@ public class Game {
         if (shield instanceof Shield) {
             player.equip((Shield) shield);
         }
+
+
+
+        Item helmet = inventory.get(data.equippedHelmetSlot());
+        if (helmet instanceof Helmet) {
+            player.equip((Helmet) helmet);
+        }
     }
 
     private SaveData.ItemData describe(Item item) {
@@ -612,6 +616,7 @@ public class Game {
             case "WEAPON" -> new Weapon(data.x(), data.y(), data.name(), data.value(), data.spriteName());
             case "ARMOR" -> new Armor(data.x(), data.y(), data.name(), data.value(), data.spriteName());
             case "SHIELD" -> new Shield(data.x(), data.y(), data.name(), data.value(), data.spriteName());
+            case "HELMET" -> new Helmet(data.x(), data.y(), data.name(), data.value(), data.spriteName());
             default -> throw new IllegalArgumentException("Bilinmeyen eşya türü: " + data.kind());
         };
     }
@@ -797,6 +802,7 @@ public class Game {
         boolean weaponPlaced = false;
         boolean armorPlaced = false;
         boolean shieldPlaced = false;
+        boolean helmetPlaced = false;
 
         for (Position spot : spots) {
             if (used.contains(spot)) {
@@ -819,6 +825,10 @@ public class Game {
             } else if (!shieldPlaced) {
                 addGroundItem(LootTable.shieldForTier(tier, spot.x(), spot.y()));
                 shieldPlaced = true;
+
+            } else if (!helmetPlaced) {
+                addGroundItem(LootTable.helmetForTier(tier, spot.x(), spot.y()));
+                helmetPlaced = true;
             } else {
                 return;
             }
