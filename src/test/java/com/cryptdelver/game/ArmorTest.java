@@ -158,6 +158,26 @@ class ArmorTest {
         assertEquals(0, player.getSwingProgress());
     }
 
+    /**
+     * Kilic baktigin yone savruluyor; bunun icin oyuncunun en son hangi yone
+     * yurudugunu hatirlamasi gerekiyor.
+     */
+    @Test
+    @DisplayName("Bakilan yon son harekete gore guncellenir, dururken korunur")
+    void facingFollowsTheLastMove() {
+        player.setMoveInput(0, -1);
+        assertEquals(0, player.getFacingX());
+        assertEquals(-1, player.getFacingY(), "Yukari bakmali");
+
+        player.setMoveInput(-1, 0);
+        assertEquals(-1, player.getFacingX(), "Sola bakmali");
+        assertEquals(0, player.getFacingY());
+
+        player.setMoveInput(0, 0);
+        assertEquals(-1, player.getFacingX(), "Tus birakilinca yon korunmali");
+        assertEquals(0, player.getFacingY());
+    }
+
     @Test
     @DisplayName("Yeniden baslayinca zirh cikar")
     void restartRemovesArmor() {
