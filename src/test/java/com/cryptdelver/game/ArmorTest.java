@@ -1,6 +1,7 @@
 package com.cryptdelver.game;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -129,6 +130,34 @@ class ArmorTest {
         assertEquals(hpBefore - 1, armored.getHp(), "Kalin savunmada vurus 1 hasara dusmeli");
     }
 
+    /**
+     * Vurus animasyonunun ilerlemesi 0'dan 1'e gitmeli ve bittiginde
+     * durmali; ekran bu degeri kilicin acisina ceviriyor.
+     */
+    @Test
+    @DisplayName("Vurus animasyonu basindan sonuna ilerler")
+    void swingProgressRunsFromStartToFinish() {
+        assertFalse(player.isSwinging(), "Vurmadan once animasyon yok");
+
+        player.requestAttack();
+        game.update(FRAME);
+
+        assertTrue(player.isSwinging(), "Vurusla birlikte animasyon baslamali");
+        double atStart = player.getSwingProgress();
+        assertTrue(atStart >= 0 && atStart < 0.5, "Basta ilerleme kucuk olmali: " + atStart);
+
+        for (int i = 0; i < 6; i++) {
+            game.update(FRAME);
+        }
+        assertTrue(player.getSwingProgress() > atStart, "Ilerleme artmali");
+
+        for (int i = 0; i < 60; i++) {
+            game.update(FRAME);
+        }
+        assertFalse(player.isSwinging(), "Sure dolunca animasyon bitmeli");
+        assertEquals(0, player.getSwingProgress());
+    }
+
     @Test
     @DisplayName("Yeniden baslayinca zirh cikar")
     void restartRemovesArmor() {
@@ -161,8 +190,8 @@ class ArmorTest {
     }
 
     /**
-     * Alt sinir sabit 1 degil, saldiranin gucuyle olceklendi: zirh ve kalkan
-     * birlikte kusanildiginda sert vuranlar da tirmiga donmesin.
+     * Alt sinir sabit 1 degil, saldiranin gucuyle olceklendi: kalin zirh
+     * karsisinda sert vuranlar da tirmiga donmesin.
      */
     @Test
     @DisplayName("Sert vuran dusman kalin zirhi yine deler")

@@ -21,8 +21,14 @@ public class Player extends Combatant implements Actor {
     /** İki saldırı arasında beklenen süre (saniye). */
     private static final double ATTACK_COOLDOWN = 0.35;
 
-    /** Vuruş animasyonunun ekranda kalma süresi. */
-    private static final double SWING_DURATION = 0.14;
+    /**
+     * Vuruş animasyonunun ekranda kalma süresi.
+     *
+     * <p>Bekleme süresinin (0.35 sn) yarısı kadar: yay tamamlanacak kadar uzun,
+     * ama arka arkaya vururken önceki savuruş bitmeden yenisi başlamayacak
+     * kadar kısa.</p>
+     */
+    private static final double SWING_DURATION = 0.18;
 
     /** Tek karede işlenecek azami adım; takılma durumunda sonsuz döngüyü keser. */
     private static final int MAX_STEPS_PER_FRAME = 8;
@@ -83,6 +89,17 @@ public class Player extends Combatant implements Actor {
     /** Vuruş animasyonu şu an çizilmeli mi. */
     public boolean isSwinging() {
         return swingTimer > 0;
+    }
+
+    /**
+     * Vuruş animasyonunun neresinde olduğumuz: 0 başlangıç, 1 bitiş.
+     *
+     * <p>Ekran bunu kılıcın açısına çeviriyor. Kalan süre yerine ilerleme
+     * vermek, animasyonun süresini burada değiştirdiğimizde çizim kodunun
+     * etkilenmemesini sağlıyor.</p>
+     */
+    public double getSwingProgress() {
+        return swingTimer <= 0 ? 0 : 1 - swingTimer / SWING_DURATION;
     }
 
     public boolean isAttackReady() {

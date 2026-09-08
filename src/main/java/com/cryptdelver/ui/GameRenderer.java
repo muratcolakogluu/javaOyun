@@ -47,6 +47,22 @@ public class GameRenderer {
     /** Elde tutulan silah, yerdekinden biraz küçük çiziliyor. */
     private static final double HELD_WEAPON_SCALE = 0.85;
 
+    /** Silahın boştaki duruşu ve savuruş yayının başı/sonu, derece. */
+    private static final double WEAPON_REST_ANGLE = 12;
+    private static final double SWING_START_ANGLE = -45;
+    private static final double SWING_END_ANGLE = 105;
+
+    /**
+     * Giyilen zırhın gövde üstündeki yeri ve boyu.
+     *
+     * <p>Karakter 16×28 piksel ve karenin tabanına oturuyor; 32 piksellik karede
+     * göğüs kabaca merkezin 16 piksel üstü ile 2 piksel altı arasında kalıyor.
+     * Zırh ikonu 16×16 kare olduğu için, taban hizası merkezin biraz altına
+     * gelecek şekilde 18 piksel çizmek göğsü tam örtüyor.</p>
+     */
+    private static final double ARMOR_SCALE = 0.56;
+    private static final double ARMOR_LIFT = 0.22;
+
     private static final int SLOT_SIZE = 30;
     private static final int SLOT_GAP = 4;
     private static final int SLOT_ORIGIN_X = 10;
@@ -98,7 +114,10 @@ public class GameRenderer {
         }
 
         Player player = game.getPlayer();
-        if (player.isSwinging()) {
+
+        // Silah varsa savuruşu kılıcın kendisi gösteriyor; çıplak elle
+        // vururken de bir şey görünsün diye halka o durumda çiziliyor.
+        if (player.isSwinging() && player.getEquippedWeapon() == null) {
             drawSwing(gc, player);
         }
 
@@ -187,16 +206,45 @@ public class GameRenderer {
      * zırhın durumu HUD ve çanta üzerinden okunuyor.</p>
      */
     private void drawEquipment(GraphicsContext gc, Player player) {
-        Weapon weapon = player.getEquippedWeapon();
-        if (weapon == null) {
-            return;
+        double centerX = player.getRenderX() * TILE_SIZE;
+        double centerY = player.getRenderY() * TILE_SIZE;
+
+        if (player.getEquippedArmor() != null) {
+            sprites.get(player.getEquippedArmor().getSpriteName()).draw(
+                    gc, centerX, centerY - TILE_SIZE * ARMOR_LIFT, TILE_SIZE * ARMOR_SCALE);
         }
 
-        sprites.get(weapon.getSpriteName()).draw(
-                gc,
-                player.getRenderX() * TILE_SIZE + TILE_SIZE * HELD_OFFSET,
-                player.getRenderY() * TILE_SIZE,
-                TILE_SIZE * HELD_WEAPON_SCALE);
+        Weapon weapon = player.getEquippedWeapon();
+        if (weapon != null) {
+            drawSwingingWeapon(gc, player, weapon, centerX, centerY);
+        }
+    }
+
+    /**
+     * Silahı elde çizer; vuruş sırasında sapın etrafında döndürür.
+     *
+     * <p>Paketin silah çizimleri sapı altta, namlusu yukarı bakacak şekilde
+     * hazırlanmış. Bu yüzden dönme merkezini resmin <em>alt ucuna</em> koyup
+     * açıyı değiştirmek gerçek bir savuruş gibi görünüyor: kılıç yukarıdan
+     * öne doğru iniyor.</p>
+     */
+    private void drawSwingingWeapon(GraphicsContext gc, Player player, Weapon weapon,
+                                    double centerX, double centerY) {
+        double angle = player.isSwinging()
+                ? SWING_START_ANGLE + (SWING_END_ANGLE - SWING_START_ANGLE) * player.getSwingProgress()
+                : WEAPON_REST_ANGLE;
+
+        double size = TILE_SIZE * HELD_WEAPON_SCALE;
+        double pivotX = centerX + TILE_SIZE * HELD_OFFSET;
+        double pivotY = centerY + TILE_SIZE * 0.5;
+
+        gc.save();
+        gc.translate(pivotX, pivotY);
+        gc.rotate(angle);
+        // Sprite tabana hizalı çizildiği için, merkezi yarım boy yukarı almak
+        // sapı tam dönme merkezine oturtuyor.
+        sprites.get(weapon.getSpriteName()).draw(gc, 0, -size / 2, size);
+        gc.restore();
     }
 
     /** Yaralı düşmanların üstünde ince bir can çubuğu. */
