@@ -5,9 +5,11 @@ import com.cryptdelver.entity.Boss;
 import com.cryptdelver.entity.Combatant;
 import com.cryptdelver.entity.Enemy;
 import com.cryptdelver.entity.Entity;
+import com.cryptdelver.entity.Goblin;
 import com.cryptdelver.entity.Gold;
 import com.cryptdelver.entity.Imp;
 import com.cryptdelver.entity.Item;
+import com.cryptdelver.entity.Orc;
 import com.cryptdelver.entity.Player;
 import com.cryptdelver.entity.Potion;
 import com.cryptdelver.entity.Skeleton;
@@ -47,10 +49,12 @@ public class Game {
     /** Düşmanlar oyuncunun bu kadar yakınına doğmaz (kare). */
     private static final int MIN_SPAWN_DISTANCE = 8;
 
-    /** İlk katta iskelet olasılığı; derinlikle artar, kalanı imp. */
-    private static final double BASE_SKELETON_CHANCE = 0.3;
-    private static final double SKELETON_CHANCE_PER_DEPTH = 0.06;
-    private static final double MAX_SKELETON_CHANCE = 0.8;
+    /** Yeni türlerin oyuna girdiği katlar. */
+    private static final int GOBLIN_MIN_DEPTH = 2;
+    private static final int ORC_MIN_DEPTH = 4;
+
+    /** Her inişte kazanılan azami can; oyuncunun tek kalıcı büyümesi. */
+    private static final int MAX_HP_PER_FLOOR = 2;
 
     /** Derin katlarda düşmanlar kaç katta bir güçlenir. */
     private static final int DEPTHS_PER_HP_BONUS = 2;
@@ -200,8 +204,10 @@ public class Game {
         }
 
         depth++;
+        player.gainMaxHp(MAX_HP_PER_FLOOR);
         generateFloor(random.nextLong());
-        messageLog.add(depth + ". kata indin. Burası daha kalabalık.");
+
+        messageLog.add(depth + ". kata indin (+" + MAX_HP_PER_FLOOR + " azami can).");
         return true;
     }
 
@@ -524,7 +530,7 @@ public class Game {
         }
 
         return new SaveData(depth, currentSeed, generatorIndex, gold, elapsedSeconds,
-                player.getTileX(), player.getTileY(), player.getHp(),
+                player.getTileX(), player.getTileY(), player.getHp(), player.getMaxHp(),
                 inventory.slotOf(player.getEquippedWeapon()),
                 inventory.slotOf(player.getEquippedArmor()),
                 savedInventory, savedGround, savedEnemies);
@@ -574,6 +580,13 @@ public class Game {
     private void restorePlayer(SaveData data) {
         player.restore();
         player.setTile(data.playerX(), data.playerY());
+
+        // Derinlikle kazanilan azami can da geri yukleniyor; eski kayitlarda
+        // bu alan yok, o zaman taban canla devam ediyoruz.
+        int extraMaxHp = data.playerMaxHp() - player.getMaxHp();
+        if (extraMaxHp > 0) {
+            player.gainMaxHp(extraMaxHp);
+        }
 
         int damage = player.getMaxHp() - data.playerHp();
         if (damage > 0) {
@@ -628,6 +641,8 @@ public class Game {
         Enemy enemy = switch (data.kind()) {
             // "RAT": bu düşman İmp olarak yeniden adlandırılmadan önceki kayıtlar.
             case "IMP", "RAT" -> new Imp(data.x(), data.y());
+            case "GOBLIN" -> new Goblin(data.x(), data.y());
+            case "ORC" -> new Orc(data.x(), data.y());
             case "SKELETON" -> new Skeleton(data.x(), data.y());
             case "BOSS" -> {
                 Boss restored = new Boss(data.x(), data.y());
@@ -759,15 +774,38 @@ public class Game {
      * zorluk eğrisi elde etmenin ucuz yolu bu.</p>
      */
     private Enemy createEnemyForDepth(Position spot) {
-        double skeletonChance = Math.min(MAX_SKELETON_CHANCE,
-                BASE_SKELETON_CHANCE + SKELETON_CHANCE_PER_DEPTH * (depth - 1));
-
-        Enemy enemy = random.nextDouble() < skeletonChance
-                ? new Skeleton(spot.x(), spot.y())
-                : new Imp(spot.x(), spot.y());
-
+        Enemy enemy = rollEnemyKind(spot);
         applyDepthBonus(enemy);
         return enemy;
+    }
+
+    /**
+     * Derinliğe göre ağırlıklı düşman seçimi.
+     *
+     * <p>Katlar tür değiştirerek zorlaşıyor, yalnızca sayı büyüterek değil:
+     * imp yukarıda kalabalık, aşağı indikçe yerini iskelete ve orka bırakıyor.
+     * Goblin 2., ork 4. kattan itibaren giriyor; ağırlıkları derinlikle
+     * arttığı için karşına çıkan sürü de yavaş yavaş sertleşiyor.</p>
+     */
+    private Enemy rollEnemyKind(Position spot) {
+        int impWeight = Math.max(1, 7 - depth);
+        int skeletonWeight = 2 + depth;
+        int goblinWeight = depth >= GOBLIN_MIN_DEPTH ? 3 : 0;
+        int orcWeight = depth >= ORC_MIN_DEPTH ? depth - 2 : 0;
+
+        int roll = random.nextInt(impWeight + skeletonWeight + goblinWeight + orcWeight);
+
+        if (roll < impWeight) {
+            return new Imp(spot.x(), spot.y());
+        }
+        roll -= impWeight;
+
+        if (roll < skeletonWeight) {
+            return new Skeleton(spot.x(), spot.y());
+        }
+        roll -= skeletonWeight;
+
+        return roll < goblinWeight ? new Goblin(spot.x(), spot.y()) : new Orc(spot.x(), spot.y());
     }
 
     /**

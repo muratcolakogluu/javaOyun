@@ -66,3 +66,19 @@ scratchpad'deki SheetCut aracıyla kesildi:
 Bu pakette yalnızca göğüs zırhı var; kask ve kalkan yok. Zaten ikisi de
 oyundan kaldırıldı — kendi şekil çizimlerim piksel sanatının yanında yamalı
 duruyordu. Savunmanın tek kaynağı artık zırh.
+
+--------------------------------------------------------------------
+Animasyon kareleri
+--------------------------------------------------------------------
+
+Her karakterin duruş ve yürüyüş animasyonu 4'er kare, 0x72 paketinden:
+
+  player_f0..f3 / player_run_f0..f3   <- elf_m_idle / elf_m_run
+  imp_f0..f3    / imp_run_f0..f3      <- imp_idle / imp_run
+  skeleton_*                          <- skelet_idle / skelet_run
+  goblin_*                            <- goblin_idle / goblin_run
+  orc_*                               <- orc_warrior_idle / orc_warrior_run
+  boss_*                              <- big_demon_idle / big_demon_run
+
+SpriteRegistry önce <ad>_f0.png arıyor (animasyon), yoksa <ad>.png, o da
+yoksa şekil çizimi. Yürüyüş için <ad>_run aynı yolla aranıyor.

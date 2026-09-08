@@ -2,7 +2,9 @@ package com.cryptdelver.ui;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
@@ -10,21 +12,38 @@ import javafx.scene.paint.Color;
 /**
  * Sprite adlarını çizilebilir sprite'lara bağlar.
  *
- * <p>Her ad için önce {@code resources/assets/sprites/<ad>.png} aranır; dosya
- * varsa {@link ImageSprite}, yoksa {@link ShapeSprites} içindeki şekil çizimi
- * kullanılır. Yani hazır bir paket bulduğumuzda yapılacak tek iş, dosyaları
- * doğru adlarla o klasöre koymak — kodda hiçbir değişiklik gerekmiyor.</p>
+ * <p>Her ad için sırayla üç şeye bakılır:</p>
+ * <ol>
+ *   <li>{@code <ad>_f0.png}, {@code _f1}... varsa → {@link AnimatedSprite}</li>
+ *   <li>{@code <ad>.png} varsa → {@link ImageSprite}</li>
+ *   <li>hiçbiri yoksa → {@link ShapeSprites} içindeki şekil çizimi</li>
+ * </ol>
+ *
+ * <p>Yürüyüş animasyonu ayrı bir ad olarak duruyor: {@code imp} duruş,
+ * {@code imp_run} yürüyüş. Ekran hareket halindeki varlık için
+ * {@link #get(String, boolean)} çağırıyor; yürüyüş karesi yoksa sessizce duruş
+ * animasyonuna düşüyor.</p>
  *
  * <p>Beklenen dosya adları — zindan: {@code floor}, {@code wall},
  * {@code stairs}; karakterler: {@code player}, {@code imp}, {@code skeleton},
- * {@code boss}; eşyalar: {@code potion}, {@code gold}, {@code sword},
- * {@code sword_steel}, {@code axe}, {@code sword_crypt},
- * {@code armor_leather}, {@code armor_chain}, {@code armor_plate},
- * {@code armor_crypt}.</p>
+ * {@code goblin}, {@code orc}, {@code boss} (ve {@code _run} halleri);
+ * eşyalar: {@code potion}, {@code gold}, {@code sword}, {@code sword_steel},
+ * {@code axe}, {@code sword_crypt}, {@code armor_leather}, {@code armor_chain},
+ * {@code armor_plate}, {@code armor_crypt}.</p>
  */
 public class SpriteRegistry {
 
     private static final String SPRITE_PATH = "/assets/sprites/";
+
+    /** Duruş animasyonu yavaş, yürüyüş hızlı akıyor. */
+    private static final double IDLE_FRAME_DURATION = 0.16;
+    private static final double RUN_FRAME_DURATION = 0.10;
+
+    /** Bir animasyonda aranacak azami kare sayısı. */
+    private static final int MAX_FRAMES = 16;
+
+    /** Yürüyüş animasyonlarının ad soneki. */
+    private static final String RUN_SUFFIX = "_run";
 
     private final Map<String, Sprite> sprites = new HashMap<>();
     private final Sprite unknown = ShapeSprites.unknown();
@@ -36,10 +55,13 @@ public class SpriteRegistry {
         register("wall", ShapeSprites.wallTile());
         register("stairs", ShapeSprites.stairsTile());
 
-        register("player", ShapeSprites.player());
-        register("imp", ShapeSprites.imp());
-        register("skeleton", ShapeSprites.skeleton());
-        register("boss", ShapeSprites.boss());
+        registerCharacter("player", ShapeSprites.player());
+        registerCharacter("imp", ShapeSprites.imp());
+        registerCharacter("skeleton", ShapeSprites.skeleton());
+        registerCharacter("goblin", ShapeSprites.imp());
+        registerCharacter("orc", ShapeSprites.skeleton());
+        registerCharacter("boss", ShapeSprites.boss());
+
         register("potion", ShapeSprites.potion());
         register("gold", ShapeSprites.gold());
 
@@ -61,10 +83,57 @@ public class SpriteRegistry {
         return sprites.getOrDefault(name, unknown);
     }
 
-    /** PNG varsa onu, yoksa verilen şekil çizimini kaydeder. */
+    /**
+     * Duruma göre sprite: hareket halindeyken yürüyüş animasyonu.
+     *
+     * <p>Yürüyüş karesi olmayan varlıklar (eşyalar, duvarlar) için duruş
+     * sprite'ı dönüyor, yani çağıran taraf ayrım yapmak zorunda değil.</p>
+     */
+    public Sprite get(String name, boolean moving) {
+        if (moving) {
+            Sprite running = sprites.get(name + RUN_SUFFIX);
+            if (running != null) {
+                return running;
+            }
+        }
+        return get(name);
+    }
+
+    /** Karakter: hem duruş hem yürüyüş animasyonu aranır. */
+    private void registerCharacter(String name, Sprite fallback) {
+        register(name, fallback);
+
+        Sprite running = loadAnimation(name + RUN_SUFFIX, RUN_FRAME_DURATION);
+        if (running != null) {
+            sprites.put(name + RUN_SUFFIX, running);
+        }
+    }
+
+    /** Önce animasyon kareleri, sonra tek dosya, olmazsa şekil çizimi. */
     private void register(String name, Sprite fallback) {
-        Sprite loaded = loadImage(name);
-        sprites.put(name, loaded != null ? loaded : fallback);
+        Sprite animation = loadAnimation(name, IDLE_FRAME_DURATION);
+        if (animation != null) {
+            sprites.put(name, animation);
+            return;
+        }
+
+        Sprite single = loadImage(name);
+        sprites.put(name, single != null ? single : fallback);
+    }
+
+    /** {@code <ad>_f0.png} ile başlayan kareleri sırayla toplar. */
+    private Sprite loadAnimation(String name, double frameDuration) {
+        List<Sprite> frames = new ArrayList<>();
+
+        for (int i = 0; i < MAX_FRAMES; i++) {
+            Sprite frame = loadImage(name + "_f" + i);
+            if (frame == null) {
+                break;
+            }
+            frames.add(frame);
+        }
+
+        return frames.isEmpty() ? null : new AnimatedSprite(frames, frameDuration);
     }
 
     private Sprite loadImage(String name) {

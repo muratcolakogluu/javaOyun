@@ -26,6 +26,7 @@ public record SaveData(
         int playerX,
         int playerY,
         int playerHp,
+        int playerMaxHp,
         int equippedWeaponSlot,
         int equippedArmorSlot,
         List<ItemData> inventory,

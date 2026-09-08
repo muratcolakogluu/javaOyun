@@ -140,9 +140,12 @@ class DescentTest {
         game.getInventory().add(potion);
         int hpBefore = player.getHp();
 
+        int maxHpBefore = player.getMaxHp();
+
         goDownOneFloor();
 
         assertEquals(hpBefore, player.getHp(), "Inmek can doldurmamali");
+        assertTrue(player.getMaxHp() > maxHpBefore, "Inmek azami cani buyutmeli");
         assertEquals(40, game.getGold());
         assertEquals(1, game.getInventory().size());
     }

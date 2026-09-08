@@ -100,8 +100,8 @@ public abstract class Enemy extends Combatant implements Actor {
 
         onUpdate(game, delta);
 
-        // Adımını tamamlamış ve oyuncunun yanındaysa: yerinden oynamaz, vurur.
-        if (!isMoving() && isAdjacentTo(player)) {
+        // Kaçan düşman vurmaz; canını kurtarmaya çalışır.
+        if (!isMoving() && isAdjacentTo(player) && !shouldFlee()) {
             if (attackCooldown <= 0) {
                 game.enemyAttacksPlayer(this);
                 attackCooldown = stats.attackCooldown();
@@ -124,6 +124,9 @@ public abstract class Enemy extends Combatant implements Actor {
         if (tileDistanceTo(player) > stats.aggroRange()) {
             return startIdleStep(game);
         }
+        if (shouldFlee()) {
+            return startFleeStep(game, player);
+        }
 
         Position step = pathfinder.nextStep(game.getDungeon(), getTile(), player.getTile());
         if (step == null) {
@@ -139,6 +142,40 @@ public abstract class Enemy extends Combatant implements Actor {
      */
     protected boolean startIdleStep(Game game) {
         return false;
+    }
+
+    /**
+     * Şu an kaçmalı mı. Varsayılan: hayır, sonuna kadar dövüşür.
+     *
+     * <p>Goblin bunu canı azalınca açıyor. Kaçan düşman ne vuruyor ne
+     * kovalıyor; oyuncudan uzaklaşan bir kare arıyor. Bu, sayıları
+     * değiştirmeden gerçek bir davranış farkı yaratıyor: goblini bitirmek
+     * istiyorsan peşinden gitmen gerekiyor.</p>
+     */
+    protected boolean shouldFlee() {
+        return false;
+    }
+
+    /**
+     * Oyuncudan uzaklaşan bir kareye adım atar.
+     *
+     * <p>Uzaklaşma yönünü önce büyük eksende deniyoruz, olmazsa diğerinde;
+     * ikisi de kapalıysa köşeye sıkışmış demektir ve olduğu yerde kalır.</p>
+     */
+    private boolean startFleeStep(Game game, Player player) {
+        int awayX = Integer.signum(getTileX() - player.getTileX());
+        int awayY = Integer.signum(getTileY() - player.getTileY());
+
+        boolean horizontalFirst = Math.abs(getTileX() - player.getTileX())
+                >= Math.abs(getTileY() - player.getTileY());
+
+        int firstX = horizontalFirst ? awayX : 0;
+        int firstY = horizontalFirst ? 0 : awayY;
+
+        if (game.tryStartStep(this, firstX, firstY)) {
+            return true;
+        }
+        return game.tryStartStep(this, horizontalFirst ? 0 : awayX, horizontalFirst ? awayY : 0);
     }
 
     /**

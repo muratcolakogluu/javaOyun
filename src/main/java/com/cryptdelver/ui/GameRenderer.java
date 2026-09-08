@@ -179,7 +179,8 @@ public class GameRenderer {
             gc.setEffect(hitEffect);
         }
 
-        sprites.get(entity.getSpriteName()).draw(
+        // Adım halindeki varlık yürüyüş animasyonuyla çiziliyor.
+        sprites.get(entity.getSpriteName(), entity.isMoving()).draw(
                 gc,
                 entity.getRenderX() * TILE_SIZE,
                 entity.getRenderY() * TILE_SIZE,

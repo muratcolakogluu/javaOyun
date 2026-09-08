@@ -88,6 +88,18 @@ public class Player extends Combatant implements Actor {
         return equippedArmor == null ? 0 : equippedArmor.getDefenseBonus();
     }
 
+    /**
+     * Azami canı kalıcı olarak büyütür; mevcut can değişmez.
+     *
+     * <p>Oyuncunun tek kalıcı büyümesi bu: silah ve zırh yerde bulunur,
+     * kaybedilebilir; can tavanı ise indikçe artıyor. Derinlikle sertleşen
+     * düşmanlara karşı ayakta kalmayı bu dengeliyor. Mevcut canı doldurmuyor,
+     * çünkü inmek bir ödül değil — yaralı indiysen yaralı devam edersin.</p>
+     */
+    public void gainMaxHp(int extra) {
+        raiseMaxHp(extra);
+    }
+
     /** Vuruş animasyonu şu an çizilmeli mi. */
     public boolean isSwinging() {
         return swingTimer > 0;

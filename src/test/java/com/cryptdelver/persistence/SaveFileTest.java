@@ -27,7 +27,7 @@ class SaveFileTest {
     private SaveData sampleData() {
         return new SaveData(
                 3, -4829157263L, 1, 137, 92.5,
-                12, 7, 14,
+                12, 7, 14, 26,
                 1, 0,
                 List.of(
                         new SaveData.ItemData("ARMOR", 0, 0, "Deri Zırh", 1, "armor_leather"),

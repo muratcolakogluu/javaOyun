@@ -30,8 +30,8 @@ import java.util.Optional;
  */
 public class SaveFile {
 
-    /** Yazılan dosya sürümü; kalkan/kask kalkınca 4 oldu. */
-    private static final int VERSION = 4;
+    /** Yazılan dosya sürümü; azami can eklenince 5 oldu. */
+    private static final int VERSION = 5;
 
     private static final String SEPARATOR = "|";
     private static final String SPLIT_PATTERN = "\\|";
@@ -66,7 +66,7 @@ public class SaveFile {
         lines.add(line("gold", String.valueOf(data.gold())));
         lines.add(line("elapsed", String.valueOf(data.elapsedSeconds())));
         lines.add(line("player", String.valueOf(data.playerX()), String.valueOf(data.playerY()),
-                String.valueOf(data.playerHp())));
+                String.valueOf(data.playerHp()), String.valueOf(data.playerMaxHp())));
         lines.add(line("equipped", String.valueOf(data.equippedWeaponSlot()),
                 String.valueOf(data.equippedArmorSlot())));
 
@@ -108,6 +108,7 @@ public class SaveFile {
         int playerX = 0;
         int playerY = 0;
         int playerHp = 1;
+        int playerMaxHp = 0;
         int weaponSlot = SaveData.NO_SLOT;
         int armorSlot = SaveData.NO_SLOT;
         List<SaveData.ItemData> inventory = new ArrayList<>();
@@ -132,6 +133,8 @@ public class SaveFile {
                         playerX = Integer.parseInt(parts[1]);
                         playerY = Integer.parseInt(parts[2]);
                         playerHp = Integer.parseInt(parts[3]);
+                        // Azami can sürüm 5 ile geldi; eski kayıtlarda yok.
+                        playerMaxHp = parts.length > 4 ? Integer.parseInt(parts[4]) : 0;
                     }
                     case "equipped" -> {
                         weaponSlot = Integer.parseInt(parts[1]);
@@ -150,7 +153,7 @@ public class SaveFile {
         }
 
         return Optional.of(new SaveData(depth, seed, generatorIndex, gold, elapsed,
-                playerX, playerY, playerHp, weaponSlot, armorSlot,
+                playerX, playerY, playerHp, playerMaxHp, weaponSlot, armorSlot,
                 inventory, ground, enemies));
     }
 

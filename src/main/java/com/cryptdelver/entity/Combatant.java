@@ -46,10 +46,26 @@ public abstract class Combatant extends Entity {
         hp = Math.min(maxHp, hp + amount);
     }
 
-    /** Azami canı büyütür ve kazanılan kadarını hemen doldurur. */
+    /**
+     * Azami canı büyütür ve kazanılan kadarını hemen doldurur.
+     *
+     * <p>Düşmanları doğarken güçlendirmek için: taze bir düşman yarı canlı
+     * doğmamalı.</p>
+     */
     protected void increaseMaxHp(int extra) {
         maxHp += extra;
         hp += extra;
+    }
+
+    /**
+     * Yalnızca azami canı büyütür; mevcut can olduğu gibi kalır.
+     *
+     * <p>Oyuncunun kat inerken kazandığı can böyle veriliyor: tavan yükseliyor
+     * ama inmek <em>iyileştirmiyor</em>. Yaralı indiysen yaralı devam
+     * ediyorsun; iksiri hâlâ içmen gerekiyor.</p>
+     */
+    protected void raiseMaxHp(int extra) {
+        maxHp += extra;
     }
 
     /** Canı tamamen doldurur. */
