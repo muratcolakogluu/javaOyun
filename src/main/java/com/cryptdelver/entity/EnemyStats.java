@@ -9,6 +9,7 @@ package com.cryptdelver.entity;
  *
  * @param maxHp          azami can
  * @param attackPower    vuruş gücü
+ * @param defense        gelen hasardan düşülen savunma (kemik, kabuk, zırh)
  * @param speed          saniyede kaç kare ilerlediği
  * @param attackCooldown iki vuruş arasındaki bekleme (saniye)
  * @param aggroRange     oyuncuyu kaç kare uzaktan fark ettiği (ızgara uzaklığı)
@@ -16,6 +17,7 @@ package com.cryptdelver.entity;
 public record EnemyStats(
         int maxHp,
         int attackPower,
+        int defense,
         double speed,
         double attackCooldown,
         int aggroRange) {
@@ -23,6 +25,9 @@ public record EnemyStats(
     public EnemyStats {
         if (maxHp <= 0 || speed <= 0 || aggroRange <= 0) {
             throw new IllegalArgumentException("Düşman değerleri pozitif olmalı");
+        }
+        if (defense < 0) {
+            throw new IllegalArgumentException("Savunma negatif olamaz: " + defense);
         }
     }
 }

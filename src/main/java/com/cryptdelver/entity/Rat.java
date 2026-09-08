@@ -16,6 +16,7 @@ public class Rat extends Enemy {
     private static final EnemyStats STATS = new EnemyStats(
             5,      // can
             2,      // vuruş gücü
+            0,      // savunma: çıplak
             5.0,    // hız (kare/saniye)
             0.85,   // vuruş arası bekleme
             7);     // fark etme menzili (kare)

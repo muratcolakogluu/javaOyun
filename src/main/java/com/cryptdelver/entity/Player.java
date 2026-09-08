@@ -28,6 +28,7 @@ public class Player extends Combatant implements Actor {
     private static final int MAX_STEPS_PER_FRAME = 8;
 
     private Weapon equippedWeapon;
+    private Armor equippedArmor;
 
     private int inputX;
     private int inputY;
@@ -52,6 +53,21 @@ public class Player extends Combatant implements Actor {
 
     public void equip(Weapon weapon) {
         this.equippedWeapon = weapon;
+    }
+
+    /** Üstündeki zırh; hiçbiri kuşanılmadıysa {@code null}. */
+    public Armor getEquippedArmor() {
+        return equippedArmor;
+    }
+
+    public void equip(Armor armor) {
+        this.equippedArmor = armor;
+    }
+
+    /** Savunma tamamen kuşanılan zırhtan gelir; çıplakken 0. */
+    @Override
+    public int getDefense() {
+        return equippedArmor == null ? 0 : equippedArmor.getDefenseBonus();
     }
 
     /** Vuruş animasyonu şu an çizilmeli mi. */
@@ -86,6 +102,7 @@ public class Player extends Combatant implements Actor {
     public void restore() {
         restoreFullHealth();
         equippedWeapon = null;
+        equippedArmor = null;
         attackCooldown = 0;
         swingTimer = 0;
         attackRequested = false;

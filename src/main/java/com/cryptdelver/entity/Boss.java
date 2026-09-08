@@ -2,6 +2,7 @@ package com.cryptdelver.entity;
 
 import com.cryptdelver.ai.AStarPathfinder;
 import com.cryptdelver.game.Game;
+import com.cryptdelver.game.LootTable;
 import java.util.Random;
 
 /**
@@ -24,6 +25,7 @@ public class Boss extends Enemy {
     private static final EnemyStats STATS = new EnemyStats(
             45,     // can
             6,      // vuruş gücü
+            3,      // savunma: kalın zırh, kılıcın kademesi önemli
             2.2,    // hız (kare/saniye) — yavaş ama durmak bilmez
             1.0,    // vuruş arası bekleme
             60);    // fark etme menzili: pratikte tüm harita
@@ -103,14 +105,24 @@ public class Boss extends Enemy {
         return spots;
     }
 
-    /** Öldüğünde altın ve bir balta bırakır. */
+    /**
+     * Öldüğünde altın ve <em>katın bir üst kademesinden</em> silah bırakır.
+     *
+     * <p>Bossu geçmek bu yüzden sıradan katları soymaktan hızlı güçlendiriyor:
+     * normalde birkaç kat daha inmeden bulamayacağın silahı erken veriyor.</p>
+     */
     @Override
     public void onDeath(Game game) {
-        int gold = BASE_GOLD_DROP + GOLD_DROP_PER_DEPTH * game.getDepth();
+        int depth = game.getDepth();
+        int gold = BASE_GOLD_DROP + GOLD_DROP_PER_DEPTH * depth;
 
         game.addGroundItem(new Gold(getTileX(), getTileY(), gold));
-        game.addGroundItem(Weapon.battleAxe(getTileX(), getTileY()));
-        game.getMessageLog().add("Kript Lordu düştü! Merdiven artık serbest.");
+
+        Weapon reward = LootTable.weaponForTier(LootTable.bossTierForDepth(depth),
+                getTileX(), getTileY());
+        game.addGroundItem(reward);
+
+        game.getMessageLog().add("Kript Lordu düştü! " + reward.getName() + " bıraktı.");
     }
 
     @Override

@@ -222,18 +222,19 @@ public class GameRenderer {
 
         gc.setFill(HUD_TEXT);
         gc.fillText("Vurus " + game.getPlayer().getAttackPower(), 175, firstLine);
+        gc.fillText("Zirh " + game.getPlayer().getDefense(), 250, firstLine);
 
         gc.setFill(HUD_ACCENT);
-        gc.fillText("Kat " + game.getDepth(), 260, firstLine);
+        gc.fillText("Kat " + game.getDepth(), 315, firstLine);
 
         gc.setFill(HUD_TEXT);
-        gc.fillText(String.format("Sure %.0fs", game.getElapsedSeconds()), 330, firstLine);
-        gc.fillText("Dusman " + game.getEnemies().size(), 415, firstLine);
+        gc.fillText(String.format("Sure %.0fs", game.getElapsedSeconds()), 380, firstLine);
+        gc.fillText("Dusman " + game.getEnemies().size(), 465, firstLine);
 
         DungeonGenerator generator = game.getCurrentGenerator();
         if (generator != null) {
             gc.setFill(HUD_ACCENT);
-            gc.fillText(generator.getName(), 505, firstLine);
+            gc.fillText(generator.getName(), 555, firstLine);
         }
 
         gc.setFill(MESSAGE_TEXT);
@@ -255,7 +256,9 @@ public class GameRenderer {
         for (int slot = 0; slot < Inventory.CAPACITY; slot++) {
             double x = SLOT_ORIGIN_X + slot * (SLOT_SIZE + SLOT_GAP);
             Item item = inventory.get(slot);
-            boolean equipped = item != null && item == game.getPlayer().getEquippedWeapon();
+            boolean equipped = item != null
+                    && (item == game.getPlayer().getEquippedWeapon()
+                        || item == game.getPlayer().getEquippedArmor());
 
             gc.setFill(SLOT_BACKGROUND);
             gc.fillRoundRect(x, top, SLOT_SIZE, SLOT_SIZE, 5, 5);
@@ -275,13 +278,17 @@ public class GameRenderer {
             gc.fillText(String.valueOf(slot + 1), x + 3, top + 7);
         }
 
-        // Kuşanılan silahın adı, slotların sağında.
+        // Kuşanılan takımın adları, slotların sağında.
+        double x = SLOT_ORIGIN_X + Inventory.CAPACITY * (SLOT_SIZE + SLOT_GAP) + 10;
+        gc.setFont(hudFont);
+        gc.setFill(SLOT_EQUIPPED);
+        gc.setTextAlign(TextAlignment.LEFT);
+
         if (game.getPlayer().getEquippedWeapon() != null) {
-            double x = SLOT_ORIGIN_X + Inventory.CAPACITY * (SLOT_SIZE + SLOT_GAP) + 10;
-            gc.setFont(hudFont);
-            gc.setFill(SLOT_EQUIPPED);
-            gc.setTextAlign(TextAlignment.LEFT);
-            gc.fillText(game.getPlayer().getEquippedWeapon().getName(), x, top + SLOT_SIZE / 2.0);
+            gc.fillText(game.getPlayer().getEquippedWeapon().getName(), x, top + 8);
+        }
+        if (game.getPlayer().getEquippedArmor() != null) {
+            gc.fillText(game.getPlayer().getEquippedArmor().getName(), x, top + 24);
         }
     }
 

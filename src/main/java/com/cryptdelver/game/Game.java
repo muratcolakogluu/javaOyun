@@ -10,7 +10,6 @@ import com.cryptdelver.entity.Player;
 import com.cryptdelver.entity.Potion;
 import com.cryptdelver.entity.Rat;
 import com.cryptdelver.entity.Skeleton;
-import com.cryptdelver.entity.Weapon;
 import com.cryptdelver.world.Dungeon;
 import com.cryptdelver.world.DungeonGenerator;
 import com.cryptdelver.world.Position;
@@ -53,6 +52,7 @@ public class Game {
     /** Derin katlarda düşmanlar kaç katta bir güçlenir. */
     private static final int DEPTHS_PER_HP_BONUS = 2;
     private static final int DEPTHS_PER_ATTACK_BONUS = 3;
+    private static final int DEPTHS_PER_DEFENSE_BONUS = 4;
 
     /** Kaç katta bir boss çıkar. */
     private static final int FLOORS_PER_BOSS = 5;
@@ -64,9 +64,6 @@ public class Game {
     private static final int GOLD_PILES_PER_FLOOR = 5;
     private static final int MIN_GOLD = 5;
     private static final int MAX_GOLD = 25;
-
-    /** Kılıç yerine balta çıkma olasılığı. */
-    private static final double AXE_CHANCE = 0.35;
 
     private final Player player;
     private final Inventory inventory = new Inventory();
@@ -494,7 +491,7 @@ public class Game {
         // Boss merdivenin üstünde doğar: geçmek için onu yenmen gerekiyor.
         if (isBossFloor() && stairs != null) {
             boss = new Boss(stairs.x(), stairs.y());
-            boss.strengthen((depth - 1) / DEPTHS_PER_HP_BONUS, (depth - 1) / DEPTHS_PER_ATTACK_BONUS);
+            applyDepthBonus(boss);
             addEnemy(boss);
             messageLog.add(boss.getName() + " merdiveni tutuyor.");
         }
@@ -543,14 +540,37 @@ public class Game {
                 ? new Skeleton(spot.x(), spot.y())
                 : new Rat(spot.x(), spot.y());
 
-        enemy.strengthen((depth - 1) / DEPTHS_PER_HP_BONUS, (depth - 1) / DEPTHS_PER_ATTACK_BONUS);
+        applyDepthBonus(enemy);
         return enemy;
     }
 
+    /**
+     * Derinliğe göre can/güç/savunma bonusu uygular.
+     *
+     * <p>Savunma en yavaş artan değer: hızlı artsaydı kılıcın kademesi geride
+     * kaldığı anda düşmanlar delinmez olurdu. Oyuncunun ekipman kademesi
+     * {@link LootTable} ile 3 katta bir yükseliyor, düşman savunması 4 katta
+     * bir — yani ilerleme hep oyuncunun lehine, ama fark kapanmıyor.</p>
+     */
+    private void applyDepthBonus(Enemy enemy) {
+        enemy.strengthen(
+                (depth - 1) / DEPTHS_PER_HP_BONUS,
+                (depth - 1) / DEPTHS_PER_ATTACK_BONUS,
+                (depth - 1) / DEPTHS_PER_DEFENSE_BONUS);
+    }
+
+    /**
+     * Kata iksir, altın ve birer ekipman parçası dağıtır.
+     *
+     * <p>Ekipmanın kademesi rastgele değil, tamamen derinliğe bağlı
+     * ({@link LootTable}): 2. katta bulduğun zırh 4. kattakinden iyi olamaz.</p>
+     */
     private void placeItems(List<Position> spots, Set<Position> used) {
+        int tier = LootTable.tierForDepth(depth);
         int potions = 0;
         int goldPiles = 0;
         boolean weaponPlaced = false;
+        boolean armorPlaced = false;
 
         for (Position spot : spots) {
             if (used.contains(spot)) {
@@ -565,10 +585,11 @@ public class Game {
                 addGroundItem(new Gold(spot.x(), spot.y(), amount));
                 goldPiles++;
             } else if (!weaponPlaced) {
-                addGroundItem(random.nextDouble() < AXE_CHANCE
-                        ? Weapon.battleAxe(spot.x(), spot.y())
-                        : Weapon.rustySword(spot.x(), spot.y()));
+                addGroundItem(LootTable.weaponForTier(tier, spot.x(), spot.y()));
                 weaponPlaced = true;
+            } else if (!armorPlaced) {
+                addGroundItem(LootTable.armorForTier(tier, spot.x(), spot.y()));
+                armorPlaced = true;
             } else {
                 return;
             }

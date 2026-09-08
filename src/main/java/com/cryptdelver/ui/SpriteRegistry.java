@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import javafx.scene.image.Image;
+import javafx.scene.paint.Color;
 
 /**
  * Sprite adlarını çizilebilir sprite'lara bağlar.
@@ -15,7 +16,9 @@ import javafx.scene.image.Image;
  * doğru adlarla o klasöre koymak — kodda hiçbir değişiklik gerekmiyor.</p>
  *
  * <p>Beklenen dosya adları: {@code player}, {@code rat}, {@code skeleton},
- * {@code boss}, {@code potion}, {@code gold}, {@code sword}, {@code axe}.</p>
+ * {@code boss}, {@code potion}, {@code gold}, {@code sword}, {@code sword_steel},
+ * {@code axe}, {@code sword_crypt}, {@code armor_leather}, {@code armor_chain},
+ * {@code armor_plate}, {@code armor_crypt}.</p>
  */
 public class SpriteRegistry {
 
@@ -31,8 +34,18 @@ public class SpriteRegistry {
         register("boss", ShapeSprites.boss());
         register("potion", ShapeSprites.potion());
         register("gold", ShapeSprites.gold());
-        register("sword", ShapeSprites.sword());
+
+        // Silah kademeleri: aynı çizim, yükselen kalite hissi renklerde.
+        register("sword", ShapeSprites.sword(Color.web("#9a8f7c"), Color.web("#6b5a3c")));
+        register("sword_steel", ShapeSprites.sword(Color.web("#cfd3dc"), Color.web("#b08a3a")));
         register("axe", ShapeSprites.axe());
+        register("sword_crypt", ShapeSprites.sword(Color.web("#b9a6f0"), Color.web("#e8c46a")));
+
+        // Zırh kademeleri.
+        register("armor_leather", ShapeSprites.armor(Color.web("#7d5a3c"), Color.web("#a8794f")));
+        register("armor_chain", ShapeSprites.armor(Color.web("#7f8492"), Color.web("#aeb3c0")));
+        register("armor_plate", ShapeSprites.armor(Color.web("#93a1bd"), Color.web("#d6dcea")));
+        register("armor_crypt", ShapeSprites.armor(Color.web("#5f5090"), Color.web("#e8c46a")));
     }
 
     /** Ada karşılık gelen sprite; tanınmayan ad için göze batan yer tutucu. */

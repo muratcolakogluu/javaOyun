@@ -134,7 +134,7 @@ class ItemTest {
     @DisplayName("Silah kusanilinca vurus gucu artar ve cantada kalir")
     void weaponIsEquippedAndKept() {
         int baseAttack = player.getAttackPower();
-        Weapon sword = Weapon.rustySword(0, 0);
+        Weapon sword = LootTable.weaponForTier(1, 0, 0);
         game.getInventory().add(sword);
 
         game.useItem(0);
@@ -147,8 +147,8 @@ class ItemTest {
     @Test
     @DisplayName("Ikinci silah oncekinin yerini alir")
     void equippingAnotherWeaponSwaps() {
-        Weapon sword = Weapon.rustySword(0, 0);
-        Weapon axe = Weapon.battleAxe(0, 0);
+        Weapon sword = LootTable.weaponForTier(1, 0, 0);
+        Weapon axe = LootTable.weaponForTier(3, 0, 0);
         game.getInventory().add(sword);
         game.getInventory().add(axe);
 

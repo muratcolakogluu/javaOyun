@@ -20,16 +20,6 @@ public class Weapon extends Item {
         this.spriteName = spriteName;
     }
 
-    /** Erken katlarda bulunan mütevazı silah. */
-    public static Weapon rustySword(int tileX, int tileY) {
-        return new Weapon(tileX, tileY, "Paslı Kılıç", 2, "sword");
-    }
-
-    /** Daha nadir ve daha sert vuran silah. */
-    public static Weapon battleAxe(int tileX, int tileY) {
-        return new Weapon(tileX, tileY, "Savaş Baltası", 4, "axe");
-    }
-
     public int getAttackBonus() {
         return attackBonus;
     }

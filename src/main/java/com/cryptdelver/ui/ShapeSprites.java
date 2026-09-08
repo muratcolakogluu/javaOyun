@@ -120,12 +120,33 @@ public final class ShapeSprites {
         };
     }
 
-    /** Kılıç: çapraz namlu, balçak ve topuz. */
-    public static Sprite sword() {
+    /**
+     * Kılıç: çapraz namlu, balçak ve topuz.
+     *
+     * <p>Renkler parametre: aynı çizim paslı kılıçtan Kript Kılıcı'na kadar
+     * bütün kademeleri veriyor, her kademe için ayrı çizim yazmaya gerek yok.</p>
+     */
+    public static Sprite sword(Color blade, Color hilt) {
         return (gc, cx, cy, size) -> {
-            strokeLine(gc, cx, cy, size, -0.26, 0.30, 0.30, -0.30, Color.web("#cfd3dc"), 0.13);
-            strokeLine(gc, cx, cy, size, -0.30, 0.06, -0.06, 0.32, Color.web("#8a7a4a"), 0.10);
-            fillOval(gc, cx, cy, size, -0.38, 0.24, 0.16, 0.16, Color.web("#e8c46a"));
+            strokeLine(gc, cx, cy, size, -0.26, 0.30, 0.30, -0.30, blade, 0.13);
+            strokeLine(gc, cx, cy, size, -0.30, 0.06, -0.06, 0.32, hilt, 0.10);
+            fillOval(gc, cx, cy, size, -0.38, 0.24, 0.16, 0.16, hilt);
+        };
+    }
+
+    /** Zırh: göğüslük, omuzlar ve kemer. Renkleri kademeye göre değişiyor. */
+    public static Sprite armor(Color plate, Color trim) {
+        return (gc, cx, cy, size) -> {
+            // Omuzlar
+            fillRoundRect(gc, cx, cy, size, -0.38, -0.26, 0.76, 0.20, 0.10, trim);
+            // Göğüslük
+            fillRoundRect(gc, cx, cy, size, -0.28, -0.24, 0.56, 0.54, 0.14, plate);
+            // Yaka
+            fillRoundRect(gc, cx, cy, size, -0.14, -0.30, 0.28, 0.12, 0.06, trim);
+            // Kemer
+            fillRect(gc, cx, cy, size, -0.28, 0.16, 0.56, 0.09, trim);
+            // Orta dikiş
+            strokeLine(gc, cx, cy, size, 0.0, -0.14, 0.0, 0.14, trim, 0.05);
         };
     }
 

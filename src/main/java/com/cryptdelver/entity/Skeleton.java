@@ -20,6 +20,7 @@ public class Skeleton extends Enemy {
     private static final EnemyStats STATS = new EnemyStats(
             10,     // can
             4,      // vuruş gücü
+            1,      // savunma: kemik kalkan gibi çalışıyor
             3.0,    // hız (kare/saniye)
             1.25,   // vuruş arası bekleme
             11);    // fark etme menzili (kare)

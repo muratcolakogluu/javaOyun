@@ -24,6 +24,7 @@ public abstract class Enemy extends Combatant implements Actor {
     private final EnemyStats stats;
     private final Pathfinder pathfinder;
     private int bonusAttack;
+    private int bonusDefense;
     private double attackCooldown;
     private double idleTimer;
 
@@ -42,6 +43,12 @@ public abstract class Enemy extends Combatant implements Actor {
         return stats.attackPower() + bonusAttack;
     }
 
+    /** Türün doğal savunması, üstüne derinlik bonusu. */
+    @Override
+    public int getDefense() {
+        return stats.defense() + bonusDefense;
+    }
+
     /**
      * Düşmanı kalıcı olarak güçlendirir.
      *
@@ -49,9 +56,10 @@ public abstract class Enemy extends Combatant implements Actor {
      * tür başına yeni sınıf yazmak yerine, doğarken güçlendiriliyorlar.
      * Kazanılan can anında da yansıyor, yoksa yarı canlı doğardı.</p>
      */
-    public void strengthen(int extraHp, int extraAttack) {
+    public void strengthen(int extraHp, int extraAttack, int extraDefense) {
         increaseMaxHp(extraHp);
         bonusAttack += extraAttack;
+        bonusDefense += extraDefense;
     }
 
     public double getSpeed() {
