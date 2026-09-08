@@ -47,28 +47,6 @@ public class GameRenderer {
     /** Elde tutulan silah, yerdekinden biraz küçük çiziliyor. */
     private static final double HELD_WEAPON_SCALE = 0.85;
 
-    /** Kalkan silahtan biraz daha küçük duruyor. */
-    private static final double SHIELD_SCALE = 0.7;
-
-    /** Giyilen zırh, gövdeyi kapatmayacak kadar küçük. */
-    private static final double WORN_ARMOR_SCALE = 0.62;
-
-    /** Takılan kask, gövdeye göre biraz küçük. */
-    private static final double HELMET_SCALE = 0.5;
-
-    /**
-     * Kuşanılan parçaların kare merkezinden ne kadar yukarı çizileceği.
-     *
-     * <p>Karakter sprite'ı karenin tabanına oturuyor ve bir kareden uzun:
-     * 16×28 piksellik resim 32 piksellik karede 32×56 piksele çıkıyor. Yani
-     * kafa kare merkezinin yaklaşık 0.9 kare, göğüs 0.3 kare üstünde kalıyor.
-     * Zırhı önce 0.55'e koymuştum ve göğüslük başa oturup kask gibi
-     * görünüyordu.</p>
-     */
-    private static final double TORSO_LIFT = 0.30;
-    private static final double SHIELD_LIFT = 0.26;
-    private static final double HEAD_LIFT = 0.88;
-
     private static final int SLOT_SIZE = 30;
     private static final int SLOT_GAP = 4;
     private static final int SLOT_ORIGIN_X = 10;
@@ -201,38 +179,26 @@ public class GameRenderer {
     }
 
     /**
-     * Kuşanılan ekipmanı gövdenin üstüne katman katman çizer.
+     * Kuşanılan silahı oyuncunun eline çizer.
      *
-     * <p>Gövde hep aynı kalıyor; değişen şey üstüne binenler. Silah sağ elde,
-     * kalkan sol kolda, zırh göğsün üstünde. Önceden zırh kademesine göre
-     * karakterin kendisi değişiyordu ama o, her zırh değişiminde oyuncuyu
-     * başka birine dönüştürüyordu.</p>
+     * <p>Yalnızca silah çiziliyor, çünkü paketin silah çizimleri zaten "elde
+     * tutulan silah" olarak hazırlanmış ve gövdeyle aynı üslupta. Zırh, kalkan
+     * ve kask için pakette hiçbir çizim yok; onları kendi vektör şekillerimle
+     * gövdeye bindirmeyi denedim ama piksel sanatının üstünde kutu gibi
+     * duruyordu. Şimdilik durumları yalnızca HUD'da (savunma değeri, parça
+     * adları ve çantadaki altın çerçeve) gösteriliyor.</p>
      */
     private void drawEquipment(GraphicsContext gc, Player player) {
-        double centerX = player.getRenderX() * TILE_SIZE;
-        double centerY = player.getRenderY() * TILE_SIZE;
-
-        if (player.getEquippedShield() != null) {
-            sprites.get(player.getEquippedShield().getSpriteName()).draw(
-                    gc, centerX - TILE_SIZE * HELD_OFFSET, centerY - TILE_SIZE * SHIELD_LIFT,
-                    TILE_SIZE * SHIELD_SCALE);
-        }
-
-        if (player.getEquippedArmor() != null) {
-            sprites.get(player.getEquippedArmor().getSpriteName()).draw(
-                    gc, centerX, centerY - TILE_SIZE * TORSO_LIFT, TILE_SIZE * WORN_ARMOR_SCALE);
-        }
-
-        if (player.getEquippedHelmet() != null) {
-            sprites.get(player.getEquippedHelmet().getSpriteName()).draw(
-                    gc, centerX, centerY - TILE_SIZE * HEAD_LIFT, TILE_SIZE * HELMET_SCALE);
-        }
-
         Weapon weapon = player.getEquippedWeapon();
-        if (weapon != null) {
-            sprites.get(weapon.getSpriteName()).draw(
-                    gc, centerX + TILE_SIZE * HELD_OFFSET, centerY, TILE_SIZE * HELD_WEAPON_SCALE);
+        if (weapon == null) {
+            return;
         }
+
+        sprites.get(weapon.getSpriteName()).draw(
+                gc,
+                player.getRenderX() * TILE_SIZE + TILE_SIZE * HELD_OFFSET,
+                player.getRenderY() * TILE_SIZE,
+                TILE_SIZE * HELD_WEAPON_SCALE);
     }
 
     /** Yaralı düşmanların üstünde ince bir can çubuğu. */
