@@ -39,12 +39,38 @@ public class Armor extends Item {
         return false;
     }
 
+    /**
+     * Yerden alındığında, üstündekinden iyiyse kendiliğinden kuşanılır.
+     *
+     * <p>Silahla aynı kural: daha kötüsü otomatik takılmaz, çantada bekler.</p>
+     */
+    @Override
+    public void onPickup(Game game) {
+        Player player = game.getPlayer();
+        Armor current = player.getEquippedArmor();
+
+        if (current == null || defenseBonus > current.getDefenseBonus()) {
+            player.equip(this);
+            game.getMessageLog().add(getName() + " kuşandın (+" + defenseBonus + " savunma).");
+        }
+    }
+
     /** Kuşanılmış zırh yere bırakılırsa üstünden de çıkar. */
     @Override
     public void onDrop(Game game) {
         if (game.getPlayer().getEquippedArmor() == this) {
             game.getPlayer().unequipArmor();
         }
+    }
+
+    @Override
+    public String getSaveKind() {
+        return "ARMOR";
+    }
+
+    @Override
+    public int getSaveValue() {
+        return defenseBonus;
     }
 
     @Override

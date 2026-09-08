@@ -38,12 +38,39 @@ public class Weapon extends Item {
         return false;
     }
 
+    /**
+     * Yerden alındığında, elindekinden iyiyse kendiliğinden kuşanılır.
+     *
+     * <p>Daha kötüsü otomatik takılmaz: zoraki bir "geri alma" hamlesi
+     * yaptırmamak için. Onu elle takmak istersen çantada duruyor.</p>
+     */
+    @Override
+    public void onPickup(Game game) {
+        Player player = game.getPlayer();
+        Weapon current = player.getEquippedWeapon();
+
+        if (current == null || attackBonus > current.getAttackBonus()) {
+            player.equip(this);
+            game.getMessageLog().add(getName() + " kuşandın (+" + attackBonus + " vuruş).");
+        }
+    }
+
     /** Kuşanılmış silah yere bırakılırsa elden de çıkar. */
     @Override
     public void onDrop(Game game) {
         if (game.getPlayer().getEquippedWeapon() == this) {
             game.getPlayer().unequipWeapon();
         }
+    }
+
+    @Override
+    public String getSaveKind() {
+        return "WEAPON";
+    }
+
+    @Override
+    public int getSaveValue() {
+        return attackBonus;
     }
 
     @Override

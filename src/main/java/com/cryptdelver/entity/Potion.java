@@ -34,6 +34,11 @@ public class Potion extends Item {
     }
 
     @Override
+    public String getSaveKind() {
+        return "POTION";
+    }
+
+    @Override
     public String getSpriteName() {
         return "potion";
     }

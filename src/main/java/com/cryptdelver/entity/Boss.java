@@ -126,6 +126,11 @@ public class Boss extends Enemy {
     }
 
     @Override
+    public String getSaveKind() {
+        return "BOSS";
+    }
+
+    @Override
     public String getSpriteName() {
         return "boss";
     }

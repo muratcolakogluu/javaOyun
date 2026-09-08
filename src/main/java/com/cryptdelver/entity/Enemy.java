@@ -70,6 +70,14 @@ public abstract class Enemy extends Combatant implements Actor {
         return pathfinder;
     }
 
+    /**
+     * Kayıt dosyasındaki tür etiketi ({@code "RAT"}, {@code "SKELETON"}...).
+     *
+     * <p>{@code Item.getSaveKind()} ile aynı gerekçe: kaydetme kodu
+     * {@code instanceof} zinciri kurmasın, düşman kendini adlandırsın.</p>
+     */
+    public abstract String getSaveKind();
+
     /** Boşta gezinen düşmanların adımları arasında bekleyeceği süre. */
     protected double getIdleTimer() {
         return idleTimer;

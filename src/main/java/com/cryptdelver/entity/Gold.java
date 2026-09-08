@@ -41,6 +41,16 @@ public class Gold extends Item {
     }
 
     @Override
+    public String getSaveKind() {
+        return "GOLD";
+    }
+
+    @Override
+    public int getSaveValue() {
+        return amount;
+    }
+
+    @Override
     public String getSpriteName() {
         return "gold";
     }

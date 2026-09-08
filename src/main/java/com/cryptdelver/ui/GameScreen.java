@@ -1,9 +1,13 @@
 package com.cryptdelver.ui;
 
 import com.cryptdelver.game.Game;
+import com.cryptdelver.persistence.SaveData;
+import com.cryptdelver.persistence.SaveFile;
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.EnumSet;
+import java.util.Optional;
 import java.util.Set;
 import javafx.animation.AnimationTimer;
 import javafx.scene.Parent;
@@ -41,6 +45,7 @@ public class GameScreen {
     private final StackPane root;
     private final Set<KeyCode> pressedKeys = EnumSet.noneOf(KeyCode.class);
     private final Deque<KeyCode> heldDirections = new ArrayDeque<>();
+    private final SaveFile saveFile = new SaveFile();
 
     private AnimationTimer loop;
     private long lastFrameNanos;
@@ -142,6 +147,8 @@ public class GameScreen {
         // Tek seferlik komutlar; hareket ve saldırı her karede durumdan okunuyor.
         switch (code) {
             case E -> game.descend();
+            case F5 -> saveGame();
+            case F9 -> loadGame();
             case R -> game.regenerateFloor();
             case G -> game.cycleGenerator();
             case ENTER -> {
@@ -160,6 +167,35 @@ public class GameScreen {
             default -> {
                 // Diğer tuşlar yalnızca basılı tuşlar kümesini ilgilendiriyor.
             }
+        }
+    }
+
+    /**
+     * Oyunu diske yazar.
+     *
+     * <p>Dosya işlemleri patlarsa oyun düşmesin: hata mesaj kaydına yazılıyor,
+     * oyuncu ekranda görüyor ve oynamaya devam ediyor.</p>
+     */
+    private void saveGame() {
+        try {
+            saveFile.write(game.captureSave());
+            game.getMessageLog().add("Oyun kaydedildi.");
+        } catch (IOException e) {
+            game.getMessageLog().add("Kaydedilemedi: " + e.getMessage());
+        }
+    }
+
+    /** Diskteki kaydı yükler; kayıt yoksa uyarır. */
+    private void loadGame() {
+        try {
+            Optional<SaveData> data = saveFile.read();
+            if (data.isEmpty()) {
+                game.getMessageLog().add("Kayıtlı oyun yok.");
+                return;
+            }
+            game.applySave(data.get());
+        } catch (IOException | RuntimeException e) {
+            game.getMessageLog().add("Kayıt yüklenemedi: " + e.getMessage());
         }
     }
 

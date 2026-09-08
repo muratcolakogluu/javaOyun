@@ -1,5 +1,6 @@
 package com.cryptdelver.game;
 
+import com.cryptdelver.entity.Armor;
 import com.cryptdelver.entity.Boss;
 import com.cryptdelver.entity.Combatant;
 import com.cryptdelver.entity.Enemy;
@@ -10,6 +11,8 @@ import com.cryptdelver.entity.Player;
 import com.cryptdelver.entity.Potion;
 import com.cryptdelver.entity.Rat;
 import com.cryptdelver.entity.Skeleton;
+import com.cryptdelver.entity.Weapon;
+import com.cryptdelver.persistence.SaveData;
 import com.cryptdelver.world.Dungeon;
 import com.cryptdelver.world.DungeonGenerator;
 import com.cryptdelver.world.Position;
@@ -478,6 +481,152 @@ public class Game {
         }
     }
 
+    // ------------------------------------------------------------ kaydetme
+
+    /**
+     * O anki durumu kayıt verisine çevirir.
+     *
+     * <p>Harita yazılmıyor, yalnızca tohumu: üreticiler aynı tohumdan aynı
+     * haritayı üretiyor. Ama harita üstündeki her şey — düşmanların canı,
+     * yerdeki eşyalar — yazılıyor; yoksa yükleme kat başına altın ve iksir
+     * çiftliğine dönerdi.</p>
+     */
+    public SaveData captureSave() {
+        List<Item> carried = inventory.getItems();
+
+        List<SaveData.ItemData> savedInventory = new ArrayList<>();
+        for (Item item : carried) {
+            savedInventory.add(describe(item));
+        }
+
+        List<SaveData.ItemData> savedGround = new ArrayList<>();
+        for (Item item : groundItems) {
+            savedGround.add(describe(item));
+        }
+
+        List<SaveData.EnemyData> savedEnemies = new ArrayList<>();
+        for (Enemy enemy : enemies) {
+            savedEnemies.add(new SaveData.EnemyData(enemy.getSaveKind(),
+                    enemy.getTileX(), enemy.getTileY(),
+                    enemy.getHp(), enemy.getMaxHp(), enemy.getAttackPower(), enemy.getDefense()));
+        }
+
+        return new SaveData(depth, currentSeed, generatorIndex, gold, elapsedSeconds,
+                player.getTileX(), player.getTileY(), player.getHp(),
+                slotOf(carried, player.getEquippedWeapon()),
+                slotOf(carried, player.getEquippedArmor()),
+                savedInventory, savedGround, savedEnemies);
+    }
+
+    /** Kuşanılmış parçanın çantadaki slotu; hiçbiri kuşanılmadıysa {@link SaveData#NO_SLOT}. */
+    private int slotOf(List<Item> carried, Item equipped) {
+        return equipped == null ? SaveData.NO_SLOT : carried.indexOf(equipped);
+    }
+
+    /**
+     * Kaydedilmiş durumu yükler: harita tohumdan yeniden üretilir, üstündeki
+     * her şey kayıttan kurulur.
+     */
+    public void applySave(SaveData data) {
+        if (generators.isEmpty()) {
+            throw new IllegalStateException("Kayıt yüklemek için zindan üreticisi gerekli");
+        }
+
+        depth = data.depth();
+        generatorIndex = Math.floorMod(data.generatorIndex(), generators.size());
+        gold = data.gold();
+        elapsedSeconds = data.elapsedSeconds();
+
+        buildFloor(data.seed());
+        inventory.clear();
+
+        restorePlayer(data);
+
+        for (SaveData.ItemData item : data.inventory()) {
+            inventory.add(createItem(item));
+        }
+        equipFromSlots(data);
+
+        for (SaveData.ItemData item : data.groundItems()) {
+            addGroundItem(createItem(item));
+        }
+        for (SaveData.EnemyData enemy : data.enemies()) {
+            addEnemy(createEnemy(enemy));
+        }
+
+        lastPickupTile = player.getTile();
+        messageLog.add(depth + ". kattaki kayıt yüklendi.");
+    }
+
+    private void restorePlayer(SaveData data) {
+        player.restore();
+        player.setTile(data.playerX(), data.playerY());
+
+        int damage = player.getMaxHp() - data.playerHp();
+        if (damage > 0) {
+            player.takeDamage(damage);
+        }
+    }
+
+    private void equipFromSlots(SaveData data) {
+        Item weapon = inventory.get(data.equippedWeaponSlot());
+        if (weapon instanceof Weapon) {
+            player.equip((Weapon) weapon);
+        }
+
+        Item armor = inventory.get(data.equippedArmorSlot());
+        if (armor instanceof Armor) {
+            player.equip((Armor) armor);
+        }
+    }
+
+    private SaveData.ItemData describe(Item item) {
+        return new SaveData.ItemData(item.getSaveKind(), item.getTileX(), item.getTileY(),
+                item.getName(), item.getSaveValue(), item.getSpriteName());
+    }
+
+    /** Etiketten eşya üretir; kayıt biçimini nesnelere çeviren tek yer. */
+    private Item createItem(SaveData.ItemData data) {
+        return switch (data.kind()) {
+            case "POTION" -> new Potion(data.x(), data.y());
+            case "GOLD" -> new Gold(data.x(), data.y(), data.value());
+            case "WEAPON" -> new Weapon(data.x(), data.y(), data.name(), data.value(), data.spriteName());
+            case "ARMOR" -> new Armor(data.x(), data.y(), data.name(), data.value(), data.spriteName());
+            default -> throw new IllegalArgumentException("Bilinmeyen eşya türü: " + data.kind());
+        };
+    }
+
+    /**
+     * Etiketten düşman üretir ve kayıttaki değerlere getirir.
+     *
+     * <p>Bonusları değil toplam değerleri sakladığımız için, taze düşmanla
+     * kayıt arasındaki farkı ekliyoruz. Tür değerlerini sonradan dengelemek
+     * eski kayıtları bozmuyor.</p>
+     */
+    private Enemy createEnemy(SaveData.EnemyData data) {
+        Enemy enemy = switch (data.kind()) {
+            case "RAT" -> new Rat(data.x(), data.y());
+            case "SKELETON" -> new Skeleton(data.x(), data.y());
+            case "BOSS" -> {
+                Boss restored = new Boss(data.x(), data.y());
+                boss = restored;
+                yield restored;
+            }
+            default -> throw new IllegalArgumentException("Bilinmeyen düşman türü: " + data.kind());
+        };
+
+        enemy.strengthen(
+                data.maxHp() - enemy.getMaxHp(),
+                data.attack() - enemy.getAttackPower(),
+                data.defense() - enemy.getDefense());
+
+        int damage = enemy.getMaxHp() - data.hp();
+        if (damage > 0) {
+            enemy.takeDamage(damage);
+        }
+        return enemy;
+    }
+
     /** Ölümden sonra sıfırdan başlar: can, çanta, kese, derinlik ve süre sıfırlanır. */
     public void restart() {
         player.restore();
@@ -493,20 +642,36 @@ public class Game {
     }
 
     private void generateFloor(long seed) {
+        Position spawn = buildFloor(seed);
+
+        player.setTile(spawn);
+        lastPickupTile = player.getTile();
+
+        populateFloor();
+    }
+
+    /**
+     * Haritayı tohumdan üretir ve merdiveni yerleştirir; içini doldurmaz.
+     *
+     * <p>Yeni kat üretirken de kayıt yüklerken de aynı adımlar işlemeli, yoksa
+     * kaydedilen katın merdiveni yüklenince başka yere düşerdi.</p>
+     *
+     * @return oyuncunun doğduğu kare
+     */
+    private Position buildFloor(long seed) {
         currentSeed = seed;
         dungeon = generators.get(generatorIndex).generate(floorWidth, floorHeight, seed);
         enemies.clear();
         groundItems.clear();
         boss = null;
 
-        player.setTile(dungeon.findWalkableNear(floorWidth / 2, floorHeight / 2));
-        lastPickupTile = player.getTile();
+        Position spawn = dungeon.findWalkableNear(floorWidth / 2, floorHeight / 2);
 
-        // Merdiven, doğduğun yerden yürüyerek gidilebilen en uzak kareye konur.
-        stairs = dungeon.findFarthestWalkableFrom(player.getTile());
+        // Merdiven, doğulan yerden yürüyerek gidilebilen en uzak kareye konur.
+        stairs = dungeon.findFarthestWalkableFrom(spawn);
         dungeon.setTile(stairs.x(), stairs.y(), Tile.STAIRS_DOWN);
 
-        populateFloor();
+        return spawn;
     }
 
     /**

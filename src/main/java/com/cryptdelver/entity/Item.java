@@ -52,4 +52,18 @@ public abstract class Item extends Entity {
      *         eşyalar {@code false} döner.
      */
     public abstract boolean use(Game game);
+
+    /**
+     * Kayıt dosyasındaki tür etiketi ({@code "POTION"}, {@code "GOLD"}...).
+     *
+     * <p>Kaydetme kodunun {@code instanceof} zinciri yazmasını önlüyor: eşya
+     * kendini nasıl adlandıracağını kendi biliyor. Karşılığında model sınıfları
+     * kayıt biçiminden az da olsa haberdar oluyor — bilinçli bir takas.</p>
+     */
+    public abstract String getSaveKind();
+
+    /** Kayıtta saklanan sayısal değer: altın miktarı, vuruş ya da savunma bonusu. */
+    public int getSaveValue() {
+        return 0;
+    }
 }

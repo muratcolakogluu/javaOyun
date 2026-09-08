@@ -71,6 +71,11 @@ public class Rat extends Enemy {
     }
 
     @Override
+    public String getSaveKind() {
+        return "RAT";
+    }
+
+    @Override
     public String getSpriteName() {
         return "rat";
     }
