@@ -29,8 +29,6 @@ public class Player extends Combatant implements Actor {
 
     private Weapon equippedWeapon;
     private Armor equippedArmor;
-    private Shield equippedShield;
-    private Helmet equippedHelmet;
 
     private int inputX;
     private int inputY;
@@ -76,41 +74,10 @@ public class Player extends Combatant implements Actor {
         this.equippedArmor = null;
     }
 
-    /** Kolundaki kalkan; hiçbiri kuşanılmadıysa {@code null}. */
-    public Shield getEquippedShield() {
-        return equippedShield;
-    }
-
-    public void equip(Shield shield) {
-        this.equippedShield = shield;
-    }
-
-    /** Kalkanı bırakır. */
-    public void unequipShield() {
-        this.equippedShield = null;
-    }
-
-    /** Başındaki kask; hiçbiri takılmadıysa {@code null}. */
-    public Helmet getEquippedHelmet() {
-        return equippedHelmet;
-    }
-
-    public void equip(Helmet helmet) {
-        this.equippedHelmet = helmet;
-    }
-
-    /** Kaskı çıkarır. */
-    public void unequipHelmet() {
-        this.equippedHelmet = null;
-    }
-
-    /** Savunma; kuşanılan zırh, kalkan ve kaskın toplamı, çıplakken 0. */
+    /** Savunma tamamen kuşanılan zırhtan gelir; çıplakken 0. */
     @Override
     public int getDefense() {
-        int armorDefense = equippedArmor == null ? 0 : equippedArmor.getDefenseBonus();
-        int shieldDefense = equippedShield == null ? 0 : equippedShield.getDefenseBonus();
-        int helmetDefense = equippedHelmet == null ? 0 : equippedHelmet.getDefenseBonus();
-        return armorDefense + shieldDefense + helmetDefense;
+        return equippedArmor == null ? 0 : equippedArmor.getDefenseBonus();
     }
 
     /** Vuruş animasyonu şu an çizilmeli mi. */
@@ -146,8 +113,6 @@ public class Player extends Combatant implements Actor {
         restoreFullHealth();
         equippedWeapon = null;
         equippedArmor = null;
-        equippedShield = null;
-        equippedHelmet = null;
         attackCooldown = 0;
         swingTimer = 0;
         attackRequested = false;

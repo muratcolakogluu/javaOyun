@@ -182,11 +182,9 @@ public class GameRenderer {
      * Kuşanılan silahı oyuncunun eline çizer.
      *
      * <p>Yalnızca silah çiziliyor, çünkü paketin silah çizimleri zaten "elde
-     * tutulan silah" olarak hazırlanmış ve gövdeyle aynı üslupta. Zırh, kalkan
-     * ve kask için pakette hiçbir çizim yok; onları kendi vektör şekillerimle
-     * gövdeye bindirmeyi denedim ama piksel sanatının üstünde kutu gibi
-     * duruyordu. Şimdilik durumları yalnızca HUD'da (savunma değeri, parça
-     * adları ve çantadaki altın çerçeve) gösteriliyor.</p>
+     * tutulan silah" olarak hazırlanmış ve gövdeyle aynı üslupta. Zırh için gövdeye
+     * bindirilecek çizim yok (paketlerde yalnızca envanter ikonu var), o yüzden
+     * zırhın durumu HUD ve çanta üzerinden okunuyor.</p>
      */
     private void drawEquipment(GraphicsContext gc, Player player) {
         Weapon weapon = player.getEquippedWeapon();
@@ -286,8 +284,7 @@ public class GameRenderer {
             Item item = inventory.get(slot);
             boolean equipped = item != null
                     && (item == game.getPlayer().getEquippedWeapon()
-                        || item == game.getPlayer().getEquippedArmor()
-                        || item == game.getPlayer().getEquippedShield());
+                        || item == game.getPlayer().getEquippedArmor());
 
             gc.setFill(SLOT_BACKGROUND);
             gc.fillRoundRect(x, top, SLOT_SIZE, SLOT_SIZE, 5, 5);
@@ -326,13 +323,6 @@ public class GameRenderer {
         }
         if (game.getPlayer().getEquippedArmor() != null) {
             gc.fillText(game.getPlayer().getEquippedArmor().getName(), x, top + 24);
-        }
-        if (game.getPlayer().getEquippedShield() != null) {
-            gc.fillText(game.getPlayer().getEquippedShield().getName(), x + 170, top + 24);
-        }
-
-        if (game.getPlayer().getEquippedHelmet() != null) {
-            gc.fillText(game.getPlayer().getEquippedHelmet().getName(), x + 170, top + 8);
         }
     }
 

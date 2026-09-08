@@ -1,8 +1,6 @@
 package com.cryptdelver.game;
 
 import com.cryptdelver.entity.Armor;
-import com.cryptdelver.entity.Helmet;
-import com.cryptdelver.entity.Shield;
 import com.cryptdelver.entity.Weapon;
 
 /**
@@ -43,26 +41,6 @@ public final class LootTable {
             new Gear("Kript Plakası", 6, "armor_crypt"),
     };
 
-    /**
-     * Kalkanlar zırhtan az koruyor: savunma iki slottan toplandığı için
-     * kalkanı da zırh kadar güçlü yapsaydık derin katlarda gelen hasar
-     * tamamen alt sınıra yapışırdı.
-     */
-    /** Kasklar en küçük katkıyı veriyor: savunma üç slottan toplanıyor. */
-    private static final Gear[] HELMETS = {
-            new Gear("Deri Başlık", 1, "helmet_leather"),
-            new Gear("Zincir Başlık", 1, "helmet_chain"),
-            new Gear("Çelik Miğfer", 2, "helmet_steel"),
-            new Gear("Kript Miğferi", 2, "helmet_crypt"),
-    };
-
-    private static final Gear[] SHIELDS = {
-            new Gear("Tahta Kalkan", 1, "shield_wood"),
-            new Gear("Demir Kalkan", 1, "shield_iron"),
-            new Gear("Çelik Kalkan", 2, "shield_steel"),
-            new Gear("Kript Kalkanı", 3, "shield_crypt"),
-    };
-
     private LootTable() {
     }
 
@@ -85,16 +63,6 @@ public final class LootTable {
     public static Armor armorForTier(int tier, int tileX, int tileY) {
         Gear gear = ARMORS[clampIndex(tier)];
         return new Armor(tileX, tileY, gear.name(), gear.bonus(), gear.spriteName());
-    }
-
-    public static Shield shieldForTier(int tier, int tileX, int tileY) {
-        Gear gear = SHIELDS[clampIndex(tier)];
-        return new Shield(tileX, tileY, gear.name(), gear.bonus(), gear.spriteName());
-    }
-
-    public static Helmet helmetForTier(int tier, int tileX, int tileY) {
-        Gear gear = HELMETS[clampIndex(tier)];
-        return new Helmet(tileX, tileY, gear.name(), gear.bonus(), gear.spriteName());
     }
 
     /** Kademeyi dizi indisine çevirir ve sınırların içinde tutar. */

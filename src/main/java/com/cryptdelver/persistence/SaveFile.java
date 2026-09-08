@@ -30,8 +30,8 @@ import java.util.Optional;
  */
 public class SaveFile {
 
-    /** Yazılan dosya sürümü; kalkan 2, kask 3 ile geldi. */
-    private static final int VERSION = 3;
+    /** Yazılan dosya sürümü; kalkan/kask kalkınca 4 oldu. */
+    private static final int VERSION = 4;
 
     private static final String SEPARATOR = "|";
     private static final String SPLIT_PATTERN = "\\|";
@@ -68,9 +68,7 @@ public class SaveFile {
         lines.add(line("player", String.valueOf(data.playerX()), String.valueOf(data.playerY()),
                 String.valueOf(data.playerHp())));
         lines.add(line("equipped", String.valueOf(data.equippedWeaponSlot()),
-                String.valueOf(data.equippedArmorSlot()),
-                String.valueOf(data.equippedShieldSlot()),
-                String.valueOf(data.equippedHelmetSlot())));
+                String.valueOf(data.equippedArmorSlot())));
 
         for (SaveData.ItemData item : data.inventory()) {
             lines.add(itemLine("inv", item));
@@ -112,8 +110,6 @@ public class SaveFile {
         int playerHp = 1;
         int weaponSlot = SaveData.NO_SLOT;
         int armorSlot = SaveData.NO_SLOT;
-        int shieldSlot = SaveData.NO_SLOT;
-        int helmetSlot = SaveData.NO_SLOT;
         List<SaveData.ItemData> inventory = new ArrayList<>();
         List<SaveData.ItemData> ground = new ArrayList<>();
         List<SaveData.EnemyData> enemies = new ArrayList<>();
@@ -140,9 +136,8 @@ public class SaveFile {
                     case "equipped" -> {
                         weaponSlot = Integer.parseInt(parts[1]);
                         armorSlot = Integer.parseInt(parts[2]);
-                        // Kalkan sürüm 2, kask sürüm 3 ile geldi; eski kayıtlarda yoklar.
-                        shieldSlot = parts.length > 3 ? Integer.parseInt(parts[3]) : SaveData.NO_SLOT;
-                        helmetSlot = parts.length > 4 ? Integer.parseInt(parts[4]) : SaveData.NO_SLOT;
+                        // Sürüm 2 ve 3 kalkan/kask slotu da yazıyordu; ikisi de
+                        // oyundan kalktı, o alanlar varsa yok sayılıyor.
                     }
                     case "inv" -> inventory.add(parseItem(parts));
                     case "ground" -> ground.add(parseItem(parts));
@@ -155,7 +150,7 @@ public class SaveFile {
         }
 
         return Optional.of(new SaveData(depth, seed, generatorIndex, gold, elapsed,
-                playerX, playerY, playerHp, weaponSlot, armorSlot, shieldSlot, helmetSlot,
+                playerX, playerY, playerHp, weaponSlot, armorSlot,
                 inventory, ground, enemies));
     }
 

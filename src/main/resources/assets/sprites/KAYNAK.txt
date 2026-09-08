@@ -36,14 +36,13 @@ Oyuncu tek gövde (player.png <- elf_m_idle_anim_f0.png); kuşanılan parçalar
 üstüne ayrı katman olarak çiziliyor. Zırh kademesine göre karakteri
 değiştirmeyi denedik ama her zırh değişiminde başka birine dönüşüyordu.
 
-Kalkan sol kolda, silah sağ elde, zırh göğsün üstünde çizilir; paketin
+Yalnızca silah gövdenin sağına çizilir; paketin
 silah çizimleri zaten elde tutulacak şekilde hazırlanmış.
 
-Kalkanlar (shield_wood, shield_iron, shield_steel, shield_crypt) da pakette
-yok; zırhlar gibi şekil çizimiyle geliyorlar.
+Kalkan ve kask oyundan kaldırıldı (pakette çizimleri yoktu, kendi şekil
+çizimlerim de piksel sanatının yanında yamalı duruyordu). Savunmanın tek
+kaynağı artık zırh.
 
-Kasklar (helmet_leather, helmet_chain, helmet_steel, helmet_crypt) da pakette
-yok; kalkanlar gibi şekil çizimiyle geliyorlar.
 
 --------------------------------------------------------------------
 İkinci kaynak: zırh ikonları
@@ -64,5 +63,6 @@ scratchpad'deki SheetCut aracıyla kesildi:
   armor_plate.png   <- armours.png satir 14, sutun 8  (parlak çelik)
   armor_crypt.png   <- armours.png satir 15, sutun 8  (altın, en üst kademe)
 
-Bu pakette yalnızca göğüs zırhı var; kask ve kalkan yok. Onlar hâlâ
-ShapeSprites içindeki şekil çizimleriyle görünüyor.
+Bu pakette yalnızca göğüs zırhı var; kask ve kalkan yok. Zaten ikisi de
+oyundan kaldırıldı — kendi şekil çizimlerim piksel sanatının yanında yamalı
+duruyordu. Savunmanın tek kaynağı artık zırh.

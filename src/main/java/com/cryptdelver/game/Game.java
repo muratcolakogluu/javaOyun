@@ -6,12 +6,10 @@ import com.cryptdelver.entity.Combatant;
 import com.cryptdelver.entity.Enemy;
 import com.cryptdelver.entity.Entity;
 import com.cryptdelver.entity.Gold;
-import com.cryptdelver.entity.Helmet;
 import com.cryptdelver.entity.Imp;
 import com.cryptdelver.entity.Item;
 import com.cryptdelver.entity.Player;
 import com.cryptdelver.entity.Potion;
-import com.cryptdelver.entity.Shield;
 import com.cryptdelver.entity.Skeleton;
 import com.cryptdelver.entity.Weapon;
 import com.cryptdelver.persistence.SaveData;
@@ -529,8 +527,6 @@ public class Game {
                 player.getTileX(), player.getTileY(), player.getHp(),
                 inventory.slotOf(player.getEquippedWeapon()),
                 inventory.slotOf(player.getEquippedArmor()),
-                inventory.slotOf(player.getEquippedShield()),
-                inventory.slotOf(player.getEquippedHelmet()),
                 savedInventory, savedGround, savedEnemies);
     }
 
@@ -554,12 +550,18 @@ public class Game {
         restorePlayer(data);
 
         for (SaveData.ItemData item : data.inventory()) {
-            inventory.add(createItem(item));
+            Item restored = createItem(item);
+            if (restored != null) {
+                inventory.add(restored);
+            }
         }
         equipFromSlots(data);
 
         for (SaveData.ItemData item : data.groundItems()) {
-            addGroundItem(createItem(item));
+            Item restored = createItem(item);
+            if (restored != null) {
+                addGroundItem(restored);
+            }
         }
         for (SaveData.EnemyData enemy : data.enemies()) {
             addEnemy(createEnemy(enemy));
@@ -590,17 +592,7 @@ public class Game {
             player.equip((Armor) armor);
         }
 
-        Item shield = inventory.get(data.equippedShieldSlot());
-        if (shield instanceof Shield) {
-            player.equip((Shield) shield);
-        }
 
-
-
-        Item helmet = inventory.get(data.equippedHelmetSlot());
-        if (helmet instanceof Helmet) {
-            player.equip((Helmet) helmet);
-        }
     }
 
     private SaveData.ItemData describe(Item item) {
@@ -608,16 +600,20 @@ public class Game {
                 item.getName(), item.getSaveValue(), item.getSpriteName());
     }
 
-    /** Etiketten eşya üretir; kayıt biçimini nesnelere çeviren tek yer. */
+    /**
+     * Etiketten eşya üretir; kayıt biçimini nesnelere çeviren tek yer.
+     *
+     * <p>Tanınmayan bir tür kaydı çöpe atmıyor, yalnızca o eşyayı atlıyoruz
+     * ({@code null} dönüyor). Eski kayıtlarda oyundan kaldırılmış türler
+     * (kalkan, kask) olabilir; onlar yüzünden bütün kayıt okunamaz olmasın.</p>
+     */
     private Item createItem(SaveData.ItemData data) {
         return switch (data.kind()) {
             case "POTION" -> new Potion(data.x(), data.y());
             case "GOLD" -> new Gold(data.x(), data.y(), data.value());
             case "WEAPON" -> new Weapon(data.x(), data.y(), data.name(), data.value(), data.spriteName());
             case "ARMOR" -> new Armor(data.x(), data.y(), data.name(), data.value(), data.spriteName());
-            case "SHIELD" -> new Shield(data.x(), data.y(), data.name(), data.value(), data.spriteName());
-            case "HELMET" -> new Helmet(data.x(), data.y(), data.name(), data.value(), data.spriteName());
-            default -> throw new IllegalArgumentException("Bilinmeyen eşya türü: " + data.kind());
+            default -> null;
         };
     }
 
@@ -801,8 +797,6 @@ public class Game {
         int goldPiles = 0;
         boolean weaponPlaced = false;
         boolean armorPlaced = false;
-        boolean shieldPlaced = false;
-        boolean helmetPlaced = false;
 
         for (Position spot : spots) {
             if (used.contains(spot)) {
@@ -822,13 +816,7 @@ public class Game {
             } else if (!armorPlaced) {
                 addGroundItem(LootTable.armorForTier(tier, spot.x(), spot.y()));
                 armorPlaced = true;
-            } else if (!shieldPlaced) {
-                addGroundItem(LootTable.shieldForTier(tier, spot.x(), spot.y()));
-                shieldPlaced = true;
 
-            } else if (!helmetPlaced) {
-                addGroundItem(LootTable.helmetForTier(tier, spot.x(), spot.y()));
-                helmetPlaced = true;
             } else {
                 return;
             }

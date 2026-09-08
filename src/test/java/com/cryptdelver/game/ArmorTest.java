@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.cryptdelver.entity.Armor;
 import com.cryptdelver.entity.Player;
-import com.cryptdelver.entity.Shield;
 import com.cryptdelver.entity.Imp;
 import com.cryptdelver.entity.Skeleton;
 import com.cryptdelver.entity.Weapon;
@@ -159,51 +158,6 @@ class ArmorTest {
         game.getInventory().add(LootTable.armorForTier(LootTable.MAX_TIER, 0, 0));
         game.useItem(1);
         assertEquals("player", player.getSpriteName(), "Agir zirhta da ayni govde");
-    }
-
-    @Test
-    @DisplayName("Kalkan zirhin ustune savunma ekler")
-    void shieldStacksWithArmor() {
-        Armor armor = LootTable.armorForTier(3, 0, 0);
-        Shield shield = LootTable.shieldForTier(3, 0, 0);
-        game.getInventory().add(armor);
-        game.getInventory().add(shield);
-
-        game.useItem(0);
-        game.useItem(1);
-
-        assertSame(shield, player.getEquippedShield());
-        assertEquals(armor.getDefenseBonus() + shield.getDefenseBonus(), player.getDefense(),
-                "Savunma iki slottan toplanmali");
-    }
-
-    @Test
-    @DisplayName("Kalkan ayri slotta, silahi ve zirhi etkilemez")
-    void shieldHasItsOwnSlot() {
-        game.getInventory().add(LootTable.weaponForTier(1, 0, 0));
-        game.getInventory().add(LootTable.armorForTier(1, 0, 0));
-        game.getInventory().add(LootTable.shieldForTier(1, 0, 0));
-
-        game.useItem(0);
-        game.useItem(1);
-        game.useItem(2);
-
-        assertNotNull(player.getEquippedWeapon());
-        assertNotNull(player.getEquippedArmor());
-        assertNotNull(player.getEquippedShield());
-        assertEquals(3, game.getInventory().size(), "Uc parca da cantada kalmali");
-    }
-
-    @Test
-    @DisplayName("Yeniden baslayinca kalkan da birakilir")
-    void restartRemovesShield() {
-        game.getInventory().add(LootTable.shieldForTier(2, 0, 0));
-        game.useItem(0);
-
-        game.restart();
-
-        assertNull(player.getEquippedShield());
-        assertEquals(0, player.getDefense());
     }
 
     /**
