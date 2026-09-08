@@ -41,11 +41,26 @@ public class GameRenderer {
 
     private static final double SWING_RADIUS = 1.1;
 
-    /** Elde tutulan silahın gövdeden sağa kayması (kare cinsinden). */
-    private static final double HELD_WEAPON_OFFSET = 0.34;
+    /** Elde tutulan parçaların gövdeden yana kayması (kare cinsinden). */
+    private static final double HELD_OFFSET = 0.34;
 
     /** Elde tutulan silah, yerdekinden biraz küçük çiziliyor. */
     private static final double HELD_WEAPON_SCALE = 0.85;
+
+    /** Kalkan silahtan biraz daha küçük duruyor. */
+    private static final double SHIELD_SCALE = 0.7;
+
+    /** Giyilen zırh, gövdeyi kapatmayacak kadar küçük. */
+    private static final double WORN_ARMOR_SCALE = 0.62;
+
+    /**
+     * Kuşanılan parçaların kare merkezinden ne kadar yukarı çizileceği.
+     *
+     * <p>Karakter sprite'ı karenin tabanına oturuyor ve bir kareden uzun
+     * (16×28 piksel), yani gövdenin göğüs hizası kare merkezinin epey
+     * üstünde kalıyor.</p>
+     */
+    private static final double TORSO_LIFT = 0.55;
 
     private static final int SLOT_SIZE = 30;
     private static final int SLOT_GAP = 4;
@@ -106,7 +121,7 @@ public class GameRenderer {
             drawHealthBar(gc, enemy);
         }
         drawEntity(gc, player, 1.0);
-        drawHeldWeapon(gc, player);
+        drawEquipment(gc, player);
 
         if (game.getBoss() != null && !game.isOver()) {
             drawBossBar(gc, game, mapWidth);
@@ -178,24 +193,33 @@ public class GameRenderer {
     }
 
     /**
-     * Kuşanılan silahı oyuncunun yanına çizer.
+     * Kuşanılan ekipmanı gövdenin üstüne katman katman çizer.
      *
-     * <p>Paketin silah çizimleri zaten "elde tutulan silah" olarak yapılmış,
-     * bu yüzden gövdenin sağına biraz kaydırıp aynı taban hizasında çizmek
-     * yeterli. Böylece hangi kılıcı kuşandığın ekrandan okunuyor — kademe
-     * atladığında görüntü de değişiyor.</p>
+     * <p>Gövde hep aynı kalıyor; değişen şey üstüne binenler. Silah sağ elde,
+     * kalkan sol kolda, zırh göğsün üstünde. Önceden zırh kademesine göre
+     * karakterin kendisi değişiyordu ama o, her zırh değişiminde oyuncuyu
+     * başka birine dönüştürüyordu.</p>
      */
-    private void drawHeldWeapon(GraphicsContext gc, Player player) {
-        Weapon weapon = player.getEquippedWeapon();
-        if (weapon == null) {
-            return;
+    private void drawEquipment(GraphicsContext gc, Player player) {
+        double centerX = player.getRenderX() * TILE_SIZE;
+        double centerY = player.getRenderY() * TILE_SIZE;
+
+        if (player.getEquippedShield() != null) {
+            sprites.get(player.getEquippedShield().getSpriteName()).draw(
+                    gc, centerX - TILE_SIZE * HELD_OFFSET, centerY - TILE_SIZE * TORSO_LIFT,
+                    TILE_SIZE * SHIELD_SCALE);
         }
 
-        sprites.get(weapon.getSpriteName()).draw(
-                gc,
-                player.getRenderX() * TILE_SIZE + TILE_SIZE * HELD_WEAPON_OFFSET,
-                player.getRenderY() * TILE_SIZE,
-                TILE_SIZE * HELD_WEAPON_SCALE);
+        if (player.getEquippedArmor() != null) {
+            sprites.get(player.getEquippedArmor().getSpriteName()).draw(
+                    gc, centerX, centerY - TILE_SIZE * TORSO_LIFT, TILE_SIZE * WORN_ARMOR_SCALE);
+        }
+
+        Weapon weapon = player.getEquippedWeapon();
+        if (weapon != null) {
+            sprites.get(weapon.getSpriteName()).draw(
+                    gc, centerX + TILE_SIZE * HELD_OFFSET, centerY, TILE_SIZE * HELD_WEAPON_SCALE);
+        }
     }
 
     /** Yaralı düşmanların üstünde ince bir can çubuğu. */
@@ -283,7 +307,8 @@ public class GameRenderer {
             Item item = inventory.get(slot);
             boolean equipped = item != null
                     && (item == game.getPlayer().getEquippedWeapon()
-                        || item == game.getPlayer().getEquippedArmor());
+                        || item == game.getPlayer().getEquippedArmor()
+                        || item == game.getPlayer().getEquippedShield());
 
             gc.setFill(SLOT_BACKGROUND);
             gc.fillRoundRect(x, top, SLOT_SIZE, SLOT_SIZE, 5, 5);
@@ -314,6 +339,9 @@ public class GameRenderer {
         }
         if (game.getPlayer().getEquippedArmor() != null) {
             gc.fillText(game.getPlayer().getEquippedArmor().getName(), x, top + 24);
+        }
+        if (game.getPlayer().getEquippedShield() != null) {
+            gc.fillText(game.getPlayer().getEquippedShield().getName(), x + 170, top + 24);
         }
     }
 

@@ -27,11 +27,9 @@ public class Player extends Combatant implements Actor {
     /** Tek karede işlenecek azami adım; takılma durumunda sonsuz döngüyü keser. */
     private static final int MAX_STEPS_PER_FRAME = 8;
 
-    /** Bu savunmadan itibaren karakter tam plakalı görünür (plaka ve üstü). */
-    private static final int HEAVY_ARMOR_THRESHOLD = 4;
-
     private Weapon equippedWeapon;
     private Armor equippedArmor;
+    private Shield equippedShield;
 
     private int inputX;
     private int inputY;
@@ -77,10 +75,26 @@ public class Player extends Combatant implements Actor {
         this.equippedArmor = null;
     }
 
-    /** Savunma tamamen kuşanılan zırhtan gelir; çıplakken 0. */
+    /** Kolundaki kalkan; hiçbiri kuşanılmadıysa {@code null}. */
+    public Shield getEquippedShield() {
+        return equippedShield;
+    }
+
+    public void equip(Shield shield) {
+        this.equippedShield = shield;
+    }
+
+    /** Kalkanı bırakır. */
+    public void unequipShield() {
+        this.equippedShield = null;
+    }
+
+    /** Savunma, kuşanılan zırh ile kalkanın toplamı; çıplakken 0. */
     @Override
     public int getDefense() {
-        return equippedArmor == null ? 0 : equippedArmor.getDefenseBonus();
+        int armorDefense = equippedArmor == null ? 0 : equippedArmor.getDefenseBonus();
+        int shieldDefense = equippedShield == null ? 0 : equippedShield.getDefenseBonus();
+        return armorDefense + shieldDefense;
     }
 
     /** Vuruş animasyonu şu an çizilmeli mi. */
@@ -116,6 +130,7 @@ public class Player extends Combatant implements Actor {
         restoreFullHealth();
         equippedWeapon = null;
         equippedArmor = null;
+        equippedShield = null;
         attackCooldown = 0;
         swingTimer = 0;
         attackRequested = false;
@@ -164,18 +179,15 @@ public class Player extends Combatant implements Actor {
     }
 
     /**
-     * Görüntü kuşanılan zırha göre değişir: çıplakken hafif giyimli bir gövde,
-     * hafif zırhla postlu, ağır zırhla tam plakalı.
+     * Gövde her zaman aynı: kuşandıkça <em>başka birine dönüşmüyorsun</em>.
      *
-     * <p>Kararı burada veriyoruz çünkü "kim olduğunu" varlığın kendisi bilir;
-     * çizim katmanı yalnızca verilen adı arar. Zırh kademesi eşiği tek yerde:
-     * {@link #HEAVY_ARMOR_THRESHOLD}.</p>
+     * <p>Önce zırh kademesine göre farklı karakter sprite'ları deniyordum
+     * (elf → cüce → şövalye) ama oyuncu her zırh değişiminde başka bir insana
+     * dönüşüyordu. Şimdi kuşanılan parçalar gövdenin üstüne ayrı katman olarak
+     * çiziliyor.</p>
      */
     @Override
     public String getSpriteName() {
-        if (equippedArmor == null) {
-            return "player";
-        }
-        return equippedArmor.getDefenseBonus() >= HEAVY_ARMOR_THRESHOLD ? "player_heavy" : "player_light";
+        return "player";
     }
 }

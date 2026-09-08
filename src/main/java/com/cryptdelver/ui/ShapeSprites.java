@@ -187,6 +187,19 @@ public final class ShapeSprites {
         };
     }
 
+    /** Kalkan: yukarısı düz, aşağısı sivri; ortasında göbek ve kenar şeridi. */
+    public static Sprite shield(Color face, Color trim) {
+        return (gc, cx, cy, size) -> {
+            // Gövde: üst kısım dikdörtgen, alt uç sivri
+            fillRoundRect(gc, cx, cy, size, -0.30, -0.34, 0.60, 0.44, 0.10, face);
+            fillOval(gc, cx, cy, size, -0.30, -0.06, 0.60, 0.42, face);
+            // Kenar şeridi
+            fillRect(gc, cx, cy, size, -0.30, -0.34, 0.60, 0.07, trim);
+            // Göbek
+            fillOval(gc, cx, cy, size, -0.10, -0.14, 0.20, 0.20, trim);
+        };
+    }
+
     /** Tanınmayan sprite adı için göze batan yer tutucu. */
     public static Sprite unknown() {
         return (gc, cx, cy, size) -> {

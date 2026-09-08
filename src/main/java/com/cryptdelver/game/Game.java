@@ -10,6 +10,7 @@ import com.cryptdelver.entity.Imp;
 import com.cryptdelver.entity.Item;
 import com.cryptdelver.entity.Player;
 import com.cryptdelver.entity.Potion;
+import com.cryptdelver.entity.Shield;
 import com.cryptdelver.entity.Skeleton;
 import com.cryptdelver.entity.Weapon;
 import com.cryptdelver.persistence.SaveData;
@@ -461,7 +462,19 @@ public class Game {
      */
     private int resolveDamage(Combatant attacker, Combatant defender) {
         int swing = attacker.getAttackPower() - 1 + random.nextInt(3);
-        return Math.max(1, swing - defender.getDefense());
+        return Math.max(minimumDamage(attacker), swing - defender.getDefense());
+    }
+
+    /**
+     * Savunma ne kadar kalın olursa olsun geçen en az hasar.
+     *
+     * <p>Sabit 1 bırakırsak, zırh ve kalkan birlikte kuşanıldığında derin
+     * katlardaki sert düşmanlar da tırmık atan bir imp kadar zararsız oluyordu.
+     * Alt sınırı vuruş gücüyle ölçekleyince ağır vuranlar zırhı yine deliyor,
+     * zayıf düşmanlar yine 1 vuruyor.</p>
+     */
+    private int minimumDamage(Combatant attacker) {
+        return 1 + attacker.getAttackPower() / 5;
     }
 
     // ---------------------------------------------------------- kat yönetimi
@@ -515,6 +528,7 @@ public class Game {
                 player.getTileX(), player.getTileY(), player.getHp(),
                 slotOf(carried, player.getEquippedWeapon()),
                 slotOf(carried, player.getEquippedArmor()),
+                slotOf(carried, player.getEquippedShield()),
                 savedInventory, savedGround, savedEnemies);
     }
 
@@ -578,6 +592,11 @@ public class Game {
         if (armor instanceof Armor) {
             player.equip((Armor) armor);
         }
+
+        Item shield = inventory.get(data.equippedShieldSlot());
+        if (shield instanceof Shield) {
+            player.equip((Shield) shield);
+        }
     }
 
     private SaveData.ItemData describe(Item item) {
@@ -592,6 +611,7 @@ public class Game {
             case "GOLD" -> new Gold(data.x(), data.y(), data.value());
             case "WEAPON" -> new Weapon(data.x(), data.y(), data.name(), data.value(), data.spriteName());
             case "ARMOR" -> new Armor(data.x(), data.y(), data.name(), data.value(), data.spriteName());
+            case "SHIELD" -> new Shield(data.x(), data.y(), data.name(), data.value(), data.spriteName());
             default -> throw new IllegalArgumentException("Bilinmeyen eşya türü: " + data.kind());
         };
     }
@@ -776,6 +796,7 @@ public class Game {
         int goldPiles = 0;
         boolean weaponPlaced = false;
         boolean armorPlaced = false;
+        boolean shieldPlaced = false;
 
         for (Position spot : spots) {
             if (used.contains(spot)) {
@@ -795,6 +816,9 @@ public class Game {
             } else if (!armorPlaced) {
                 addGroundItem(LootTable.armorForTier(tier, spot.x(), spot.y()));
                 armorPlaced = true;
+            } else if (!shieldPlaced) {
+                addGroundItem(LootTable.shieldForTier(tier, spot.x(), spot.y()));
+                shieldPlaced = true;
             } else {
                 return;
             }

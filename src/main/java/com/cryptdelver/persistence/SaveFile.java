@@ -30,8 +30,8 @@ import java.util.Optional;
  */
 public class SaveFile {
 
-    /** Desteklenen dosya sürümü. */
-    private static final int VERSION = 1;
+    /** Yazılan dosya sürümü; kalkan slotu 2 ile geldi. */
+    private static final int VERSION = 2;
 
     private static final String SEPARATOR = "|";
     private static final String SPLIT_PATTERN = "\\|";
@@ -68,7 +68,8 @@ public class SaveFile {
         lines.add(line("player", String.valueOf(data.playerX()), String.valueOf(data.playerY()),
                 String.valueOf(data.playerHp())));
         lines.add(line("equipped", String.valueOf(data.equippedWeaponSlot()),
-                String.valueOf(data.equippedArmorSlot())));
+                String.valueOf(data.equippedArmorSlot()),
+                String.valueOf(data.equippedShieldSlot())));
 
         for (SaveData.ItemData item : data.inventory()) {
             lines.add(itemLine("inv", item));
@@ -110,6 +111,7 @@ public class SaveFile {
         int playerHp = 1;
         int weaponSlot = SaveData.NO_SLOT;
         int armorSlot = SaveData.NO_SLOT;
+        int shieldSlot = SaveData.NO_SLOT;
         List<SaveData.ItemData> inventory = new ArrayList<>();
         List<SaveData.ItemData> ground = new ArrayList<>();
         List<SaveData.EnemyData> enemies = new ArrayList<>();
@@ -136,6 +138,10 @@ public class SaveFile {
                     case "equipped" -> {
                         weaponSlot = Integer.parseInt(parts[1]);
                         armorSlot = Integer.parseInt(parts[2]);
+                        // Kalkan slotu sürüm 2'de eklendi; eski kayıtlarda yok.
+                        shieldSlot = parts.length > 3
+                                ? Integer.parseInt(parts[3])
+                                : SaveData.NO_SLOT;
                     }
                     case "inv" -> inventory.add(parseItem(parts));
                     case "ground" -> ground.add(parseItem(parts));
@@ -148,7 +154,8 @@ public class SaveFile {
         }
 
         return Optional.of(new SaveData(depth, seed, generatorIndex, gold, elapsed,
-                playerX, playerY, playerHp, weaponSlot, armorSlot, inventory, ground, enemies));
+                playerX, playerY, playerHp, weaponSlot, armorSlot, shieldSlot,
+                inventory, ground, enemies));
     }
 
     /** Kaydı siler; dosya yoksa sessizce geçer. */
@@ -156,10 +163,17 @@ public class SaveFile {
         Files.deleteIfExists(path);
     }
 
+    /**
+     * Sürümü doğrular.
+     *
+     * <p>Sürüm 1 kayıtları da okunuyor: aradaki tek fark kalkan slotu ve
+     * okuyucu o alan yokken varsayılanı kullanıyor. Bilinmeyen bir sürümü ise
+     * sessizce yanlış okumaktansa reddediyoruz.</p>
+     */
     private void requireSupportedVersion(String value) throws IOException {
         int version = Integer.parseInt(value);
-        if (version != VERSION) {
-            throw new IOException("Kayıt sürümü desteklenmiyor: " + version + " (beklenen " + VERSION + ")");
+        if (version < 1 || version > VERSION) {
+            throw new IOException("Kayıt sürümü desteklenmiyor: " + version + " (en fazla " + VERSION + ")");
         }
     }
 

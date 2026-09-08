@@ -36,11 +36,7 @@ public class SpriteRegistry {
         register("wall", ShapeSprites.wallTile());
         register("stairs", ShapeSprites.stairsTile());
 
-        // Oyuncunun üç hâli: çıplak, hafif zırhlı, ağır zırhlı. Dosya yoksa
-        // üçü de aynı şekil çizimine düşer.
         register("player", ShapeSprites.player());
-        register("player_light", ShapeSprites.player());
-        register("player_heavy", ShapeSprites.player());
         register("imp", ShapeSprites.imp());
         register("skeleton", ShapeSprites.skeleton());
         register("boss", ShapeSprites.boss());
@@ -54,6 +50,12 @@ public class SpriteRegistry {
         register("sword_crypt", ShapeSprites.sword(Color.web("#b9a6f0"), Color.web("#e8c46a")));
 
         // Zırh kademeleri.
+        // Kalkan kademeleri; pakette kalkan çizimi yok, hepsi şekilden geliyor.
+        register("shield_wood", ShapeSprites.shield(Color.web("#7d5a3c"), Color.web("#a8794f")));
+        register("shield_iron", ShapeSprites.shield(Color.web("#6f7482"), Color.web("#9aa0ad")));
+        register("shield_steel", ShapeSprites.shield(Color.web("#8b98b4"), Color.web("#d6dcea")));
+        register("shield_crypt", ShapeSprites.shield(Color.web("#5f5090"), Color.web("#e8c46a")));
+
         register("armor_leather", ShapeSprites.armor(Color.web("#7d5a3c"), Color.web("#a8794f")));
         register("armor_chain", ShapeSprites.armor(Color.web("#7f8492"), Color.web("#aeb3c0")));
         register("armor_plate", ShapeSprites.armor(Color.web("#93a1bd"), Color.web("#d6dcea")));

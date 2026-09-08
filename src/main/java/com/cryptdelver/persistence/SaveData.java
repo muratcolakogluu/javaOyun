@@ -28,6 +28,7 @@ public record SaveData(
         int playerHp,
         int equippedWeaponSlot,
         int equippedArmorSlot,
+        int equippedShieldSlot,
         List<ItemData> inventory,
         List<ItemData> groundItems,
         List<EnemyData> enemies) {
