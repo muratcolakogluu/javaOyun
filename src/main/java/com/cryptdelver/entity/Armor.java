@@ -39,6 +39,14 @@ public class Armor extends Item {
         return false;
     }
 
+    /** Kuşanılmış zırh yere bırakılırsa üstünden de çıkar. */
+    @Override
+    public void onDrop(Game game) {
+        if (game.getPlayer().getEquippedArmor() == this) {
+            game.getPlayer().unequipArmor();
+        }
+    }
+
     @Override
     public String getSpriteName() {
         return spriteName;

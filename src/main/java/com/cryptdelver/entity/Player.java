@@ -55,6 +55,11 @@ public class Player extends Combatant implements Actor {
         this.equippedWeapon = weapon;
     }
 
+    /** Silahı elinden bırakır; vuruş gücü çıplak elle değerine döner. */
+    public void unequipWeapon() {
+        this.equippedWeapon = null;
+    }
+
     /** Üstündeki zırh; hiçbiri kuşanılmadıysa {@code null}. */
     public Armor getEquippedArmor() {
         return equippedArmor;
@@ -62,6 +67,11 @@ public class Player extends Combatant implements Actor {
 
     public void equip(Armor armor) {
         this.equippedArmor = armor;
+    }
+
+    /** Zırhı çıkarır; savunma 0'a döner. */
+    public void unequipArmor() {
+        this.equippedArmor = null;
     }
 
     /** Savunma tamamen kuşanılan zırhtan gelir; çıplakken 0. */

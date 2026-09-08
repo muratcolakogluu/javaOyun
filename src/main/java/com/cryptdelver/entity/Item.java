@@ -36,6 +36,16 @@ public abstract class Item extends Entity {
     }
 
     /**
+     * Çantadan yere bırakıldığı anda çalışır.
+     *
+     * <p>{@link #onPickup} ile simetrik: kuşanılan eşyalar burada üstünden
+     * çıkarılıyor, yoksa yere attığın kılıcın bonusu üstünde kalırdı.</p>
+     */
+    public void onDrop(Game game) {
+        // Kuşanılmayan eşyalar için yapacak bir şey yok.
+    }
+
+    /**
      * Çantadan kullanıldığında çalışır.
      *
      * @return eşya tükendiyse {@code true} — çantadan silinir. Silah gibi kalıcı

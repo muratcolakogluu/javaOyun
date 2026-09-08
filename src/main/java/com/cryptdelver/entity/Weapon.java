@@ -38,6 +38,14 @@ public class Weapon extends Item {
         return false;
     }
 
+    /** Kuşanılmış silah yere bırakılırsa elden de çıkar. */
+    @Override
+    public void onDrop(Game game) {
+        if (game.getPlayer().getEquippedWeapon() == this) {
+            game.getPlayer().unequipWeapon();
+        }
+    }
+
     @Override
     public String getSpriteName() {
         return spriteName;

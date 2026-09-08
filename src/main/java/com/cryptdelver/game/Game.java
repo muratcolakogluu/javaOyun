@@ -83,6 +83,7 @@ public class Game {
     private int depth = 1;
     private Position stairs;
     private Boss boss;
+    private Position lastPickupTile;
 
     /** Hazır bir harita ile kurar; testler ve sabit kat senaryoları için. */
     public Game(Dungeon dungeon, Player player) {
@@ -251,7 +252,14 @@ public class Game {
      */
     public void update(double delta) {
         player.update(this, delta);
-        pickUpItems();
+
+        // Toplama yalnızca yeni bir kareye <em>girildiğinde</em> deneniyor.
+        // Her karede denemek iki soruna yol açıyordu: yere bıraktığın eşya
+        // anında geri alınıyordu ve çanta doluyken mesaj kaydı akıyordu.
+        if (!player.getTile().equals(lastPickupTile)) {
+            lastPickupTile = player.getTile();
+            pickUpItems();
+        }
 
         // Kopya üzerinde geziyoruz: bir düşman hamlesi sırasında ölüp listeden düşebilir.
         for (Enemy enemy : List.copyOf(enemies)) {
@@ -351,6 +359,36 @@ public class Game {
         if (item.use(this)) {
             inventory.remove(item);
         }
+    }
+
+    /**
+     * Çantadaki bir eşyayı bulunduğun kareye bırakır.
+     *
+     * <p>Kuşanılmış bir parçayı bırakmak onu üstünden de çıkarır — bunu eşyanın
+     * kendisi hallediyor ({@code Item.onDrop}). Bıraktığın eşya, sen o kareden
+     * çıkıp geri dönene kadar tekrar toplanmıyor; yoksa elinden bırakır
+     * bırakmaz geri alırdın.</p>
+     *
+     * @return eşya bırakıldıysa {@code true}
+     */
+    public boolean dropItem(int slot) {
+        if (isOver()) {
+            return false;
+        }
+
+        Item item = inventory.get(slot);
+        if (item == null) {
+            return false;
+        }
+
+        inventory.remove(item);
+        item.setTile(player.getTile());
+        item.onDrop(this);
+        addGroundItem(item);
+        messageLog.add(item.getName() + " yere bıraktın.");
+
+        lastPickupTile = player.getTile();
+        return true;
     }
 
     // ---------------------------------------------------------------- savaş
@@ -462,6 +500,7 @@ public class Game {
         boss = null;
 
         player.setTile(dungeon.findWalkableNear(floorWidth / 2, floorHeight / 2));
+        lastPickupTile = player.getTile();
 
         // Merdiven, doğduğun yerden yürüyerek gidilebilen en uzak kareye konur.
         stairs = dungeon.findFarthestWalkableFrom(player.getTile());

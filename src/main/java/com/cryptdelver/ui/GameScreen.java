@@ -149,8 +149,14 @@ public class GameScreen {
                     game.restart();
                 }
             }
-            case DIGIT1, DIGIT2, DIGIT3, DIGIT4, DIGIT5, DIGIT6, DIGIT7, DIGIT8 ->
+            // Shift basılıysa eşya kullanılmaz, yere bırakılır.
+            case DIGIT1, DIGIT2, DIGIT3, DIGIT4, DIGIT5, DIGIT6, DIGIT7, DIGIT8 -> {
+                if (event.isShiftDown()) {
+                    game.dropItem(slotOf(code));
+                } else {
                     game.useItem(slotOf(code));
+                }
+            }
             default -> {
                 // Diğer tuşlar yalnızca basılı tuşlar kümesini ilgilendiriyor.
             }

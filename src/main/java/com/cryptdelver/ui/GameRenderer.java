@@ -242,7 +242,8 @@ public class GameRenderer {
 
         gc.setTextAlign(TextAlignment.RIGHT);
         gc.setFill(HUD_TEXT);
-        gc.fillText("WASD hareket    Bosluk vur    1-8 esya    E in", mapWidth - 10, firstLine);
+        gc.fillText("WASD hareket    Bosluk vur    1-8 kullan    Shift+1-8 birak    E in",
+                mapWidth - 10, firstLine);
         gc.fillText("R yeni kat    G uretici    Enter yeniden basla", mapWidth - 10, secondLine);
 
         drawInventory(gc, game, mapHeight);
