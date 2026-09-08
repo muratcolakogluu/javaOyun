@@ -91,6 +91,8 @@ public class Game {
     private Position stairs;
     private Boss boss;
     private Position lastPickupTile;
+    private boolean paused;
+    private SoundListener sounds = SoundListener.SILENT;
 
     /** Hazır bir harita ile kurar; testler ve sabit kat senaryoları için. */
     public Game(Dungeon dungeon, Player player) {
@@ -205,6 +207,7 @@ public class Game {
 
         depth++;
         player.gainMaxHp(MAX_HP_PER_FLOOR);
+        sounds.play(SoundEffect.STAIRS);
         generateFloor(random.nextLong());
 
         messageLog.add(depth + ". kata indin (+" + MAX_HP_PER_FLOOR + " azami can).");
@@ -222,6 +225,34 @@ public class Game {
      */
     public long getCurrentSeed() {
         return currentSeed;
+    }
+
+    /**
+     * Ses olaylarını dinleyecek tarafı takar.
+     *
+     * <p>Varsayılan sessiz dinleyici; testler ve pencere açılmadan çalışan
+     * senaryolar ses kütüphanesine hiç dokunmuyor.</p>
+     */
+    public void setSoundListener(SoundListener listener) {
+        this.sounds = listener == null ? SoundListener.SILENT : listener;
+    }
+
+    /** Oyun duraklatıldı mı. */
+    public boolean isPaused() {
+        return paused;
+    }
+
+    /**
+     * Duraklatmayı açıp kapatır.
+     *
+     * <p>Duraklatma oyun durumunun parçası, ekranın değil: hem çizim katmanı
+     * bunu okuyup perdeyi gösteriyor hem de {@link #update(double)} hiçbir şey
+     * ilerletmeden dönüyor. Oyun bittiyse duraklatmanın anlamı yok.</p>
+     */
+    public void togglePause() {
+        if (!isOver()) {
+            paused = !paused;
+        }
     }
 
     /** Oyuncu öldüyse oyun biter. */
@@ -260,6 +291,10 @@ public class Game {
      * @param delta son kareden bu yana geçen süre, saniye
      */
     public void update(double delta) {
+        if (paused) {
+            return;
+        }
+
         player.update(this, delta);
 
         // Toplama yalnızca yeni bir kareye <em>girildiğinde</em> deneniyor.
@@ -342,6 +377,7 @@ public class Game {
                     continue;
                 }
                 messageLog.add(item.getName() + " aldın.");
+                sounds.play(SoundEffect.PICKUP);
             }
 
             item.onPickup(this);
@@ -365,7 +401,10 @@ public class Game {
             return;
         }
 
-        if (item.use(this)) {
+        boolean consumed = item.use(this);
+        sounds.play(consumed ? SoundEffect.POTION : SoundEffect.EQUIP);
+
+        if (consumed) {
             inventory.remove(item);
         }
     }
@@ -417,10 +456,14 @@ public class Game {
             }
         }
 
+        sounds.play(SoundEffect.SWING);
+
         if (targets.isEmpty()) {
             messageLog.add("Kılıcın boşluğu kesti.");
             return;
         }
+
+        sounds.play(SoundEffect.HIT);
 
         for (Enemy enemy : targets) {
             int damage = resolveDamage(player, enemy);
@@ -430,6 +473,7 @@ public class Game {
             if (!enemy.isAlive()) {
                 removeEnemy(enemy);
                 messageLog.add(enemy.getName() + " yere serildi.");
+                sounds.play(SoundEffect.KILL);
 
                 // Ganimeti düşman kendi bırakıyor; burada tür kontrolü yok.
                 enemy.onDeath(this);
@@ -448,9 +492,11 @@ public class Game {
         int damage = resolveDamage(enemy, player);
         player.takeDamage(damage);
         messageLog.add(enemy.getName() + " sana " + damage + " hasar vurdu.");
+        sounds.play(SoundEffect.HURT);
 
         if (!player.isAlive()) {
             messageLog.add("Zindanda öldün.");
+            sounds.play(SoundEffect.DEATH);
         }
     }
 
@@ -735,6 +781,7 @@ public class Game {
             applyDepthBonus(boss);
             addEnemy(boss);
             messageLog.add(boss.getName() + " merdiveni tutuyor. Yavaş — vur ve geri çekil.");
+            sounds.play(SoundEffect.BOSS);
         }
 
         int target = enemyCountForDepth();

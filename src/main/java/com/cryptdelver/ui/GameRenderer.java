@@ -10,6 +10,7 @@ import com.cryptdelver.game.Inventory;
 import com.cryptdelver.world.Dungeon;
 import com.cryptdelver.world.DungeonGenerator;
 import com.cryptdelver.world.Tile;
+import java.util.List;
 import javafx.geometry.VPos;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.effect.ColorAdjust;
@@ -34,12 +35,15 @@ public class GameRenderer {
     public static final int TILE_SIZE = 32;
 
     /** Haritanın altındaki bilgi ve çanta şeridinin yüksekliği. */
-    public static final int HUD_HEIGHT = 88;
+    public static final int HUD_HEIGHT = 96;
 
     /** Yerdeki eşyalar biraz küçük çiziliyor ki karakterlerden ayırt edilsin. */
     private static final double GROUND_ITEM_SCALE = 1.0;
 
     private static final double SWING_RADIUS = 1.1;
+
+    /** Bilgi seridinde gosterilen olay satiri sayisi. */
+    private static final int MESSAGE_LINES = 3;
 
     /** Elde tutulan silah, yerdekinden biraz küçük çiziliyor. */
     private static final double HELD_WEAPON_SCALE = 0.85;
@@ -67,6 +71,7 @@ public class GameRenderer {
     private static final Color HP_TEXT = Color.web("#c9564f");
     private static final Color GOLD_TEXT = Color.web("#e8c46a");
     private static final Color MESSAGE_TEXT = Color.web("#b6b6c8");
+    private static final Color MESSAGE_FADED = Color.web("#6b6b80");
     private static final Color SLOT_BACKGROUND = Color.web("#1e1e2a");
     private static final Color SLOT_BORDER = Color.web("#2f2f40");
     private static final Color SLOT_EQUIPPED = Color.web("#e8c46a");
@@ -129,8 +134,55 @@ public class GameRenderer {
 
         drawHud(gc, game, mapWidth, mapHeight);
 
+        if (game.isPaused()) {
+            drawPauseScreen(gc, mapWidth, mapHeight);
+        }
+
         if (game.isOver()) {
             drawGameOver(gc, game, mapWidth, mapHeight);
+        }
+    }
+
+    /**
+     * Duraklatma perdesi: aynı zamanda oyunun yardım ekranı.
+     *
+     * <p>Tuş listesini buraya taşımak HUD'ı boşalttı; oyun sırasında sürekli
+     * göz önünde duran iki satır yazı yerine, ihtiyaç duyulduğunda açılan
+     * düzgün bir liste var.</p>
+     */
+    private void drawPauseScreen(GraphicsContext gc, double mapWidth, double mapHeight) {
+        gc.setFill(OVERLAY);
+        gc.fillRect(0, 0, mapWidth, mapHeight);
+
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setTextBaseline(VPos.CENTER);
+        gc.setFont(titleFont);
+        gc.setFill(GOLD_TEXT);
+        gc.fillText("DURAKLATILDI", mapWidth / 2, mapHeight / 2 - 130);
+
+        String[][] keys = {
+                {"WASD / oklar", "hareket"},
+                {"Bosluk", "vur"},
+                {"1-8", "cantadaki esyayi kullan / kusan"},
+                {"Shift + 1-8", "esyayi yere birak"},
+                {"E", "merdivende bir alt kata in"},
+                {"F5 / F9", "kaydet / yukle"},
+                {"R / G", "yeni kat / zindan ureticisini degistir"},
+                {"Enter", "olunce yeniden basla"},
+                {"ESC", "devam et"},
+        };
+
+        gc.setFont(hudFont);
+        double y = mapHeight / 2 - 70;
+        for (String[] row : keys) {
+            gc.setTextAlign(TextAlignment.RIGHT);
+            gc.setFill(HUD_ACCENT);
+            gc.fillText(row[0], mapWidth / 2 - 15, y);
+
+            gc.setTextAlign(TextAlignment.LEFT);
+            gc.setFill(MESSAGE_TEXT);
+            gc.fillText(row[1], mapWidth / 2 + 15, y);
+            y += 22;
         }
     }
 
@@ -288,41 +340,65 @@ public class GameRenderer {
         double firstLine = mapHeight + 15;
         double secondLine = mapHeight + 35;
 
-        gc.setTextAlign(TextAlignment.LEFT);
-        gc.setFill(HP_TEXT);
-        gc.fillText("Can " + game.getPlayer().getHp() + "/" + game.getPlayer().getMaxHp(), 10, firstLine);
+        drawHealthBar(gc, game, firstLine);
 
+        gc.setTextAlign(TextAlignment.LEFT);
         gc.setFill(GOLD_TEXT);
-        gc.fillText("Altin " + game.getGold(), 90, firstLine);
+        gc.fillText("Altin " + game.getGold(), 200, firstLine);
 
         gc.setFill(HUD_TEXT);
-        gc.fillText("Vurus " + game.getPlayer().getAttackPower(), 175, firstLine);
-        gc.fillText("Zirh " + game.getPlayer().getDefense(), 250, firstLine);
+        gc.fillText("Vurus " + game.getPlayer().getAttackPower(), 285, firstLine);
+        gc.fillText("Zirh " + game.getPlayer().getDefense(), 360, firstLine);
 
         gc.setFill(HUD_ACCENT);
-        gc.fillText("Kat " + game.getDepth(), 315, firstLine);
+        gc.fillText("Kat " + game.getDepth(), 425, firstLine);
 
         gc.setFill(HUD_TEXT);
-        gc.fillText(String.format("Sure %.0fs", game.getElapsedSeconds()), 380, firstLine);
-        gc.fillText("Dusman " + game.getEnemies().size(), 465, firstLine);
+        gc.fillText(String.format("Sure %.0fs", game.getElapsedSeconds()), 490, firstLine);
+        gc.fillText("Dusman " + game.getEnemies().size(), 575, firstLine);
 
         DungeonGenerator generator = game.getCurrentGenerator();
         if (generator != null) {
             gc.setFill(HUD_ACCENT);
-            gc.fillText(generator.getName(), 555, firstLine);
+            gc.fillText(generator.getName(), 665, firstLine);
         }
 
-        gc.setFill(MESSAGE_TEXT);
-        gc.fillText(game.getMessageLog().last(), 10, secondLine);
+        // Son üç olay: tek satır, hızlı savaşta neyin olduğunu kaçırtıyordu.
+        // Eskiler soluk, en yeni parlak.
+        List<String> recent = game.getMessageLog().latest(MESSAGE_LINES);
+        for (int i = 0; i < recent.size(); i++) {
+            gc.setFill(i == 0 ? MESSAGE_TEXT : MESSAGE_FADED);
+            gc.fillText(recent.get(i), 10, secondLine + i * 15);
+        }
 
         gc.setTextAlign(TextAlignment.RIGHT);
         gc.setFill(HUD_TEXT);
-        gc.fillText("WASD hareket    Bosluk vur    1-8 kullan    Shift+1-8 birak    E in",
-                mapWidth - 10, firstLine);
-        gc.fillText("F5 kaydet    F9 yukle    R yeni kat    G uretici    Enter yeniden basla",
-                mapWidth - 10, secondLine);
+        gc.fillText("ESC: durdur ve tuslari gor", mapWidth - 10, firstLine);
 
         drawInventory(gc, game, mapHeight);
+    }
+
+    /** Can çubuğu: sayıyı okumadan da kalan canı görebilesin diye. */
+    private void drawHealthBar(GraphicsContext gc, Game game, double centerY) {
+        double width = 170;
+        double height = 14;
+        double x = 10;
+        double y = centerY - height / 2;
+        double ratio = game.getPlayer().getHp() / (double) game.getPlayer().getMaxHp();
+
+        gc.setFill(HP_BAR_BACKGROUND);
+        gc.fillRect(x, y, width, height);
+        gc.setFill(HP_BAR_FILL);
+        gc.fillRect(x, y, width * Math.max(0, ratio), height);
+        gc.setStroke(HUD_TEXT);
+        gc.setLineWidth(1);
+        gc.strokeRect(x, y, width, height);
+
+        gc.setFont(hudFont);
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setFill(MESSAGE_TEXT);
+        gc.fillText(game.getPlayer().getHp() + " / " + game.getPlayer().getMaxHp(),
+                x + width / 2, centerY);
     }
 
     /** Çanta slotları: numarası, içindeki eşyanın sprite'ı, kuşanılan silahın çerçevesi. */

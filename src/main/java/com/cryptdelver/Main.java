@@ -42,6 +42,7 @@ public class Main extends Application {
         stage.setOnCloseRequest(event -> screen.stop());
         stage.show();
 
+        screen.enableSound();
         screen.start();
     }
 

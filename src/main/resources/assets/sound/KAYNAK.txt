@@ -1,0 +1,26 @@
+Ses efektleri
+=============
+
+Bu dosyalar hazır bir paketten gelmiyor; scratchpad'deki SoundMaker aracıyla
+sentezlendi (kare dalga + filtrelenmiş gürültü, 22050 Hz 16-bit mono WAV).
+
+Neden üretildi:
+- Lisans derdi yok, tamamen bize ait
+- Efektler kısa ve karakteristik; oyunun temposuna göre ayarlanabiliyor
+- Piksel sanatıyla aynı "8-bit" dilde konuşuyor
+
+Dosyalar ve tetikleyen olay (SoundEffect enum'u ile birebir):
+
+  swing.wav   kılıç savuruldu (isabet olsun olmasın)
+  hit.wav     vuruş düşmana isabet etti
+  hurt.wav    oyuncu hasar aldı
+  kill.wav    düşman öldü
+  pickup.wav  yerden eşya alındı
+  potion.wav  iksir içildi
+  equip.wav   silah ya da zırh kuşanıldı
+  stairs.wav  bir alt kata inildi
+  boss.wav    boss belirdi
+  death.wav   oyuncu öldü
+
+Sesi değiştirmek istersen SoundMaker.java içindeki frekans/süre değerlerini
+oynatıp yeniden çalıştırmak yeterli.

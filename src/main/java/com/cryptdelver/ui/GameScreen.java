@@ -79,6 +79,11 @@ public class GameScreen {
         scene.setOnKeyReleased(this::onKeyReleased);
     }
 
+    /** Ses çalıcıyı oyuna takar; pencere açıldığında çağrılıyor. */
+    public void enableSound() {
+        game.setSoundListener(new SoundPlayer());
+    }
+
     /** Oyun döngüsünü başlatır. */
     public void start() {
         loop = new AnimationTimer() {
@@ -144,11 +149,24 @@ public class GameScreen {
             heldDirections.addLast(code);
         }
 
-        // Tek seferlik komutlar; hareket ve saldırı her karede durumdan okunuyor.
+        // Duraklatmayı açıp kapatmak, kaydetmek ve yüklemek her zaman serbest;
+        // oynanışa dokunan komutlar duraklatmada geçersiz.
         switch (code) {
-            case E -> game.descend();
+            case ESCAPE -> game.togglePause();
             case F5 -> saveGame();
             case F9 -> loadGame();
+            default -> handlePlayCommand(code, event);
+        }
+    }
+
+    /** Yalnızca oyun akarken işleyen tek seferlik komutlar. */
+    private void handlePlayCommand(KeyCode code, KeyEvent event) {
+        if (game.isPaused()) {
+            return;
+        }
+
+        switch (code) {
+            case E -> game.descend();
             case R -> game.regenerateFloor();
             case G -> game.cycleGenerator();
             case ENTER -> {
