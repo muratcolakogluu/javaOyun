@@ -4,6 +4,7 @@ import com.cryptdelver.entity.Enemy;
 import com.cryptdelver.entity.Entity;
 import com.cryptdelver.entity.Item;
 import com.cryptdelver.entity.Player;
+import com.cryptdelver.entity.Weapon;
 import com.cryptdelver.game.Game;
 import com.cryptdelver.game.Inventory;
 import com.cryptdelver.world.Dungeon;
@@ -39,6 +40,12 @@ public class GameRenderer {
     private static final double GROUND_ITEM_SCALE = 1.0;
 
     private static final double SWING_RADIUS = 1.1;
+
+    /** Elde tutulan silahın gövdeden sağa kayması (kare cinsinden). */
+    private static final double HELD_WEAPON_OFFSET = 0.34;
+
+    /** Elde tutulan silah, yerdekinden biraz küçük çiziliyor. */
+    private static final double HELD_WEAPON_SCALE = 0.85;
 
     private static final int SLOT_SIZE = 30;
     private static final int SLOT_GAP = 4;
@@ -99,6 +106,7 @@ public class GameRenderer {
             drawHealthBar(gc, enemy);
         }
         drawEntity(gc, player, 1.0);
+        drawHeldWeapon(gc, player);
 
         if (game.getBoss() != null && !game.isOver()) {
             drawBossBar(gc, game, mapWidth);
@@ -167,6 +175,27 @@ public class GameRenderer {
                 TILE_SIZE * scale * entity.getDrawScale());
 
         gc.setEffect(null);
+    }
+
+    /**
+     * Kuşanılan silahı oyuncunun yanına çizer.
+     *
+     * <p>Paketin silah çizimleri zaten "elde tutulan silah" olarak yapılmış,
+     * bu yüzden gövdenin sağına biraz kaydırıp aynı taban hizasında çizmek
+     * yeterli. Böylece hangi kılıcı kuşandığın ekrandan okunuyor — kademe
+     * atladığında görüntü de değişiyor.</p>
+     */
+    private void drawHeldWeapon(GraphicsContext gc, Player player) {
+        Weapon weapon = player.getEquippedWeapon();
+        if (weapon == null) {
+            return;
+        }
+
+        sprites.get(weapon.getSpriteName()).draw(
+                gc,
+                player.getRenderX() * TILE_SIZE + TILE_SIZE * HELD_WEAPON_OFFSET,
+                player.getRenderY() * TILE_SIZE,
+                TILE_SIZE * HELD_WEAPON_SCALE);
     }
 
     /** Yaralı düşmanların üstünde ince bir can çubuğu. */

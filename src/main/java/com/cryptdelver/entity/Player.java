@@ -27,6 +27,9 @@ public class Player extends Combatant implements Actor {
     /** Tek karede işlenecek azami adım; takılma durumunda sonsuz döngüyü keser. */
     private static final int MAX_STEPS_PER_FRAME = 8;
 
+    /** Bu savunmadan itibaren karakter tam plakalı görünür (plaka ve üstü). */
+    private static final int HEAVY_ARMOR_THRESHOLD = 4;
+
     private Weapon equippedWeapon;
     private Armor equippedArmor;
 
@@ -160,8 +163,19 @@ public class Player extends Combatant implements Actor {
         }
     }
 
+    /**
+     * Görüntü kuşanılan zırha göre değişir: çıplakken hafif giyimli bir gövde,
+     * hafif zırhla postlu, ağır zırhla tam plakalı.
+     *
+     * <p>Kararı burada veriyoruz çünkü "kim olduğunu" varlığın kendisi bilir;
+     * çizim katmanı yalnızca verilen adı arar. Zırh kademesi eşiği tek yerde:
+     * {@link #HEAVY_ARMOR_THRESHOLD}.</p>
+     */
     @Override
     public String getSpriteName() {
-        return "player";
+        if (equippedArmor == null) {
+            return "player";
+        }
+        return equippedArmor.getDefenseBonus() >= HEAVY_ARMOR_THRESHOLD ? "player_heavy" : "player_light";
     }
 }

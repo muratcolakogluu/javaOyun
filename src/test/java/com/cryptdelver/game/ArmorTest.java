@@ -139,4 +139,22 @@ class ArmorTest {
         assertNull(player.getEquippedArmor());
         assertEquals(0, player.getDefense());
     }
+
+    /**
+     * Kusanilan zirh karakterin gorunumunu degistirmeli: ciplak govde, hafif
+     * zirhli ve agir zirhli olmak uzere uc ayri sprite.
+     */
+    @Test
+    @DisplayName("Karakterin gorunumu kusanilan zirha gore degisir")
+    void spriteReflectsEquippedArmor() {
+        assertEquals("player", player.getSpriteName(), "Zirhsizken ciplak govde");
+
+        game.getInventory().add(LootTable.armorForTier(1, 0, 0));
+        game.useItem(0);
+        assertEquals("player_light", player.getSpriteName(), "Deri zirhla hafif gorunum");
+
+        game.getInventory().add(LootTable.armorForTier(LootTable.MAX_TIER, 0, 0));
+        game.useItem(1);
+        assertEquals("player_heavy", player.getSpriteName(), "Kript plakasiyla agir gorunum");
+    }
 }

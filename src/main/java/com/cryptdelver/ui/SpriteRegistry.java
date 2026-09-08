@@ -36,7 +36,11 @@ public class SpriteRegistry {
         register("wall", ShapeSprites.wallTile());
         register("stairs", ShapeSprites.stairsTile());
 
+        // Oyuncunun üç hâli: çıplak, hafif zırhlı, ağır zırhlı. Dosya yoksa
+        // üçü de aynı şekil çizimine düşer.
         register("player", ShapeSprites.player());
+        register("player_light", ShapeSprites.player());
+        register("player_heavy", ShapeSprites.player());
         register("imp", ShapeSprites.imp());
         register("skeleton", ShapeSprites.skeleton());
         register("boss", ShapeSprites.boss());

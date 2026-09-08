@@ -31,3 +31,12 @@ onlar ShapeSprites içindeki şekil çizimleriyle görünmeye devam ediyor.
 Paketteki her karakterin 4 karelik idle ve run animasyonu var
 (..._anim_f0..f3). Şu an yalnızca f0 kullanılıyor; animasyon eklenirse
 diğer kareler de buraya kopyalanacak.
+
+Oyuncunun üç hâli (kuşanılan zırha göre değişir):
+
+  player.png        <- elf_m_idle_anim_f0.png     (zırhsız)
+  player_light.png  <- dwarf_m_idle_anim_f0.png   (deri / zincir)
+  player_heavy.png  <- knight_m_idle_anim_f0.png  (plaka ve üstü)
+
+Kuşanılan silah, gövdenin sağına ayrı bir sprite olarak çizilir; paketin
+silah çizimleri zaten elde tutulacak şekilde hazırlanmış.
