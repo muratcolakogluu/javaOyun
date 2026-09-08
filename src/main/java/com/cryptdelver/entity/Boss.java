@@ -22,19 +22,36 @@ import java.util.Random;
  */
 public class Boss extends Enemy {
 
+    /**
+     * Boss değerleri, ilk karşılaşmanın (5. kat) kazanılabilir olmasına göre
+     * ayarlandı.
+     *
+     * <p>5. katta oyuncu 2. kademe takımla geliyor: 8 vuruş, 2 savunma, 20 can.
+     * Bu değerlerle dövüş kabaca "boss 4 saniyede düşer, oyuncu 7 saniyede
+     * ölür" dengesinde — yani ayakta durup vuruşmak <em>yetiyor</em>, ama hata
+     * payı dar. Önceki hâlinde ikisi de 4 saniyeydi, yani yazı tura atıyordun.</p>
+     *
+     * <p>Asıl kaçış yolu hız farkı: oyuncu saniyede 6 kare, boss 2.2. Vurup
+     * geri çekilerek dövüşürsen hiç hasar almadan da bitirebilirsin.</p>
+     */
     private static final EnemyStats STATS = new EnemyStats(
-            45,     // can
-            6,      // vuruş gücü
+            40,     // can
+            5,      // vuruş gücü
             3,      // savunma: kalın zırh, kılıcın kademesi önemli
             2.2,    // hız (kare/saniye) — yavaş ama durmak bilmez
-            1.0,    // vuruş arası bekleme
+            1.4,    // vuruş arası bekleme: tek hatada ölmeyesin
             60);    // fark etme menzili: pratikte tüm harita
 
     /** İki çağırma arasındaki süre, saniye. */
     private static final double SUMMON_INTERVAL = 6.0;
 
-    /** İlk çağırmadan önceki hazırlık süresi. */
-    private static final double FIRST_SUMMON_DELAY = 3.0;
+    /**
+     * İlk çağırmadan önceki hazırlık süresi.
+     *
+     * <p>Dövüşün ilk saniyelerinde yaratık gelmiyor: hem boss hem sürü aynı
+     * anda üstüne binerse kaçacak yer kalmıyordu.</p>
+     */
+    private static final double FIRST_SUMMON_DELAY = 4.5;
 
     /** Her çağırmada kaç yaratık gelir. */
     private static final int MINIONS_PER_SUMMON = 2;

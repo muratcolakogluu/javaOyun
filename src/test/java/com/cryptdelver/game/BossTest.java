@@ -10,10 +10,10 @@ import com.cryptdelver.entity.Boss;
 import com.cryptdelver.entity.Enemy;
 import com.cryptdelver.entity.Item;
 import com.cryptdelver.entity.Player;
+import com.cryptdelver.entity.Skeleton;
 import com.cryptdelver.entity.Weapon;
 import com.cryptdelver.world.BspGenerator;
 import com.cryptdelver.world.Dungeon;
-import com.cryptdelver.world.Position;
 import com.cryptdelver.world.Tile;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -146,13 +146,23 @@ class BossTest {
                     "Cagrilan yaratiklar fare olmali");
         }
 
+        /**
+         * Kesin sayilar yerine oran araniyor: denge ayarlari (bossun vurusu
+         * 6'dan 5'e indi gibi) testi patlatmasin, ama boss her zaman siradan
+         * dusmandan belirgin sekilde sert kalsin.
+         */
         @Test
         @DisplayName("Boss siradan dusmandan cok daha dayanikli")
         void bossIsTougherThanRegularEnemies() {
-            Enemy boss = new Boss(new Position(3, 3).x(), 3);
+            Enemy boss = new Boss(3, 3);
+            Enemy skeleton = new Skeleton(3, 3);
 
-            assertTrue(boss.getMaxHp() > 30);
-            assertTrue(boss.getAttackPower() >= 6);
+            assertTrue(boss.getMaxHp() > skeleton.getMaxHp() * 3,
+                    "Boss cani iskeletin en az uc kati olmali");
+            assertTrue(boss.getAttackPower() > skeleton.getAttackPower(),
+                    "Boss daha sert vurmali");
+            assertTrue(boss.getDefense() > skeleton.getDefense(),
+                    "Boss daha zirhli olmali");
         }
     }
 }

@@ -45,12 +45,6 @@ public class GameRenderer {
     private static final int SLOT_ORIGIN_X = 10;
 
     private static final Color BACKGROUND = Color.web("#0d0d12");
-    private static final Color FLOOR_COLOR = Color.web("#1b1b26");
-    private static final Color FLOOR_SPECK = Color.web("#262634");
-    private static final Color WALL_COLOR = Color.web("#3f3a56");
-    private static final Color WALL_EDGE = Color.web("#524a70");
-    private static final Color STAIRS_PIT = Color.web("#08080c");
-    private static final Color STAIRS_STEP = Color.web("#6b6480");
     private static final Color STAIRS_EDGE = Color.web("#9a8fc0");
     private static final Color HINT_BACKGROUND = Color.web("#15151d", 0.9);
     private static final Color HUD_BACKGROUND = Color.web("#15151d");
@@ -116,48 +110,43 @@ public class GameRenderer {
         }
     }
 
+    /**
+     * Zindanı çizer.
+     *
+     * <p>Duvar ve zemin de sprite üzerinden çiziliyor: hazır bir tileset
+     * klasöre konduğunda harita da onunla görünsün diye. Merdiven, zeminin
+     * üstüne ikinci bir sprite olarak biniyor.</p>
+     */
     private void drawDungeon(GraphicsContext gc, Dungeon dungeon, boolean stairsLocked) {
+        Sprite floor = sprites.get("floor");
+        Sprite wall = sprites.get("wall");
+        Sprite stairs = sprites.get("stairs");
+
         for (int x = 0; x < dungeon.getWidth(); x++) {
             for (int y = 0; y < dungeon.getHeight(); y++) {
-                double px = x * (double) TILE_SIZE;
-                double py = y * (double) TILE_SIZE;
+                double cx = x * TILE_SIZE + TILE_SIZE / 2.0;
+                double cy = y * TILE_SIZE + TILE_SIZE / 2.0;
 
                 Tile tile = dungeon.getTile(x, y);
                 if (tile == Tile.WALL) {
-                    gc.setFill(WALL_COLOR);
-                    gc.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-                    // Üstte ince bir aydınlık şerit duvara hacim hissi veriyor.
-                    gc.setFill(WALL_EDGE);
-                    gc.fillRect(px, py, TILE_SIZE, 2);
-                } else {
-                    gc.setFill(FLOOR_COLOR);
-                    gc.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-                    gc.setFill(FLOOR_SPECK);
-                    gc.fillRect(px + TILE_SIZE / 2.0, py + TILE_SIZE / 2.0, 2, 2);
+                    wall.draw(gc, cx, cy, TILE_SIZE);
+                    continue;
+                }
 
-                    if (tile == Tile.STAIRS_DOWN) {
-                        drawStairs(gc, px, py, stairsLocked);
-                    }
+                floor.draw(gc, cx, cy, TILE_SIZE);
+                if (tile == Tile.STAIRS_DOWN) {
+                    stairs.draw(gc, cx, cy, TILE_SIZE);
+                    drawStairsFrame(gc, cx, cy, stairsLocked);
                 }
             }
         }
     }
 
-    /** İniş merdiveni: karanlık bir boşluk ve içine inen basamaklar. Kilitliyse kızıl çerçeve. */
-    private void drawStairs(GraphicsContext gc, double px, double py, boolean locked) {
-        gc.setFill(STAIRS_PIT);
-        gc.fillRect(px + 2, py + 2, TILE_SIZE - 4, TILE_SIZE - 4);
-
-        gc.setFill(STAIRS_STEP);
-        for (int step = 0; step < 3; step++) {
-            double inset = 3 + step * 2.5;
-            double y = py + 4 + step * 4.5;
-            gc.fillRect(px + inset, y, TILE_SIZE - inset * 2, 2.5);
-        }
-
+    /** Merdivenin çerçevesi: boss tutuyorsa kızıl ve kalın. */
+    private void drawStairsFrame(GraphicsContext gc, double cx, double cy, boolean locked) {
         gc.setStroke(locked ? OVERLAY_TITLE : STAIRS_EDGE);
         gc.setLineWidth(locked ? 2 : 1);
-        gc.strokeRect(px + 2, py + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+        gc.strokeRect(cx - TILE_SIZE / 2.0 + 2, cy - TILE_SIZE / 2.0 + 2, TILE_SIZE - 4, TILE_SIZE - 4);
     }
 
     /** Varlığı sprite'ıyla çizer; hasar almışsa beyaza yakın parlatır. */

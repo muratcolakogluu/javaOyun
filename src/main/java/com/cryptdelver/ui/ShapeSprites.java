@@ -22,6 +22,34 @@ public final class ShapeSprites {
     private ShapeSprites() {
     }
 
+    /** Zemin karesi. */
+    public static Sprite floorTile() {
+        return (gc, cx, cy, size) -> {
+            fillTile(gc, cx, cy, size, Color.web("#1b1b26"));
+            fillRect(gc, cx, cy, size, 0.0, 0.0, 0.1, 0.1, Color.web("#262634"));
+        };
+    }
+
+    /** Duvar karesi; üstteki ince aydınlık şerit hacim hissi veriyor. */
+    public static Sprite wallTile() {
+        return (gc, cx, cy, size) -> {
+            fillTile(gc, cx, cy, size, Color.web("#3f3a56"));
+            fillRect(gc, cx, cy, size, -0.5, -0.5, 1.0, 0.1, Color.web("#524a70"));
+        };
+    }
+
+    /** İniş merdiveni: karanlık bir boşluk ve içine inen basamaklar. */
+    public static Sprite stairsTile() {
+        return (gc, cx, cy, size) -> {
+            fillRect(gc, cx, cy, size, -0.4, -0.4, 0.8, 0.8, Color.web("#08080c"));
+            for (int step = 0; step < 3; step++) {
+                double inset = 0.35 - step * 0.1;
+                double y = -0.3 + step * 0.22;
+                fillRect(gc, cx, cy, size, -inset, y, inset * 2, 0.11, Color.web("#6b6480"));
+            }
+        };
+    }
+
     /** Oyuncu: miğferli kafa, zırhlı gövde ve elinde kılıç. */
     public static Sprite player() {
         return (gc, cx, cy, size) -> {
@@ -169,6 +197,12 @@ public final class ShapeSprites {
     }
 
     // ------------------------------------------------- birim kutu yardımcıları
+
+    /** Karenin tamamını tek renkle doldurur; tile sprite'ları için. */
+    private static void fillTile(GraphicsContext gc, double cx, double cy, double size, Color color) {
+        gc.setFill(color);
+        gc.fillRect(cx - size / 2, cy - size / 2, size, size);
+    }
 
     private static void fillOval(GraphicsContext gc, double cx, double cy, double size,
                                  double x, double y, double width, double height, Color color) {

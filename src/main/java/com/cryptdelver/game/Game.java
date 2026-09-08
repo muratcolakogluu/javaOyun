@@ -697,7 +697,7 @@ public class Game {
             boss = new Boss(stairs.x(), stairs.y());
             applyDepthBonus(boss);
             addEnemy(boss);
-            messageLog.add(boss.getName() + " merdiveni tutuyor.");
+            messageLog.add(boss.getName() + " merdiveni tutuyor. Yavaş — vur ve geri çekil.");
         }
 
         int target = enemyCountForDepth();

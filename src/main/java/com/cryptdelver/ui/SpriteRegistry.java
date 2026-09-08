@@ -15,10 +15,12 @@ import javafx.scene.paint.Color;
  * kullanılır. Yani hazır bir paket bulduğumuzda yapılacak tek iş, dosyaları
  * doğru adlarla o klasöre koymak — kodda hiçbir değişiklik gerekmiyor.</p>
  *
- * <p>Beklenen dosya adları: {@code player}, {@code rat}, {@code skeleton},
- * {@code boss}, {@code potion}, {@code gold}, {@code sword}, {@code sword_steel},
- * {@code axe}, {@code sword_crypt}, {@code armor_leather}, {@code armor_chain},
- * {@code armor_plate}, {@code armor_crypt}.</p>
+ * <p>Beklenen dosya adları — zindan: {@code floor}, {@code wall},
+ * {@code stairs}; karakterler: {@code player}, {@code rat}, {@code skeleton},
+ * {@code boss}; eşyalar: {@code potion}, {@code gold}, {@code sword},
+ * {@code sword_steel}, {@code axe}, {@code sword_crypt},
+ * {@code armor_leather}, {@code armor_chain}, {@code armor_plate},
+ * {@code armor_crypt}.</p>
  */
 public class SpriteRegistry {
 
@@ -28,6 +30,12 @@ public class SpriteRegistry {
     private final Sprite unknown = ShapeSprites.unknown();
 
     public SpriteRegistry() {
+        // Zindanın kendisi de sprite: hazır bir tileset gelince duvar ve zemin
+        // de dosyadan çizilebilsin diye.
+        register("floor", ShapeSprites.floorTile());
+        register("wall", ShapeSprites.wallTile());
+        register("stairs", ShapeSprites.stairsTile());
+
         register("player", ShapeSprites.player());
         register("rat", ShapeSprites.rat());
         register("skeleton", ShapeSprites.skeleton());

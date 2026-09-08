@@ -12,7 +12,11 @@ import com.cryptdelver.entity.Potion;
 import com.cryptdelver.world.BspGenerator;
 import com.cryptdelver.world.Position;
 import com.cryptdelver.world.Tile;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -60,12 +64,49 @@ class DescentTest {
         assertNotEquals(player.getTile(), stairs, "Merdiven dogdugun karede olmamali");
     }
 
+    /**
+     * Merdiven, dogma noktasindan yuruyerek gidilebilen <em>en uzak</em> kareye
+     * konur.
+     *
+     * <p>Onceki hali "uzaklik > 10" diye sabit bir esik ariyordu ve zaman zaman
+     * patliyordu: rastgele tohum bazen derli toplu bir harita uretiyor ve
+     * tasarimda bu esigi garanti eden bir kural yok. Simdi tasarimin gercekten
+     * soz verdigi sey olculuyor: baska hicbir kare merdivenden uzak degil.</p>
+     */
     @Test
-    @DisplayName("Merdiven dogma noktasindan uzaga konur")
-    void stairsAreFarFromTheSpawn() {
-        int distance = game.getStairs().manhattanDistance(player.getTile());
+    @DisplayName("Merdiven, dogma noktasindan gidilebilen en uzak kareye konur")
+    void stairsSitAtTheFarthestReachableTile() {
+        Map<Position, Integer> distances = walkingDistancesFrom(player.getTile());
 
-        assertTrue(distance > 10, "Merdiven cok yakina dusmemeli, olculen: " + distance);
+        Integer stairsDistance = distances.get(game.getStairs());
+        assertNotNull(stairsDistance, "Merdivene yuruyerek ulasilabilmeli");
+
+        int farthest = distances.values().stream().max(Integer::compareTo).orElseThrow();
+        assertEquals(farthest, stairsDistance.intValue(),
+                "Merdiven en uzak karede olmali");
+        assertTrue(stairsDistance > 1, "Merdiven dogdugun karenin dibinde olmamali");
+    }
+
+    /** Baslangictan her yurunebilir kareye kac adimda gidildigini hesaplar (BFS). */
+    private Map<Position, Integer> walkingDistancesFrom(Position start) {
+        int[][] directions = {{0, -1}, {0, 1}, {-1, 0}, {1, 0}};
+        Map<Position, Integer> distances = new HashMap<>();
+        Deque<Position> queue = new ArrayDeque<>();
+
+        distances.put(start, 0);
+        queue.add(start);
+
+        while (!queue.isEmpty()) {
+            Position current = queue.poll();
+            for (int[] direction : directions) {
+                Position next = current.offset(direction[0], direction[1]);
+                if (game.getDungeon().isWalkable(next.x(), next.y()) && !distances.containsKey(next)) {
+                    distances.put(next, distances.get(current) + 1);
+                    queue.add(next);
+                }
+            }
+        }
+        return distances;
     }
 
     @Test
