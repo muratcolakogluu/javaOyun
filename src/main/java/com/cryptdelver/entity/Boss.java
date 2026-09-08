@@ -1,0 +1,125 @@
+package com.cryptdelver.entity;
+
+import com.cryptdelver.ai.AStarPathfinder;
+import com.cryptdelver.game.Game;
+import java.util.Random;
+
+/**
+ * Kript Lordu: belirli katlarda merdiveni tutan boss.
+ *
+ * <p>Öldürülmeden aşağı inilemez — inişin bir bedeli olsun diye. Sıradan
+ * düşmanlardan üç şeyle ayrılıyor:</p>
+ * <ul>
+ *   <li><b>Menzili tüm harita:</b> nerede olursan ol peşine düşer, A* ile.</li>
+ *   <li><b>Yaratık çağırır:</b> belli aralıklarla etrafına fare doğurur, bu
+ *       yüzden onu görmezden gelip beklemek işe yaramaz.</li>
+ *   <li><b>Ganimet bırakır:</b> öldüğünde altın ve bir balta düşürür.</li>
+ * </ul>
+ *
+ * <p>Bu üç davranışın üçü de {@link Enemy} sınıfındaki genişleme noktalarıyla
+ * eklendi; ortak tur akışının tek satırı değişmedi.</p>
+ */
+public class Boss extends Enemy {
+
+    private static final EnemyStats STATS = new EnemyStats(
+            45,     // can
+            6,      // vuruş gücü
+            2.2,    // hız (kare/saniye) — yavaş ama durmak bilmez
+            1.0,    // vuruş arası bekleme
+            60);    // fark etme menzili: pratikte tüm harita
+
+    /** İki çağırma arasındaki süre, saniye. */
+    private static final double SUMMON_INTERVAL = 6.0;
+
+    /** İlk çağırmadan önceki hazırlık süresi. */
+    private static final double FIRST_SUMMON_DELAY = 3.0;
+
+    /** Her çağırmada kaç yaratık gelir. */
+    private static final int MINIONS_PER_SUMMON = 2;
+
+    /** Kattaki düşman sayısı bunu aşarsa çağırmayı bırakır. */
+    private static final int ENEMY_LIMIT = 16;
+
+    private static final int BASE_GOLD_DROP = 40;
+    private static final int GOLD_DROP_PER_DEPTH = 15;
+
+    private static final int[][] SUMMON_SPOTS = {
+            {0, -1}, {0, 1}, {-1, 0}, {1, 0}, {-1, -1}, {1, -1}, {-1, 1}, {1, 1}};
+
+    private final Random random = new Random();
+    private double summonTimer = FIRST_SUMMON_DELAY;
+
+    public Boss(int tileX, int tileY) {
+        super(tileX, tileY, "Kript Lordu", STATS, new AStarPathfinder());
+    }
+
+    /** Sayacı işletir ve zamanı gelince yaratık çağırır. */
+    @Override
+    protected void onUpdate(Game game, double delta) {
+        summonTimer -= delta;
+        if (summonTimer > 0) {
+            return;
+        }
+
+        summonTimer = SUMMON_INTERVAL;
+        summonMinions(game);
+    }
+
+    private void summonMinions(Game game) {
+        if (game.getEnemies().size() >= ENEMY_LIMIT) {
+            return;
+        }
+
+        int summoned = 0;
+        for (int[] spot : shuffledSpots()) {
+            if (summoned >= MINIONS_PER_SUMMON) {
+                break;
+            }
+
+            int x = getTileX() + spot[0];
+            int y = getTileY() + spot[1];
+            if (!game.isTileFree(x, y, this)) {
+                continue;
+            }
+
+            game.addEnemy(new Rat(x, y));
+            summoned++;
+        }
+
+        if (summoned > 0) {
+            game.getMessageLog().add("Kript Lordu " + summoned + " yaratık çağırdı!");
+        }
+    }
+
+    /** Yaratıklar hep aynı yönde belirmesin diye komşu kareleri karıştırır. */
+    private int[][] shuffledSpots() {
+        int[][] spots = SUMMON_SPOTS.clone();
+        for (int i = spots.length - 1; i > 0; i--) {
+            int j = random.nextInt(i + 1);
+            int[] temp = spots[i];
+            spots[i] = spots[j];
+            spots[j] = temp;
+        }
+        return spots;
+    }
+
+    /** Öldüğünde altın ve bir balta bırakır. */
+    @Override
+    public void onDeath(Game game) {
+        int gold = BASE_GOLD_DROP + GOLD_DROP_PER_DEPTH * game.getDepth();
+
+        game.addGroundItem(new Gold(getTileX(), getTileY(), gold));
+        game.addGroundItem(Weapon.battleAxe(getTileX(), getTileY()));
+        game.getMessageLog().add("Kript Lordu düştü! Merdiven artık serbest.");
+    }
+
+    @Override
+    public String getSpriteName() {
+        return "boss";
+    }
+
+    @Override
+    public double getDrawScale() {
+        return 1.35;
+    }
+}
