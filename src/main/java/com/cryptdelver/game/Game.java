@@ -6,10 +6,10 @@ import com.cryptdelver.entity.Combatant;
 import com.cryptdelver.entity.Enemy;
 import com.cryptdelver.entity.Entity;
 import com.cryptdelver.entity.Gold;
+import com.cryptdelver.entity.Imp;
 import com.cryptdelver.entity.Item;
 import com.cryptdelver.entity.Player;
 import com.cryptdelver.entity.Potion;
-import com.cryptdelver.entity.Rat;
 import com.cryptdelver.entity.Skeleton;
 import com.cryptdelver.entity.Weapon;
 import com.cryptdelver.persistence.SaveData;
@@ -47,7 +47,7 @@ public class Game {
     /** Düşmanlar oyuncunun bu kadar yakınına doğmaz (kare). */
     private static final int MIN_SPAWN_DISTANCE = 8;
 
-    /** İlk katta iskelet olasılığı; derinlikle artar, kalanı fare. */
+    /** İlk katta iskelet olasılığı; derinlikle artar, kalanı imp. */
     private static final double BASE_SKELETON_CHANCE = 0.3;
     private static final double SKELETON_CHANCE_PER_DEPTH = 0.06;
     private static final double MAX_SKELETON_CHANCE = 0.8;
@@ -605,7 +605,8 @@ public class Game {
      */
     private Enemy createEnemy(SaveData.EnemyData data) {
         Enemy enemy = switch (data.kind()) {
-            case "RAT" -> new Rat(data.x(), data.y());
+            // "RAT": bu düşman İmp olarak yeniden adlandırılmadan önceki kayıtlar.
+            case "IMP", "RAT" -> new Imp(data.x(), data.y());
             case "SKELETON" -> new Skeleton(data.x(), data.y());
             case "BOSS" -> {
                 Boss restored = new Boss(data.x(), data.y());
@@ -742,7 +743,7 @@ public class Game {
 
         Enemy enemy = random.nextDouble() < skeletonChance
                 ? new Skeleton(spot.x(), spot.y())
-                : new Rat(spot.x(), spot.y());
+                : new Imp(spot.x(), spot.y());
 
         applyDepthBonus(enemy);
         return enemy;

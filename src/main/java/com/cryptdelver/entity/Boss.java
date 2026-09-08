@@ -12,7 +12,7 @@ import java.util.Random;
  * düşmanlardan üç şeyle ayrılıyor:</p>
  * <ul>
  *   <li><b>Menzili tüm harita:</b> nerede olursan ol peşine düşer, A* ile.</li>
- *   <li><b>Yaratık çağırır:</b> belli aralıklarla etrafına fare doğurur, bu
+ *   <li><b>Yaratık çağırır:</b> belli aralıklarla etrafına imp doğurur, bu
  *       yüzden onu görmezden gelip beklemek işe yaramaz.</li>
  *   <li><b>Ganimet bırakır:</b> öldüğünde altın ve bir balta düşürür.</li>
  * </ul>
@@ -101,7 +101,7 @@ public class Boss extends Enemy {
                 continue;
             }
 
-            game.addEnemy(new Rat(x, y));
+            game.addEnemy(new Imp(x, y));
             summoned++;
         }
 
@@ -152,8 +152,12 @@ public class Boss extends Enemy {
         return "boss";
     }
 
+    /**
+     * Ölçek büyütülmüyor: boss sprite'ı zaten iki kare eninde (32×36 piksel),
+     * bir de çarpan uygulasak koridora sığmayacak kadar büyürdü.
+     */
     @Override
     public double getDrawScale() {
-        return 1.35;
+        return 1.0;
     }
 }

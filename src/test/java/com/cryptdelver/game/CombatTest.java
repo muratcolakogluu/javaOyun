@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.cryptdelver.entity.Player;
-import com.cryptdelver.entity.Rat;
+import com.cryptdelver.entity.Imp;
 import com.cryptdelver.entity.Skeleton;
 import com.cryptdelver.world.Dungeon;
 import com.cryptdelver.world.Tile;
@@ -128,12 +128,12 @@ class CombatTest {
     @Test
     @DisplayName("Cani biten dusman oyundan cikar")
     void deadEnemyLeavesTheGame() {
-        Rat rat = new Rat(6, 5);
-        game.addEnemy(rat);
+        Imp imp = new Imp(6, 5);
+        game.addEnemy(imp);
 
         simulateAttacking(180);
 
-        assertFalse(rat.isAlive());
+        assertFalse(imp.isAlive());
         assertTrue(game.getEnemies().isEmpty(), "Olu dusman listede kalmamali");
     }
 
@@ -150,14 +150,14 @@ class CombatTest {
     @Test
     @DisplayName("Menzildeki dusman kare kare yaklasir")
     void enemyChasesPlayer() {
-        Rat rat = new Rat(11, 5);
-        game.addEnemy(rat);
-        int distanceBefore = rat.tileDistanceTo(player);
+        Imp imp = new Imp(11, 5);
+        game.addEnemy(imp);
+        int distanceBefore = imp.tileDistanceTo(player);
 
         simulateFrames(60);
 
-        assertTrue(rat.tileDistanceTo(player) < distanceBefore - 2,
-                "Fare menzil icindeyken belirgin sekilde yaklasmali");
+        assertTrue(imp.tileDistanceTo(player) < distanceBefore - 2,
+                "İmp menzil icindeyken belirgin sekilde yaklasmali");
     }
 
     @Test
@@ -190,12 +190,12 @@ class CombatTest {
     @Test
     @DisplayName("Dusman oyuncunun karesine girmez")
     void enemyDoesNotStepOntoThePlayer() {
-        Rat rat = new Rat(8, 5);
-        game.addEnemy(rat);
+        Imp imp = new Imp(8, 5);
+        game.addEnemy(imp);
 
         for (int i = 0; i < 120; i++) {
             game.update(FRAME);
-            assertFalse(rat.getTile().equals(player.getTile()),
+            assertFalse(imp.getTile().equals(player.getTile()),
                     "Dusman oyuncunun uzerine binmemeli");
         }
     }

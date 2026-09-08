@@ -5,13 +5,13 @@ import com.cryptdelver.game.Game;
 import java.util.Random;
 
 /**
- * Fare: hızlı ama zayıf. Oyuncuyu geç fark eder, buna karşılık boş durmaz —
+ * İmp: hızlı ama zayıf. Oyuncuyu geç fark eder, buna karşılık boş durmaz —
  * kare kare dolaştığı için koridorda beklenmedik anda karşına çıkar.
  *
  * <p>Oyuncudan biraz yavaş koşar; kaçmak mümkün, ama sürüsüne yakalanırsan
  * sıkıntı.</p>
  */
-public class Rat extends Enemy {
+public class Imp extends Enemy {
 
     private static final EnemyStats STATS = new EnemyStats(
             5,      // can
@@ -33,8 +33,8 @@ public class Rat extends Enemy {
     private final Random random = new Random();
     private int[] wanderDirection = DIRECTIONS[0];
 
-    public Rat(int tileX, int tileY) {
-        super(tileX, tileY, "Fare", STATS, new GreedyPathfinder());
+    public Imp(int tileX, int tileY) {
+        super(tileX, tileY, "İmp", STATS, new GreedyPathfinder());
         pickNewDirection();
     }
 
@@ -72,11 +72,11 @@ public class Rat extends Enemy {
 
     @Override
     public String getSaveKind() {
-        return "RAT";
+        return "IMP";
     }
 
     @Override
     public String getSpriteName() {
-        return "rat";
+        return "imp";
     }
 }

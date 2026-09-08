@@ -5,8 +5,8 @@ import java.util.List;
 /**
  * Kaydedilmiş bir oyunun tam durumu.
  *
- * <p>Oyun nesnelerine değil, sade değerlere bakar: {@code Player}, {@code Rat}
- * gibi sınıfları tanımaz, onları {@code "RAT"} gibi etiketlerle anar. Bu ayrım
+ * <p>Oyun nesnelerine değil, sade değerlere bakar: {@code Player}, {@code Imp}
+ * gibi sınıfları tanımaz, onları {@code "IMP"} gibi etiketlerle anar. Bu ayrım
  * sayesinde dosya biçimi oyun sınıflarının iç yapısına bağlı kalmıyor — bir
  * düşmana yeni bir alan eklemek kayıt dosyasını bozmuyor.</p>
  *

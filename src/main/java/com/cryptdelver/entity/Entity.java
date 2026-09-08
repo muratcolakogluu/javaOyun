@@ -147,7 +147,7 @@ public abstract class Entity {
     }
 
     /**
-     * Ekranda hangi sprite ile çizileceğinin adı ({@code "rat"}, {@code "player"}...).
+     * Ekranda hangi sprite ile çizileceğinin adı ({@code "imp"}, {@code "player"}...).
      *
      * <p>Varlık nasıl çizildiğini bilmez, yalnızca kim olduğunu söyler; çizimi
      * {@code ui} katmanındaki sprite kaydı seçer. Bu yüzden şekilden PNG'ye

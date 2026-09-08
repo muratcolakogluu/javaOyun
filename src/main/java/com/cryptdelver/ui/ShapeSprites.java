@@ -10,7 +10,7 @@ import javafx.scene.shape.StrokeLineCap;
  * <p>Hazır çizim dosyası kullanmadan, daire/dikdörtgen/çizgi ile "tanınabilir"
  * figürler üretiyoruz. Bütün koordinatlar birim kutuda tanımlı: kutunun merkezi
  * {@code (0, 0)}, kenarları {@code -0.5} ile {@code 0.5} arası. Çizim anında
- * {@code size} ile ölçekleniyor, böylece aynı sprite hem 20 piksellik tile'da
+ * {@code size} ile ölçekleniyor, böylece aynı sprite hem 32 piksellik tile'da
  * hem 18 piksellik envanter kutusunda düzgün duruyor.</p>
  *
  * <p>Bu sınıf geçici bir çözüm değil, geçerli bir yedek: PNG paketi eklendiğinde
@@ -67,8 +67,8 @@ public final class ShapeSprites {
         };
     }
 
-    /** Fare: yayvan gövde, sivri burun, yuvarlak kulaklar ve kuyruk. */
-    public static Sprite rat() {
+    /** İmp: yayvan gövde, sivri burun, yuvarlak kulaklar. */
+    public static Sprite imp() {
         return (gc, cx, cy, size) -> {
             // Kuyruk
             strokeLine(gc, cx, cy, size, -0.22, 0.14, -0.46, -0.06, Color.web("#7d6a4c"), 0.06);

@@ -1,0 +1,33 @@
+Sprite kaynağı
+==============
+
+Paket : DungeonTileset II, sürüm 1.7
+Yapan : 0x72
+Adres : https://0x72.itch.io/dungeontileset-ii
+Lisans: itch.io sayfasında CC-0 (kamu malı) olarak duyuruluyor.
+        İndirilen arşivin içinde lisans dosyası yok; ticari bir yerde
+        kullanmadan önce itch.io sayfasındaki lisansı bir kez daha teyit et.
+
+Bu klasördeki dosyalar, paketin "frames" klasöründen alınıp oyunun beklediği
+adlarla kopyalandı:
+
+  floor.png        <- floor_1.png
+  wall.png         <- wall_mid.png
+  stairs.png       <- floor_ladder.png
+  player.png       <- knight_m_idle_anim_f0.png
+  imp.png          <- imp_idle_anim_f0.png
+  skeleton.png     <- skelet_idle_anim_f0.png
+  boss.png         <- big_demon_idle_anim_f0.png
+  potion.png       <- flask_red.png
+  gold.png         <- coin_anim_f0.png
+  sword.png        <- weapon_rusty_sword.png
+  sword_steel.png  <- weapon_regular_sword.png
+  axe.png          <- weapon_axe.png
+  sword_crypt.png  <- weapon_red_gem_sword.png
+
+Zırhlar (armor_leather, armor_chain, armor_plate, armor_crypt) pakette yok;
+onlar ShapeSprites içindeki şekil çizimleriyle görünmeye devam ediyor.
+
+Paketteki her karakterin 4 karelik idle ve run animasyonu var
+(..._anim_f0..f3). Şu an yalnızca f0 kullanılıyor; animasyon eklenirse
+diğer kareler de buraya kopyalanacak.

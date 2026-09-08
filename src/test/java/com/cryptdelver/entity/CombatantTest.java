@@ -85,26 +85,26 @@ class CombatantTest {
     }
 
     @Test
-    @DisplayName("Savunma turden gelir: ciplak fare 0, kemikli iskelet 1")
+    @DisplayName("Savunma turden gelir: ciplak imp 0, kemikli iskelet 1")
     void defenseComesFromTheType() {
         assertEquals(0, new Player(0, 0).getDefense(), "Zirhsiz oyuncunun savunmasi yok");
-        assertEquals(0, new Rat(0, 0).getDefense());
+        assertEquals(0, new Imp(0, 0).getDefense());
         assertEquals(1, new Skeleton(0, 0).getDefense());
     }
 
     @Test
     @DisplayName("Dusman guclendirmesi can, guc ve savunmayi birlikte artirir")
     void strengthenRaisesAllThreeStats() {
-        Rat rat = new Rat(0, 0);
-        int baseHp = rat.getMaxHp();
-        int baseAttack = rat.getAttackPower();
-        int baseDefense = rat.getDefense();
+        Imp imp = new Imp(0, 0);
+        int baseHp = imp.getMaxHp();
+        int baseAttack = imp.getAttackPower();
+        int baseDefense = imp.getDefense();
 
-        rat.strengthen(4, 2, 1);
+        imp.strengthen(4, 2, 1);
 
-        assertEquals(baseHp + 4, rat.getMaxHp());
-        assertEquals(baseHp + 4, rat.getHp());
-        assertEquals(baseAttack + 2, rat.getAttackPower());
-        assertEquals(baseDefense + 1, rat.getDefense());
+        assertEquals(baseHp + 4, imp.getMaxHp());
+        assertEquals(baseHp + 4, imp.getHp());
+        assertEquals(baseAttack + 2, imp.getAttackPower());
+        assertEquals(baseDefense + 1, imp.getDefense());
     }
 }

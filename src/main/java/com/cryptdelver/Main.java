@@ -20,8 +20,8 @@ import javafx.stage.Stage;
  */
 public class Main extends Application {
 
-    private static final int DUNGEON_WIDTH = 48;
-    private static final int DUNGEON_HEIGHT = 30;
+    private static final int DUNGEON_WIDTH = 40;
+    private static final int DUNGEON_HEIGHT = 22;
 
     @Override
     public void start(Stage stage) {

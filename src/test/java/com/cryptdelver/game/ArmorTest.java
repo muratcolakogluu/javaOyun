@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.cryptdelver.entity.Armor;
 import com.cryptdelver.entity.Player;
-import com.cryptdelver.entity.Rat;
+import com.cryptdelver.entity.Imp;
 import com.cryptdelver.entity.Skeleton;
 import com.cryptdelver.entity.Weapon;
 import com.cryptdelver.world.Dungeon;
@@ -105,7 +105,7 @@ class ArmorTest {
     void armorNeverBlocksAllDamage() {
         game.getInventory().add(new Armor(0, 0, "Test Zirhi", 999, "armor_plate"));
         game.useItem(0);
-        game.addEnemy(new Rat(5, 4));
+        game.addEnemy(new Imp(5, 4));
 
         int hpBefore = player.getHp();
         for (int i = 0; i < 60 * 2; i++) {

@@ -16,7 +16,7 @@ import javafx.scene.paint.Color;
  * doğru adlarla o klasöre koymak — kodda hiçbir değişiklik gerekmiyor.</p>
  *
  * <p>Beklenen dosya adları — zindan: {@code floor}, {@code wall},
- * {@code stairs}; karakterler: {@code player}, {@code rat}, {@code skeleton},
+ * {@code stairs}; karakterler: {@code player}, {@code imp}, {@code skeleton},
  * {@code boss}; eşyalar: {@code potion}, {@code gold}, {@code sword},
  * {@code sword_steel}, {@code axe}, {@code sword_crypt},
  * {@code armor_leather}, {@code armor_chain}, {@code armor_plate},
@@ -37,7 +37,7 @@ public class SpriteRegistry {
         register("stairs", ShapeSprites.stairsTile());
 
         register("player", ShapeSprites.player());
-        register("rat", ShapeSprites.rat());
+        register("imp", ShapeSprites.imp());
         register("skeleton", ShapeSprites.skeleton());
         register("boss", ShapeSprites.boss());
         register("potion", ShapeSprites.potion());

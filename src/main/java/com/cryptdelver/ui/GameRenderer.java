@@ -24,19 +24,19 @@ import javafx.scene.text.TextAlignment;
  * karenin arasında görünüyor.</p>
  *
  * <p>Hangi varlığın nasıl çizileceğini bu sınıf bilmiyor: varlık adını söylüyor
- * ({@code "rat"}), {@link SpriteRegistry} çizimi veriyor. Tür kontrolü
+ * ({@code "imp"}), {@link SpriteRegistry} çizimi veriyor. Tür kontrolü
  * ({@code instanceof}) hiçbir yerde yok.</p>
  */
 public class GameRenderer {
 
     /** Bir tile'ın piksel cinsinden kenar uzunluğu. */
-    public static final int TILE_SIZE = 20;
+    public static final int TILE_SIZE = 32;
 
     /** Haritanın altındaki bilgi ve çanta şeridinin yüksekliği. */
     public static final int HUD_HEIGHT = 88;
 
     /** Yerdeki eşyalar biraz küçük çiziliyor ki karakterlerden ayırt edilsin. */
-    private static final double GROUND_ITEM_SCALE = 0.78;
+    private static final double GROUND_ITEM_SCALE = 1.0;
 
     private static final double SWING_RADIUS = 1.1;
 
@@ -74,6 +74,11 @@ public class GameRenderer {
         Dungeon dungeon = game.getDungeon();
         double mapWidth = dungeon.getWidth() * (double) TILE_SIZE;
         double mapHeight = dungeon.getHeight() * (double) TILE_SIZE;
+
+        // Piksel sanatı bulanıklaşmasın: yumuşatma kapalı, kaynak piksel
+        // kenarları keskin kalsın (16 piksellik resim 32 piksellik kareye
+        // tam iki katına ölçekleniyor).
+        gc.setImageSmoothing(false);
 
         gc.setFill(BACKGROUND);
         gc.fillRect(0, 0, mapWidth, mapHeight + HUD_HEIGHT);

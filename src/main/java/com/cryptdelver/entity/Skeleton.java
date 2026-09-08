@@ -7,7 +7,7 @@ import com.cryptdelver.ai.AStarPathfinder;
  * peşini bırakmaz; boştayken nöbet tutar, yerinden kıpırdamaz.
  *
  * <p>Yol bulucusu A*: duvarın arkasına saklanmak işe yaramaz, koridorun
- * etrafından dolaşıp gelir. Fareden farkı yalnızca sayılar değil, kafası —
+ * etrafından dolaşıp gelir. İmpten farkı yalnızca sayılar değil, kafası —
  * ve bu fark, {@code Enemy} sınıfının tek satırına dokunmadan sadece kurucuya
  * verilen nesneyle sağlanıyor.</p>
  *

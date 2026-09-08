@@ -142,8 +142,8 @@ class BossTest {
 
             assertTrue(game.getEnemies().size() > 1,
                     "Boss etrafina yaratik doldurmali, sayilan: " + game.getEnemies().size());
-            assertTrue(game.getEnemies().stream().anyMatch(enemy -> enemy.getName().equals("Fare")),
-                    "Cagrilan yaratiklar fare olmali");
+            assertTrue(game.getEnemies().stream().anyMatch(enemy -> enemy.getName().equals("İmp")),
+                    "Cagrilan yaratiklar imp olmali");
         }
 
         /**
