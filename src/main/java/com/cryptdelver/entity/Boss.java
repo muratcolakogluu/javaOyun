@@ -80,8 +80,16 @@ public class Boss extends Enemy {
     private static final int BASE_GOLD_DROP = 50;
     private static final int GOLD_DROP_PER_DEPTH = 18;
 
-    /** Bossu geçmenin kalıcı ödülü: azami can. */
-    private static final int MAX_HP_REWARD = 2;
+    /**
+     * Bossu geçmenin kalıcı ödülü: azami can.
+     *
+     * <p>Azami can artık yalnızca buradan geliyor — eskiden her inişte +2
+     * geliyordu ve beş katta toplam +10 ediyordu. Ödülü 2'de bıraksak oyuncu
+     * derin katlara neredeyse taban canla inerdi; 5 olunca boss başına kazanç
+     * eskisinin yarısı oluyor: hâlâ belirgin bir düşüş, ama sertlik cezaya
+     * dönmüyor.</p>
+     */
+    private static final int MAX_HP_REWARD = 5;
 
     private static final int[][] SUMMON_SPOTS = {
             {0, -1}, {0, 1}, {-1, 0}, {1, 0}, {-1, -1}, {1, -1}, {-1, 1}, {1, 1}};

@@ -17,6 +17,7 @@ import com.cryptdelver.world.Dungeon;
 import com.cryptdelver.world.DungeonGenerator;
 import com.cryptdelver.world.Tile;
 import java.util.List;
+import java.util.Map;
 import javafx.geometry.VPos;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.effect.ColorAdjust;
@@ -121,6 +122,18 @@ public class GameRenderer {
     /** Yazı genişliği ölçmek için tutulan görünmez düğüm; {@link #measure} kullanıyor. */
     private final Text textMeasure = new Text();
 
+    /**
+     * Zırh kademesine göre gövde rengi; anahtar zırhın sprite adı.
+     *
+     * <p>Değerler {@code ColorAdjust}: ton kayması, doygunluk, parlaklık.
+     * Taban gövde yeşil tunikli; her kademe onu başka bir yöne çekiyor.</p>
+     */
+    private static final Map<String, ColorAdjust> ARMOR_TINTS = Map.of(
+            "armor_leather", tint(0.06, -0.30, -0.08),
+            "armor_chain", tint(-0.42, -0.55, 0.06),
+            "armor_plate", tint(-0.34, -0.80, 0.20),
+            "armor_crypt", tint(0.72, -0.05, -0.10));
+
     /** Haritayı, varlıkları, bilgi şeridini ve gerekiyorsa ölüm ekranını çizer. */
     public void render(GraphicsContext gc, Game game) {
         Dungeon dungeon = game.getDungeon();
@@ -159,7 +172,7 @@ public class GameRenderer {
             drawEntity(gc, enemy, 1.0);
             drawHealthBar(gc, enemy);
         }
-        drawEntity(gc, player, 1.0);
+        drawEntity(gc, player, 1.0, armorTint(player));
         drawEquipment(gc, player);
 
         if (game.getBoss() != null && !game.isOver()) {
@@ -334,8 +347,21 @@ public class GameRenderer {
 
     /** Varlığı sprite'ıyla çizer; hasar almışsa beyaza yakın parlatır. */
     private void drawEntity(GraphicsContext gc, Entity entity, double scale) {
+        drawEntity(gc, entity, scale, null);
+    }
+
+    /**
+     * Varlığı çizer; {@code tint} verilmişse gövde o renge boyanır.
+     *
+     * <p>Vuruş parlaması boyamayı eziyor: o an önemli olan "darbe yedim"
+     * bilgisi, hangi zırhı giydiğin değil. Parlama zaten çeyrek saniye
+     * sürüyor, sonrasında renk geri geliyor.</p>
+     */
+    private void drawEntity(GraphicsContext gc, Entity entity, double scale, ColorAdjust tint) {
         if (entity.isFlashing()) {
             gc.setEffect(hitEffect);
+        } else if (tint != null) {
+            gc.setEffect(tint);
         }
 
         // Adım halindeki varlık yürüyüş animasyonuyla çiziliyor.
@@ -349,12 +375,36 @@ public class GameRenderer {
     }
 
     /**
+     * Kuşanılan zırhın gövdeye verdiği renk.
+     *
+     * <p>Zırhı gövdenin üstüne <em>çizmenin</em> yolu yok: pakette giyilmiş
+     * zırh çizimi yok, envanter ikonunu gövdeye bindirmeyi de denedik ve
+     * berbat duruyordu. Bunun yerine gövdenin kendisi boyanıyor — deri sıcak
+     * kahve, zincir soğuk çelik, plaka parlak beyaz, kript plakası mor. Aynı
+     * karakter, farklı renk: "başka birine dönüşmek" hissi olmuyor ama üstünde
+     * ne olduğu haritadan bakınca anlaşılıyor.</p>
+     *
+     * <p>Eşleme zırhın sprite adı üzerinden: model sınıfları renk bilmiyor,
+     * bilmesi de gerekmiyor — hangi varlığın nasıl görüneceği bu sınıfın
+     * işi.</p>
+     */
+    private ColorAdjust armorTint(Player player) {
+        Armor armor = player.getEquippedArmor();
+        return armor == null ? null : ARMOR_TINTS.get(armor.getSpriteName());
+    }
+
+    private static ColorAdjust tint(double hue, double saturation, double brightness) {
+        return new ColorAdjust(hue, saturation, brightness, 0);
+    }
+
+    /**
      * Kuşanılan silahı oyuncunun eline çizer.
      *
      * <p>Yalnızca silah çiziliyor, çünkü paketin silah çizimleri zaten "elde
-     * tutulan silah" olarak hazırlanmış ve gövdeyle aynı üslupta. Zırh için gövdeye
-     * bindirilecek çizim yok (paketlerde yalnızca envanter ikonu var), o yüzden
-     * zırhın durumu HUD ve çanta üzerinden okunuyor.</p>
+     * tutulan silah" olarak hazırlanmış ve gövdeyle aynı üslupta. Zırh için
+     * gövdeye bindirilecek çizim yok (paketlerde yalnızca envanter ikonu var);
+     * o yüzden zırh ayrı bir parça olarak değil, gövdenin <em>rengi</em> olarak
+     * görünüyor — bkz. {@link #armorTint(Player)}.</p>
      */
     private void drawEquipment(GraphicsContext gc, Player player) {
         Weapon weapon = player.getEquippedWeapon();
