@@ -36,7 +36,24 @@ public class SoundPlayer implements SoundListener {
             AudioClip clip = load(effect);
             if (clip != null) {
                 clips.put(effect, clip);
+                warmUp(clip);
             }
+        }
+    }
+
+    /**
+     * Klibi bir kez sessizce çalar.
+     *
+     * <p>Ses aygıtı ilk çalışta açılıyor ve bu açılış duyulur bir gecikme
+     * yaratıyor — oyunda ilk vuruşun sesi geç geliyordu. Sıfır seviyeli bir
+     * çalış aygıtı ve kanalı önceden hazırlıyor: oyuncu bunu duymuyor ama
+     * ilk gerçek efekt anında çıkıyor.</p>
+     */
+    private void warmUp(AudioClip clip) {
+        try {
+            clip.play(0);
+        } catch (RuntimeException e) {
+            // Isınma olmazsa efekt yine çalar, sadece ilki gecikir.
         }
     }
 

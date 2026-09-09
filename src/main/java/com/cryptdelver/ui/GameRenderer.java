@@ -61,7 +61,20 @@ public class GameRenderer {
 
     private static final int SLOT_SIZE = 30;
     private static final int SLOT_GAP = 4;
-    private static final int SLOT_ORIGIN_X = 10;
+
+    /** Panel ayraçlarının solunda bıraktığımız boşluk. */
+    private static final double PANEL_GAP = 14;
+
+    /**
+     * Panellerin sol kenarları.
+     *
+     * <p>Harita 40 kare, yani 1280 piksel geniş. Şerit üç parçaya bölündü:
+     * durum solda, çanta ortada, olaylar sağda. Sayılar sabit çünkü pencere
+     * boyutu da sabit; oranla hesaplamak burada gereksiz karmaşa olurdu.</p>
+     */
+    private static final double STATUS_PANEL_X = 10;
+    private static final double INVENTORY_PANEL_X = 260;
+    private static final double EVENT_PANEL_X = 600;
 
     private static final Color BACKGROUND = Color.web("#0d0d12");
     private static final Color STAIRS_EDGE = Color.web("#9a8fc0");
@@ -396,58 +409,117 @@ public class GameRenderer {
                 radius * 2);
     }
 
+    /**
+     * Bilgi şeridi: üç ayrı panel.
+     *
+     * <p>Önceden her şey aynı sütunda üst üsteydi — olay yazıları çantanın
+     * hemen üstünde durduğu için "3 hasar aldın" ile çanta slotları
+     * karışıyordu. Şimdi <b>Durum</b> solda, <b>Çanta</b> ortada,
+     * <b>Olaylar</b> sağda; aralarında ayraç çizgisi var. Gözün nereye
+     * bakacağını bilmesi için her panelin başlığı da yazılı.</p>
+     */
     private void drawHud(GraphicsContext gc, Game game, double mapWidth, double mapHeight) {
         gc.setFill(HUD_BACKGROUND);
         gc.fillRect(0, mapHeight, mapWidth, HUD_HEIGHT);
 
         gc.setFont(hudFont);
         gc.setTextBaseline(VPos.CENTER);
-        double firstLine = mapHeight + 15;
-        double secondLine = mapHeight + 35;
 
-        drawHealthBar(gc, game, firstLine);
+        drawStatusPanel(gc, game, mapHeight);
+        drawInventoryPanel(gc, game, mapHeight);
+        drawEventPanel(gc, game, mapWidth, mapHeight);
+
+        drawPanelDivider(gc, INVENTORY_PANEL_X - PANEL_GAP, mapHeight);
+        drawPanelDivider(gc, EVENT_PANEL_X - PANEL_GAP, mapHeight);
+    }
+
+    /** Panelleri birbirinden ayıran dikey çizgi. */
+    private void drawPanelDivider(GraphicsContext gc, double x, double mapHeight) {
+        gc.setStroke(SLOT_BORDER);
+        gc.setLineWidth(1);
+        gc.strokeLine(x, mapHeight + 8, x, mapHeight + HUD_HEIGHT - 8);
+    }
+
+    private void drawPanelTitle(GraphicsContext gc, String title, double x, double mapHeight) {
+        gc.setFont(slotFont);
+        gc.setTextAlign(TextAlignment.LEFT);
+        gc.setFill(HUD_ACCENT);
+        gc.fillText(title, x, mapHeight + 14);
+        gc.setFont(hudFont);
+    }
+
+    /** Sol panel: can çubuğu, savaş değerleri ve ilerleme. */
+    private void drawStatusPanel(GraphicsContext gc, Game game, double mapHeight) {
+        drawPanelTitle(gc, "DURUM", STATUS_PANEL_X, mapHeight);
+        drawHealthBar(gc, game, mapHeight + 36);
 
         gc.setTextAlign(TextAlignment.LEFT);
+        double line = mapHeight + 60;
+
+        gc.setFill(HUD_TEXT);
+        gc.fillText("Vurus " + game.getPlayer().getAttackPower(), STATUS_PANEL_X, line);
+        gc.fillText("Zirh " + game.getPlayer().getDefense(), STATUS_PANEL_X + 82, line);
+
         gc.setFill(GOLD_TEXT);
-        gc.fillText("Altin " + game.getGold(), 200, firstLine);
+        gc.fillText("Altin " + game.getGold(), STATUS_PANEL_X + 148, line);
 
-        gc.setFill(HUD_TEXT);
-        gc.fillText("Vurus " + game.getPlayer().getAttackPower(), 285, firstLine);
-        gc.fillText("Zirh " + game.getPlayer().getDefense(), 360, firstLine);
-
+        line += 18;
         gc.setFill(HUD_ACCENT);
-        gc.fillText("Kat " + game.getDepth(), 425, firstLine);
+        gc.fillText("Kat " + game.getDepth(), STATUS_PANEL_X, line);
 
         gc.setFill(HUD_TEXT);
-        gc.fillText(String.format("Sure %.0fs", game.getElapsedSeconds()), 490, firstLine);
-        gc.fillText("Dusman " + game.getEnemies().size(), 575, firstLine);
+        gc.fillText(String.format("Sure %.0fs", game.getElapsedSeconds()), STATUS_PANEL_X + 62, line);
+        gc.fillText("Dusman " + game.getEnemies().size(), STATUS_PANEL_X + 150, line);
+    }
 
-        DungeonGenerator generator = game.getCurrentGenerator();
-        if (generator != null) {
-            gc.setFill(HUD_ACCENT);
-            gc.fillText(generator.getName(), 665, firstLine);
+    /** Orta panel: çanta slotları ve kuşanılan parçalar. */
+    private void drawInventoryPanel(GraphicsContext gc, Game game, double mapHeight) {
+        drawPanelTitle(gc, "CANTA", INVENTORY_PANEL_X, mapHeight);
+        drawInventory(gc, game, INVENTORY_PANEL_X, mapHeight + 22);
+
+        gc.setTextAlign(TextAlignment.LEFT);
+        gc.setFill(SLOT_EQUIPPED);
+        double line = mapHeight + 74;
+
+        Player player = game.getPlayer();
+        if (player.getEquippedWeapon() != null) {
+            gc.fillText(player.getEquippedWeapon().getName(), INVENTORY_PANEL_X, line);
         }
+        if (player.getEquippedArmor() != null) {
+            gc.fillText(player.getEquippedArmor().getName(), INVENTORY_PANEL_X + 150, line);
+        }
+    }
 
-        // Son üç olay: tek satır, hızlı savaşta neyin olduğunu kaçırtıyordu.
-        // Eskiler soluk, en yeni parlak.
+    /** Sağ panel: son olaylar ve tek satırlık yardım ipucu. */
+    private void drawEventPanel(GraphicsContext gc, Game game, double mapWidth, double mapHeight) {
+        drawPanelTitle(gc, "OLAYLAR", EVENT_PANEL_X, mapHeight);
+
+        gc.setTextAlign(TextAlignment.LEFT);
         List<String> recent = game.getMessageLog().latest(MESSAGE_LINES);
+        double line = mapHeight + 36;
+
         for (int i = 0; i < recent.size(); i++) {
+            // En yeni olay parlak, eskiler soluk: sıralama renkten okunuyor.
             gc.setFill(i == 0 ? MESSAGE_TEXT : MESSAGE_FADED);
-            gc.fillText(recent.get(i), 10, secondLine + i * 15);
+            gc.fillText(recent.get(i), EVENT_PANEL_X, line + i * 17);
         }
 
         gc.setTextAlign(TextAlignment.RIGHT);
         gc.setFill(HUD_TEXT);
-        gc.fillText("ESC: durdur ve tuslari gor", mapWidth - 10, firstLine);
+        gc.fillText("ESC: durdur, ayarlar ve tuslar", mapWidth - 10, mapHeight + 14);
 
-        drawInventory(gc, game, mapHeight);
+        DungeonGenerator generator = game.getCurrentGenerator();
+        if (generator != null) {
+            gc.setFill(HUD_ACCENT);
+            gc.fillText(generator.getName(), mapWidth - 10, mapHeight + HUD_HEIGHT - 14);
+        }
     }
 
     /** Can çubuğu: sayıyı okumadan da kalan canı görebilesin diye. */
     private void drawHealthBar(GraphicsContext gc, Game game, double centerY) {
         double width = 170;
         double height = 14;
-        double x = 10;
+        double x = STATUS_PANEL_X;
         double y = centerY - height / 2;
         double ratio = game.getPlayer().getHp() / (double) game.getPlayer().getMaxHp();
 
@@ -466,13 +538,19 @@ public class GameRenderer {
                 x + width / 2, centerY);
     }
 
-    /** Çanta slotları: numarası, içindeki eşyanın sprite'ı, kuşanılan silahın çerçevesi. */
-    private void drawInventory(GraphicsContext gc, Game game, double mapHeight) {
+    /**
+     * Çanta slotları: numarası, içindeki eşyanın görseli, kuşanılanın çerçevesi.
+     *
+     * <p>Nereye çizileceği artık dışarıdan geliyor. Şerit tek sütunken sabit bir
+     * köşeden başlamak yetiyordu; panellere bölününce çantanın yeri panelin
+     * kararı oldu. Kuşanılan parçaların adlarını da bu yüzden panel yazıyor:
+     * burası yalnızca kutuları çiziyor.</p>
+     */
+    private void drawInventory(GraphicsContext gc, Game game, double originX, double top) {
         Inventory inventory = game.getInventory();
-        double top = mapHeight + 48;
 
         for (int slot = 0; slot < Inventory.CAPACITY; slot++) {
-            double x = SLOT_ORIGIN_X + slot * (SLOT_SIZE + SLOT_GAP);
+            double x = originX + slot * (SLOT_SIZE + SLOT_GAP);
             Item item = inventory.get(slot);
             boolean equipped = item != null
                     && (item == game.getPlayer().getEquippedWeapon()
@@ -504,18 +582,7 @@ public class GameRenderer {
             }
         }
 
-        // Kuşanılan takımın adları, slotların sağında.
-        double x = SLOT_ORIGIN_X + Inventory.CAPACITY * (SLOT_SIZE + SLOT_GAP) + 10;
         gc.setFont(hudFont);
-        gc.setFill(SLOT_EQUIPPED);
-        gc.setTextAlign(TextAlignment.LEFT);
-
-        if (game.getPlayer().getEquippedWeapon() != null) {
-            gc.fillText(game.getPlayer().getEquippedWeapon().getName(), x, top + 8);
-        }
-        if (game.getPlayer().getEquippedArmor() != null) {
-            gc.fillText(game.getPlayer().getEquippedArmor().getName(), x, top + 24);
-        }
     }
 
     /** Boss yaşarken haritanın üstünde duran can çubuğu. */

@@ -6,8 +6,15 @@ sentezlendi (üçgen dalga + filtrelenmiş gürültü, 22050 Hz 16-bit mono WAV)
 
 İlk sürümde kare dalga kullanılmıştı ama tınısı sert ve vızıldayan çıkıyordu.
 Üçgen dalgada üst harmonikler çok daha hızlı sönüyor: aynı 8-bit hissi kalıyor,
-kulağı tırmalaması gidiyor. Üstüne alçak geçiren yumuşatma ve daha yavaş
-sönen bir zarf uygulanıyor.
+kulağı tırmalaması gidiyor. Üstüne bir alçak geçiren yumuşatma var.
+
+Zarf ikinci kez değişti: eskiden ses ilk %12'sinde yavaşça açılıyor ve tepe
+noktası ortalara düşüyordu, bu da kulakta "ses geç geldi" hissi yaratıyordu.
+Şimdi vurmalı bir zarf var — %2'lik açılış yalnızca klik sesini engelliyor,
+tepe en başta, gerisi sönüyor. Ölüm ve boss sesleri de kısaltıldı.
+
+Gecikmenin ikinci kaynağı ses aygıtının ilk çalışta açılmasıydı; SoundPlayer
+artık her klibi açılışta sıfır seviyede bir kez çalıp aygıtı ısıtıyor.
 
 Neden üretildi:
 - Lisans derdi yok, tamamen bize ait
