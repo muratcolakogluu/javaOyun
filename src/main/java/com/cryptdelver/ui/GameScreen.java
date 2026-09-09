@@ -13,6 +13,7 @@ import java.util.EnumSet;
 import java.util.Optional;
 import java.util.Set;
 import javafx.animation.AnimationTimer;
+import javafx.application.Platform;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Group;
 import javafx.scene.Parent;
@@ -64,6 +65,7 @@ public class GameScreen {
     private final Deque<KeyCode> heldDirections = new ArrayDeque<>();
     private final SaveFile saveFile = new SaveFile();
     private final SettingsFile settingsFile = new SettingsFile();
+    private final StartMenu menu;
 
     private AnimationTimer loop;
     private long lastFrameNanos;
@@ -88,6 +90,9 @@ public class GameScreen {
         // sol ve üst kenarı ekranın dışında bırakıyordu — bilgi şeridinin sol
         // sütunu kırpılıyor, boss can çubuğu da hiç görünmüyordu.
         this.root = new Group(scaledCanvas);
+
+        // "Devam et" satırı yalnızca gerçekten kayıt varsa görünsün.
+        this.menu = new StartMenu(saveFile.exists());
     }
 
     /**
@@ -151,8 +156,13 @@ public class GameScreen {
                 double delta = Math.min((now - lastFrameNanos) / 1_000_000_000.0, MAX_DELTA);
                 lastFrameNanos = now;
 
-                applyInput();
-                game.update(delta);
+                // Menü açıkken dünya donuyor ama çizim sürüyor: arkada duran
+                // zindan menünün fonu oluyor ve animasyonlar akmaya devam
+                // ediyor.
+                if (!menu.isOpen()) {
+                    applyInput();
+                    game.update(delta);
+                }
                 render();
             }
         };
@@ -167,7 +177,7 @@ public class GameScreen {
 
     /** Ekranı oyunun güncel durumuna göre çizer. */
     public void render() {
-        renderer.render(canvas.getGraphicsContext2D(), game);
+        renderer.render(canvas.getGraphicsContext2D(), game, menu);
     }
 
     /** Basılı yön tuşunu oyuncunun yönüne, boşluğu saldırı isteğine çevirir. */
@@ -209,6 +219,12 @@ public class GameScreen {
             heldDirections.addLast(code);
         }
 
+        // Menü açıkken başka hiçbir tuş işlemiyor.
+        if (menu.isOpen()) {
+            handleMenuCommand(code);
+            return;
+        }
+
         // Duraklatmayı açıp kapatmak, ayarlar, kaydetmek ve yüklemek her zaman
         // serbest; oynanışa dokunan komutlar duraklatmada geçersiz.
         switch (code) {
@@ -221,6 +237,42 @@ public class GameScreen {
             case M -> toggleMute();
             default -> handlePlayCommand(code, event);
         }
+    }
+
+    /**
+     * Başlangıç menüsünün tuşları.
+     *
+     * <p>Ok tuşları ya da W/S ile geziniyor, Enter ya da boşlukla
+     * seçiliyor. Rakam tuşu vermedim: menüde satır sayısı kayda göre
+     * değişiyor, sabit rakam ezberletmek yanlış olurdu.</p>
+     */
+    private void handleMenuCommand(KeyCode code) {
+        switch (code) {
+            case UP, W -> menu.moveUp();
+            case DOWN, S -> menu.moveDown();
+            case ENTER, SPACE -> chooseFromMenu();
+            default -> {
+                // Menüde başka tuşun işi yok.
+            }
+        }
+    }
+
+    private void chooseFromMenu() {
+        switch (menu.getSelected()) {
+            case NEW_GAME -> menu.close();
+            case CONTINUE -> {
+                loadGame();
+                menu.close();
+            }
+            case QUIT -> {
+                stop();
+                Platform.exit();
+            }
+        }
+
+        // Menüde basılı kalan tuşlar oyuna sarkmasın.
+        pressedKeys.clear();
+        heldDirections.clear();
     }
 
     /**
@@ -256,8 +308,6 @@ public class GameScreen {
 
         switch (code) {
             case E -> game.descend();
-            case R -> game.regenerateFloor();
-            case G -> game.cycleGenerator();
             case ENTER -> {
                 if (game.isOver()) {
                     game.restart();

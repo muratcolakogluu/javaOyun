@@ -238,10 +238,16 @@ class SaveLoadTest {
         assertTrue(restored.isBroken());
     }
 
+    /**
+     * Uretici artik oyuncunun degil katin karari, ama kayit yine de hangi
+     * ureticiyle kuruldugunu sakliyor: yuklerken ayni haritayi kurmak icin
+     * tohum tek basina yetmiyor.
+     */
     @Test
-    @DisplayName("Uretici secimi korunur")
-    void generatorChoiceIsPreserved() {
-        game.cycleGenerator();
+    @DisplayName("Katin ureticisi kayitta korunur")
+    void generatorIsPreserved() {
+        player.setTile(game.getStairs());
+        game.descend();
         String expected = game.getCurrentGenerator().getName();
 
         Game loaded = reload();

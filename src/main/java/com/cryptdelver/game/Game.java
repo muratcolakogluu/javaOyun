@@ -853,19 +853,35 @@ public class Game {
 
     // ---------------------------------------------------------- kat yönetimi
 
-    /** Aynı üreticiyle yeni bir kat üretir. */
+    /** Aynı derinlikte yeni bir kat üretir. */
     public void regenerateFloor() {
         if (!generators.isEmpty()) {
             generateFloor(random.nextLong());
         }
     }
 
-    /** Sıradaki üreticiye geçer ve yeni bir kat üretir. */
-    public void cycleGenerator() {
-        if (!generators.isEmpty()) {
-            generatorIndex = (generatorIndex + 1) % generators.size();
-            regenerateFloor();
+    /**
+     * Katın hangi üreticiyle kurulacağı: <b>derinliğin kararı, oyuncunun
+     * değil.</b>
+     *
+     * <p>Önce oyuncu {@code G} ile üreticiyi elle değiştirebiliyordu. Bu bir
+     * hata ayıklama kolaylığıydı ve oyunun akışını bozuyordu: zindan bir yol
+     * olmaktan çıkıp ayar penceresine dönüyordu. Şimdi sıra sabit ve
+     * öngörülebilir:</p>
+     *
+     * <ul>
+     *   <li><b>Boss katları hep odalı.</b> Boss yavaş ama durmak bilmez;
+     *       vurup geri çekilerek dövüşmek için alan gerekiyor. Mağara
+     *       koridorlarında sıkışıp kalıyordun.</li>
+     *   <li><b>Diğer katlar sırayla değişiyor:</b> tek katlar odalı, çift
+     *       katlar mağara. Aynı görüntüde üst üste inmiyorsun.</li>
+     * </ul>
+     */
+    private int generatorForDepth(int depth) {
+        if (generators.size() < 2 || depth % FLOORS_PER_BOSS == 0) {
+            return 0;
         }
+        return depth % 2 == 0 ? 1 : 0;
     }
 
     // ------------------------------------------------------------ kaydetme
@@ -1088,6 +1104,10 @@ public class Game {
     }
 
     private void generateFloor(long seed) {
+        // Üretici katın kendi kuralı; kayıt yüklerken ise kayıttan geliyor,
+        // o yüzden burada, buildFloor'da değil.
+        generatorIndex = generatorForDepth(depth);
+
         Position spawn = buildFloor(seed);
 
         player.setTile(spawn);

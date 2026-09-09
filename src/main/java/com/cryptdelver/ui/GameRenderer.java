@@ -102,6 +102,9 @@ public class GameRenderer {
     private static final Color HP_BAR_BACKGROUND = Color.web("#000000", 0.55);
     private static final Color HP_BAR_FILL = Color.web("#b64b45");
     private static final Color OVERLAY = Color.web("#0d0d12", 0.78);
+
+    /** Menü perdesi oyun perdesinden daha kapalı: menü ön planda.  */
+    private static final Color MENU_BACKDROP = Color.web("#0b0b10", 0.92);
     private static final Color OVERLAY_TITLE = Color.web("#c9564f");
     private static final Color DURABILITY_FULL = Color.web("#6f9a5a");
 
@@ -132,12 +135,87 @@ public class GameRenderer {
     private final Font hudFont = Font.font("Consolas", 13);
     private final Font slotFont = Font.font("Consolas", 10);
     private final Font titleFont = Font.font("Consolas", 46);
+    private final Font menuFont = Font.font("Consolas", 20);
 
     /** Yazı genişliği ölçmek için tutulan görünmez düğüm; {@link #measure} kullanıyor. */
     private final Text textMeasure = new Text();
 
     /** Büyülü parçaları saran hale; her karede nefesine göre güncelleniyor. */
     private final DropShadow enchantAura = new DropShadow(ENCHANT_AURA_RADIUS, ENCHANT_GLOW);
+
+    /**
+     * Her şeyi çizer; menü açıksa onu da oyunun üstüne koyar.
+     *
+     * @param menu başlangıç menüsü; {@code null} verilebilir (menüsüz çizim)
+     */
+    public void render(GraphicsContext gc, Game game, StartMenu menu) {
+        render(gc, game);
+
+        if (menu != null && menu.isOpen()) {
+            Dungeon dungeon = game.getDungeon();
+            drawStartMenu(gc, menu, dungeon.getWidth() * (double) TILE_SIZE,
+                    dungeon.getHeight() * (double) TILE_SIZE);
+        }
+    }
+
+    /**
+     * Başlangıç menüsü.
+     *
+     * <p>Fonu oyunun kendisi: arkada birinci kat duruyor, üstüne koyu bir perde
+     * ve başlık geliyor. Boş siyah bir ekran yerine oyunu göstermek, menüyü
+     * oyunun bir parçası gibi hissettiriyor.</p>
+     */
+    private void drawStartMenu(GraphicsContext gc, StartMenu menu,
+                               double mapWidth, double mapHeight) {
+        gc.setFill(MENU_BACKDROP);
+        gc.fillRect(0, 0, mapWidth, mapHeight + HUD_HEIGHT);
+
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setTextBaseline(VPos.CENTER);
+
+        gc.setFont(titleFont);
+        gc.setFill(GOLD_TEXT);
+        gc.fillText("CRYPTDELVER", mapWidth / 2, mapHeight / 2 - 140);
+
+        gc.setFont(hudFont);
+        gc.setFill(HUD_TEXT);
+        gc.fillText("Kripte in, ganimeti topla, Kript Lordunu gec.",
+                mapWidth / 2, mapHeight / 2 - 92);
+
+        List<StartMenu.Option> options = menu.getOptions();
+        double y = mapHeight / 2 - 20;
+
+        for (int i = 0; i < options.size(); i++) {
+            boolean selected = i == menu.getIndex();
+            drawMenuRow(gc, options.get(i).getLabel(), mapWidth / 2, y + i * 44, selected);
+        }
+
+        gc.setFont(hudFont);
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setFill(HUD_TEXT);
+        gc.fillText("Yon tuslariyla sec, Enter ile onayla",
+                mapWidth / 2, mapHeight / 2 + options.size() * 44 + 20);
+    }
+
+    /** Menüde tek satır; seçili olan çerçeveli ve parlak. */
+    private void drawMenuRow(GraphicsContext gc, String label, double centerX, double centerY,
+                             boolean selected) {
+        double width = Math.max(300, measure(label, titleFont) * 0.55 + 80);
+        double height = 34;
+
+        if (selected) {
+            gc.setFill(HINT_BACKGROUND);
+            gc.fillRoundRect(centerX - width / 2, centerY - height / 2, width, height, 8, 8);
+            gc.setStroke(GOLD_TEXT);
+            gc.setLineWidth(1);
+            gc.strokeRoundRect(centerX - width / 2, centerY - height / 2, width, height, 8, 8);
+        }
+
+        gc.setFont(menuFont);
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setFill(selected ? GOLD_TEXT : MESSAGE_FADED);
+        gc.fillText(label, centerX, centerY);
+    }
 
     /** Haritayı, varlıkları, bilgi şeridini ve gerekiyorsa ölüm ekranını çizer. */
     public void render(GraphicsContext gc, Game game) {
@@ -288,7 +366,7 @@ public class GameRenderer {
                 {"E", "merdivende bir alt kata in"},
                 {"F", "büyücünün yaninda tezgahi ac"},
                 {"F5 / F9", "kaydet / yukle"},
-                {"R / G", "yeni kat / zindan ureticisini degistir"},
+                {"- / + / M", "ses azalt / artir / sustur"},
                 {"Enter", "olunce yeniden basla"},
                 {"ESC", "devam et"},
         };
