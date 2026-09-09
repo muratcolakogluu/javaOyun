@@ -1,8 +1,10 @@
 package com.cryptdelver.ui;
 
 import com.cryptdelver.game.Game;
+import com.cryptdelver.game.Settings;
 import com.cryptdelver.persistence.SaveData;
 import com.cryptdelver.persistence.SaveFile;
+import com.cryptdelver.persistence.SettingsFile;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -46,6 +48,7 @@ public class GameScreen {
     private final Set<KeyCode> pressedKeys = EnumSet.noneOf(KeyCode.class);
     private final Deque<KeyCode> heldDirections = new ArrayDeque<>();
     private final SaveFile saveFile = new SaveFile();
+    private final SettingsFile settingsFile = new SettingsFile();
 
     private AnimationTimer loop;
     private long lastFrameNanos;
@@ -79,9 +82,13 @@ public class GameScreen {
         scene.setOnKeyReleased(this::onKeyReleased);
     }
 
-    /** Ses çalıcıyı oyuna takar; pencere açıldığında çağrılıyor. */
+    /**
+     * Kayıtlı ayarları yükleyip ses çalıcıyı takar; pencere açıldığında
+     * çağrılıyor.
+     */
     public void enableSound() {
-        game.setSoundListener(new SoundPlayer());
+        settingsFile.load(game.getSettings());
+        game.setSoundListener(new SoundPlayer(game.getSettings()));
     }
 
     /** Oyun döngüsünü başlatır. */
@@ -149,14 +156,36 @@ public class GameScreen {
             heldDirections.addLast(code);
         }
 
-        // Duraklatmayı açıp kapatmak, kaydetmek ve yüklemek her zaman serbest;
-        // oynanışa dokunan komutlar duraklatmada geçersiz.
+        // Duraklatmayı açıp kapatmak, ayarlar, kaydetmek ve yüklemek her zaman
+        // serbest; oynanışa dokunan komutlar duraklatmada geçersiz.
         switch (code) {
             case ESCAPE -> game.togglePause();
             case F5 -> saveGame();
             case F9 -> loadGame();
+            case MINUS, SUBTRACT -> changeVolume(-Settings.VOLUME_STEP);
+            case PLUS, ADD, EQUALS -> changeVolume(Settings.VOLUME_STEP);
+            case M -> toggleMute();
             default -> handlePlayCommand(code, event);
         }
+    }
+
+    /**
+     * Ses seviyesini değiştirir ve tercihi diske yazar.
+     *
+     * <p>Her değişiklikte kaydediyoruz: dosya iki satır, ama oyuncunun ayarı
+     * bir sonraki açılışta yerinde duruyor. "Ayarları kaydet" diye ayrı bir
+     * adım istememek daha doğru.</p>
+     */
+    private void changeVolume(double delta) {
+        game.getSettings().adjustVolume(delta);
+        settingsFile.save(game.getSettings());
+        game.getMessageLog().add("Ses: %" + game.getSettings().getVolumePercent());
+    }
+
+    private void toggleMute() {
+        game.getSettings().toggleMuted();
+        settingsFile.save(game.getSettings());
+        game.getMessageLog().add(game.getSettings().isMuted() ? "Ses kapatıldı." : "Ses açıldı.");
     }
 
     /** Yalnızca oyun akarken işleyen tek seferlik komutlar. */

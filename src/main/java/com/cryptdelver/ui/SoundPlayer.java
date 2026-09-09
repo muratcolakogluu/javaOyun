@@ -1,5 +1,6 @@
 package com.cryptdelver.ui;
 
+import com.cryptdelver.game.Settings;
 import com.cryptdelver.game.SoundEffect;
 import com.cryptdelver.game.SoundListener;
 import java.net.URL;
@@ -21,12 +22,16 @@ public class SoundPlayer implements SoundListener {
 
     private static final String SOUND_PATH = "/assets/sound/";
 
-    /** Efektler arka planı bastırmasın diye kısık çalıyor. */
-    private static final double VOLUME = 0.35;
-
     private final Map<SoundEffect, AudioClip> clips = new EnumMap<>(SoundEffect.class);
+    private final Settings settings;
 
-    public SoundPlayer() {
+    /**
+     * @param settings ses seviyesi buradan okunuyor; oyuncu ayarlar ekranından
+     *                 değiştirdiğinde bir sonraki efekt yeni seviyeyle çalıyor
+     */
+    public SoundPlayer(Settings settings) {
+        this.settings = settings;
+
         for (SoundEffect effect : SoundEffect.values()) {
             AudioClip clip = load(effect);
             if (clip != null) {
@@ -38,8 +43,13 @@ public class SoundPlayer implements SoundListener {
     @Override
     public void play(SoundEffect effect) {
         AudioClip clip = clips.get(effect);
-        if (clip != null) {
-            clip.play();
+        if (clip == null) {
+            return;
+        }
+
+        double volume = settings.getEffectiveVolume();
+        if (volume > 0) {
+            clip.play(volume);
         }
     }
 
@@ -50,9 +60,7 @@ public class SoundPlayer implements SoundListener {
                 return null;
             }
 
-            AudioClip clip = new AudioClip(url.toExternalForm());
-            clip.setVolume(VOLUME);
-            return clip;
+            return new AudioClip(url.toExternalForm());
         } catch (RuntimeException e) {
             System.err.println("Ses yüklenemedi, sessiz geçiliyor: " + effect);
             return null;

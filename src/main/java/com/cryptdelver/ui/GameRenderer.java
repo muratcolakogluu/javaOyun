@@ -7,6 +7,7 @@ import com.cryptdelver.entity.Player;
 import com.cryptdelver.entity.Weapon;
 import com.cryptdelver.game.Game;
 import com.cryptdelver.game.Inventory;
+import com.cryptdelver.game.Settings;
 import com.cryptdelver.world.Dungeon;
 import com.cryptdelver.world.DungeonGenerator;
 import com.cryptdelver.world.Tile;
@@ -135,7 +136,7 @@ public class GameRenderer {
         drawHud(gc, game, mapWidth, mapHeight);
 
         if (game.isPaused()) {
-            drawPauseScreen(gc, mapWidth, mapHeight);
+            drawPauseScreen(gc, game, mapWidth, mapHeight);
         }
 
         if (game.isOver()) {
@@ -150,7 +151,7 @@ public class GameRenderer {
      * göz önünde duran iki satır yazı yerine, ihtiyaç duyulduğunda açılan
      * düzgün bir liste var.</p>
      */
-    private void drawPauseScreen(GraphicsContext gc, double mapWidth, double mapHeight) {
+    private void drawPauseScreen(GraphicsContext gc, Game game, double mapWidth, double mapHeight) {
         gc.setFill(OVERLAY);
         gc.fillRect(0, 0, mapWidth, mapHeight);
 
@@ -158,8 +159,68 @@ public class GameRenderer {
         gc.setTextBaseline(VPos.CENTER);
         gc.setFont(titleFont);
         gc.setFill(GOLD_TEXT);
-        gc.fillText("DURAKLATILDI", mapWidth / 2, mapHeight / 2 - 130);
+        gc.fillText("DURAKLATILDI", mapWidth / 2, mapHeight / 2 - 175);
 
+        double y = drawSettingsSection(gc, game, mapWidth, mapHeight / 2 - 115);
+        drawKeyList(gc, mapWidth, y + 24);
+    }
+
+    /**
+     * Ayarlar bölümü: ses seviyesi çubuğu ve sessize alma durumu.
+     *
+     * @return listelenen son satırın altındaki y konumu
+     */
+    private double drawSettingsSection(GraphicsContext gc, Game game, double mapWidth, double top) {
+        Settings settings = game.getSettings();
+
+        gc.setFont(hudFont);
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setFill(HUD_ACCENT);
+        gc.fillText("— AYARLAR —", mapWidth / 2, top);
+
+        double rowY = top + 28;
+        gc.setTextAlign(TextAlignment.RIGHT);
+        gc.setFill(MESSAGE_TEXT);
+        gc.fillText("Ses", mapWidth / 2 - 90, rowY);
+
+        drawVolumeBar(gc, settings, mapWidth / 2 - 75, rowY);
+
+        gc.setTextAlign(TextAlignment.LEFT);
+        gc.setFill(settings.isMuted() ? HUD_TEXT : GOLD_TEXT);
+        gc.fillText(settings.isMuted() ? "kapali" : "%" + settings.getVolumePercent(),
+                mapWidth / 2 + 90, rowY);
+
+        rowY += 20;
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setFill(HUD_TEXT);
+        gc.fillText("- / +  ile ayarla,  M  ile sustur", mapWidth / 2, rowY);
+
+        return rowY;
+    }
+
+    /** On kademeli ses çubuğu; sessizdeyken sönük çiziliyor. */
+    private void drawVolumeBar(GraphicsContext gc, Settings settings, double left, double centerY) {
+        int steps = (int) Math.round(1 / Settings.VOLUME_STEP);
+        int filled = (int) Math.round(settings.getVolume() * steps);
+
+        double cellWidth = 14;
+        double height = 12;
+        double y = centerY - height / 2;
+
+        for (int i = 0; i < steps; i++) {
+            double x = left + i * cellWidth;
+
+            if (i < filled) {
+                gc.setFill(settings.isMuted() ? HUD_TEXT : GOLD_TEXT);
+                gc.fillRect(x + 1, y, cellWidth - 3, height);
+            } else {
+                gc.setFill(SLOT_BACKGROUND);
+                gc.fillRect(x + 1, y, cellWidth - 3, height);
+            }
+        }
+    }
+
+    private void drawKeyList(GraphicsContext gc, double mapWidth, double top) {
         String[][] keys = {
                 {"WASD / oklar", "hareket"},
                 {"Bosluk", "vur"},
@@ -173,7 +234,11 @@ public class GameRenderer {
         };
 
         gc.setFont(hudFont);
-        double y = mapHeight / 2 - 70;
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setFill(HUD_ACCENT);
+        gc.fillText("— TUSLAR —", mapWidth / 2, top);
+
+        double y = top + 26;
         for (String[] row : keys) {
             gc.setTextAlign(TextAlignment.RIGHT);
             gc.setFill(HUD_ACCENT);
@@ -182,7 +247,7 @@ public class GameRenderer {
             gc.setTextAlign(TextAlignment.LEFT);
             gc.setFill(MESSAGE_TEXT);
             gc.fillText(row[1], mapWidth / 2 + 15, y);
-            y += 22;
+            y += 21;
         }
     }
 

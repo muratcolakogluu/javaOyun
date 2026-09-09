@@ -93,6 +93,7 @@ public class Game {
     private Position lastPickupTile;
     private boolean paused;
     private SoundListener sounds = SoundListener.SILENT;
+    private final Settings settings = new Settings();
 
     /** Hazır bir harita ile kurar; testler ve sabit kat senaryoları için. */
     public Game(Dungeon dungeon, Player player) {
@@ -235,6 +236,16 @@ public class Game {
      */
     public void setSoundListener(SoundListener listener) {
         this.sounds = listener == null ? SoundListener.SILENT : listener;
+    }
+
+    /**
+     * Oyuncunun tercihleri (ses seviyesi, sessize alma).
+     *
+     * <p>Oyun durumundan ayri yasiyor: yeniden baslamak ayarlari
+     * sifirlamiyor.</p>
+     */
+    public Settings getSettings() {
+        return settings;
     }
 
     /** Oyun duraklatıldı mı. */
