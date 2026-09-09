@@ -31,7 +31,7 @@ class StartMenuTest {
         StartMenu menu = new StartMenu(true);
 
         assertTrue(menu.getOptions().contains(StartMenu.Option.CONTINUE));
-        assertEquals(3, menu.getOptions().size());
+        assertEquals(5, menu.getOptions().size(), "Yeni, devam, ayarlar, yardim, cikis");
     }
 
     @Test
@@ -43,10 +43,61 @@ class StartMenuTest {
         assertEquals(StartMenu.Option.CONTINUE, menu.getSelected());
 
         menu.moveDown();
-        assertEquals(StartMenu.Option.QUIT, menu.getSelected());
+        assertEquals(StartMenu.Option.SETTINGS, menu.getSelected());
 
         menu.moveUp();
         assertEquals(StartMenu.Option.CONTINUE, menu.getSelected());
+    }
+
+    /**
+     * Ana sayfadaki secim, alt sayfada gezinirken kaybolmuyor: ayarlardan
+     * donunce yine "Ayarlar" satirinda duruyorsun.
+     */
+    @Test
+    @DisplayName("Alt sayfada gezinmek ana sayfanin secimini bozmuyor")
+    void panesKeepTheirOwnSelection() {
+        StartMenu menu = new StartMenu(false);
+        menu.moveDown();
+        StartMenu.Option before = menu.getSelected();
+
+        menu.openPane(StartMenu.Pane.SETTINGS);
+        menu.moveDown();
+        menu.moveDown();
+        menu.back();
+
+        assertEquals(StartMenu.Pane.MAIN, menu.getPane());
+        assertEquals(before, menu.getSelected());
+    }
+
+    @Test
+    @DisplayName("Ayarlar sayfasinda satirlar arasinda geziliyor")
+    void settingRowsAreNavigable() {
+        StartMenu menu = new StartMenu(false);
+        menu.openPane(StartMenu.Pane.SETTINGS);
+
+        assertEquals(StartMenu.SettingRow.VOLUME, menu.getSelectedSetting());
+
+        menu.moveDown();
+        assertEquals(StartMenu.SettingRow.MUTE, menu.getSelectedSetting());
+
+        menu.moveUp();
+        menu.moveUp();
+        assertEquals(StartMenu.SettingRow.BACK, menu.getSelectedSetting(), "Basta yukari sona sarmali");
+    }
+
+    /**
+     * ESC ana sayfada pencereyi kapatmiyor: yanlislikla basinca oyundan
+     * atilmak, kazanilabilecek en ucuz sinir bozuklugu olurdu. Cikis listede.
+     */
+    @Test
+    @DisplayName("Ana sayfada geri bir sey yapmiyor")
+    void backOnTheMainPaneIsHarmless() {
+        StartMenu menu = new StartMenu(false);
+
+        menu.back();
+
+        assertEquals(StartMenu.Pane.MAIN, menu.getPane());
+        assertTrue(menu.isOpen(), "Menu acik kalmali");
     }
 
     /** Listenin ucunda takilip kalmak yerine basa sariyor. */

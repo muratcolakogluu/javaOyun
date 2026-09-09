@@ -250,7 +250,10 @@ public class GameScreen {
         switch (code) {
             case UP, W -> menu.moveUp();
             case DOWN, S -> menu.moveDown();
+            case LEFT, A -> adjustSetting(-1);
+            case RIGHT, D -> adjustSetting(1);
             case ENTER, SPACE -> chooseFromMenu();
+            case ESCAPE -> menu.back();
             default -> {
                 // Menüde başka tuşun işi yok.
             }
@@ -258,21 +261,66 @@ public class GameScreen {
     }
 
     private void chooseFromMenu() {
+        if (menu.getPane() != StartMenu.Pane.MAIN) {
+            // Alt sayfalarda Enter yalnızca "Geri" satırında bir şey yapıyor;
+            // değerler sağ/sol ile değişiyor.
+            if (menu.getPane() != StartMenu.Pane.SETTINGS
+                    || menu.getSelectedSetting() == StartMenu.SettingRow.BACK) {
+                menu.back();
+            } else {
+                adjustSetting(1);
+            }
+            return;
+        }
+
         switch (menu.getSelected()) {
-            case NEW_GAME -> menu.close();
+            case NEW_GAME -> startPlaying();
             case CONTINUE -> {
                 loadGame();
-                menu.close();
+                startPlaying();
             }
+            case SETTINGS -> menu.openPane(StartMenu.Pane.SETTINGS);
+            case HELP -> menu.openPane(StartMenu.Pane.HELP);
             case QUIT -> {
                 stop();
                 Platform.exit();
             }
         }
+    }
+
+    private void startPlaying() {
+        menu.close();
 
         // Menüde basılı kalan tuşlar oyuna sarkmasın.
         pressedKeys.clear();
         heldDirections.clear();
+    }
+
+    /**
+     * Ayarlar sayfasında sağ/sol.
+     *
+     * <p>Her değişiklik anında diske yazılıyor. Dosya dört satır; "ayarları
+     * kaydet" diye ayrı bir adım istemek, kazandırdığından çok götürürdü.</p>
+     */
+    private void adjustSetting(int step) {
+        if (menu.getPane() != StartMenu.Pane.SETTINGS || step == 0) {
+            return;
+        }
+
+        Settings settings = game.getSettings();
+        switch (menu.getSelectedSetting()) {
+            case VOLUME -> settings.adjustVolume(step * Settings.VOLUME_STEP);
+            case MUTE -> settings.toggleMuted();
+            case DIFFICULTY -> settings.setDifficulty(step > 0
+                    ? settings.getDifficulty().next()
+                    : settings.getDifficulty().previous());
+            case AUTO_SAVE -> settings.toggleAutoSave();
+            case BACK -> {
+                return;
+            }
+        }
+
+        settingsFile.save(settings);
     }
 
     /**
@@ -307,7 +355,7 @@ public class GameScreen {
         }
 
         switch (code) {
-            case E -> game.descend();
+            case E -> descend();
             case ENTER -> {
                 if (game.isOver()) {
                     game.restart();
@@ -324,6 +372,19 @@ public class GameScreen {
             default -> {
                 // Diğer tuşlar yalnızca basılı tuşlar kümesini ilgilendiriyor.
             }
+        }
+    }
+
+    /**
+     * Bir alt kata iner; ayar açıksa iniş sonrası kendiliğinden kaydeder.
+     *
+     * <p>Kaydetme anı olarak kat inişi seçildi: kat sınırı oyunun doğal
+     * kontrol noktası, hem oyuncunun kafasında hem kayıt biçiminde. Her
+     * saniye kaydetmek diski yorar, ölümde kaydetmek de anlamsız olurdu.</p>
+     */
+    private void descend() {
+        if (game.descend() && game.getSettings().isAutoSave()) {
+            saveGame();
         }
     }
 

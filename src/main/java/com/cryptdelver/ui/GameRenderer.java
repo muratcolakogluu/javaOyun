@@ -105,6 +105,10 @@ public class GameRenderer {
 
     /** Menü perdesi oyun perdesinden daha kapalı: menü ön planda.  */
     private static final Color MENU_BACKDROP = Color.web("#0b0b10", 0.92);
+
+    /** Menü çerçevesinin ve satırlarının genişliği. */
+    private static final double MENU_FRAME_WIDTH = 620;
+    private static final double MENU_ROW_WIDTH = 460;
     private static final Color OVERLAY_TITLE = Color.web("#c9564f");
     private static final Color DURABILITY_FULL = Color.web("#6f9a5a");
 
@@ -153,7 +157,7 @@ public class GameRenderer {
 
         if (menu != null && menu.isOpen()) {
             Dungeon dungeon = game.getDungeon();
-            drawStartMenu(gc, menu, dungeon.getWidth() * (double) TILE_SIZE,
+            drawStartMenu(gc, menu, game, dungeon.getWidth() * (double) TILE_SIZE,
                     dungeon.getHeight() * (double) TILE_SIZE);
         }
     }
@@ -165,7 +169,7 @@ public class GameRenderer {
      * ve başlık geliyor. Boş siyah bir ekran yerine oyunu göstermek, menüyü
      * oyunun bir parçası gibi hissettiriyor.</p>
      */
-    private void drawStartMenu(GraphicsContext gc, StartMenu menu,
+    private void drawStartMenu(GraphicsContext gc, StartMenu menu, Game game,
                                double mapWidth, double mapHeight) {
         gc.setFill(MENU_BACKDROP);
         gc.fillRect(0, 0, mapWidth, mapHeight + HUD_HEIGHT);
@@ -173,34 +177,139 @@ public class GameRenderer {
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setTextBaseline(VPos.CENTER);
 
+        double centerX = mapWidth / 2;
+        drawMenuFrame(gc, centerX, mapHeight);
+
         gc.setFont(titleFont);
         gc.setFill(GOLD_TEXT);
-        gc.fillText("CRYPTDELVER", mapWidth / 2, mapHeight / 2 - 140);
+        gc.fillText("CRYPTDELVER", centerX, 120);
 
         gc.setFont(hudFont);
-        gc.setFill(HUD_TEXT);
-        gc.fillText("Kripte in, ganimeti topla, Kript Lordunu gec.",
-                mapWidth / 2, mapHeight / 2 - 92);
+        gc.setFill(HUD_ACCENT);
+        gc.fillText("Kripte in, ganimeti topla, Kript Lordunu gec.", centerX, 158);
 
-        List<StartMenu.Option> options = menu.getOptions();
-        double y = mapHeight / 2 - 20;
-
-        for (int i = 0; i < options.size(); i++) {
-            boolean selected = i == menu.getIndex();
-            drawMenuRow(gc, options.get(i).getLabel(), mapWidth / 2, y + i * 44, selected);
+        switch (menu.getPane()) {
+            case MAIN -> drawMainPane(gc, menu, centerX);
+            case SETTINGS -> drawSettingsPane(gc, menu, game.getSettings(), centerX);
+            case HELP -> drawHelpPane(gc, mapWidth);
         }
 
         gc.setFont(hudFont);
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setFill(HUD_TEXT);
-        gc.fillText("Yon tuslariyla sec, Enter ile onayla",
-                mapWidth / 2, mapHeight / 2 + options.size() * 44 + 20);
+        gc.fillText(menu.getPane() == StartMenu.Pane.MAIN
+                        ? "Yon tuslariyla sec, Enter ile onayla"
+                        : "Yon tuslariyla degistir, ESC ile geri don",
+                centerX, mapHeight - 60);
+    }
+
+    /** Menüyü çerçeveleyen ince altın hat; ekranı bir "sayfa" gibi topluyor. */
+    private void drawMenuFrame(GraphicsContext gc, double centerX, double mapHeight) {
+        double width = MENU_FRAME_WIDTH;
+        double top = 60;
+        double height = mapHeight - 100;
+
+        gc.setStroke(SLOT_BORDER);
+        gc.setLineWidth(1);
+        gc.strokeRoundRect(centerX - width / 2, top, width, height, 10, 10);
+
+        // Başlığın altındaki ayraç; başlıkla listeyi ayırıyor.
+        gc.setStroke(HUD_ACCENT);
+        gc.strokeLine(centerX - width / 2 + 40, 180, centerX + width / 2 - 40, 180);
+    }
+
+    private void drawMainPane(GraphicsContext gc, StartMenu menu, double centerX) {
+        List<StartMenu.Option> options = menu.getOptions();
+        double y = 240;
+
+        for (int i = 0; i < options.size(); i++) {
+            drawMenuRow(gc, options.get(i).getLabel(), centerX, y + i * 44, i == menu.getIndex());
+        }
+    }
+
+    /**
+     * Ayarlar sayfası: her satırda ad ve o anki değer.
+     *
+     * <p>Değerler {@code < ... >} işaretleri arasında: bir listeden seçildikleri
+     * ve sağ/sol ile değiştikleri, ayrı bir açıklama yazmadan anlaşılıyor.</p>
+     */
+    private void drawSettingsPane(GraphicsContext gc, StartMenu menu, Settings settings,
+                                  double centerX) {
+        List<StartMenu.SettingRow> rows = menu.getSettingRows();
+        double y = 240;
+
+        for (int i = 0; i < rows.size(); i++) {
+            StartMenu.SettingRow row = rows.get(i);
+            boolean selected = i == menu.getIndex();
+            double rowY = y + i * 44;
+
+            if (row == StartMenu.SettingRow.BACK) {
+                drawMenuRow(gc, row.getLabel(), centerX, rowY + 12, selected);
+                continue;
+            }
+
+            drawSettingRow(gc, row.getLabel(), settingValue(row, settings), centerX, rowY,
+                    selected);
+        }
+
+        gc.setFont(hudFont);
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setFill(MESSAGE_FADED);
+        gc.fillText(difficultyHint(settings), centerX, y + rows.size() * 44 + 24);
+    }
+
+    /** Seçili zorluğun ne yaptığını tek satırda anlatır. */
+    private String difficultyHint(Settings settings) {
+        return switch (settings.getDifficulty()) {
+            case KOLAY -> "Kolay: kat daha tenha, dusmanlar derinlikle yavas sertlesir.";
+            case NORMAL -> "Normal: oyunun dengelendigi kademe.";
+            case ZOR -> "Zor: kat kalabalik, dusmanlar derinlikle hizla sertlesir.";
+        };
+    }
+
+    private String settingValue(StartMenu.SettingRow row, Settings settings) {
+        return switch (row) {
+            case VOLUME -> "%" + settings.getVolumePercent();
+            case MUTE -> settings.isMuted() ? "Acik" : "Kapali";
+            case DIFFICULTY -> settings.getDifficulty().getLabel();
+            case AUTO_SAVE -> settings.isAutoSave() ? "Acik" : "Kapali";
+            case BACK -> "";
+        };
+    }
+
+    /** Ayar satırı: solda ad, sağda değer. */
+    private void drawSettingRow(GraphicsContext gc, String label, String value,
+                                double centerX, double centerY, boolean selected) {
+        double width = MENU_ROW_WIDTH;
+        double height = 34;
+
+        if (selected) {
+            gc.setFill(HINT_BACKGROUND);
+            gc.fillRoundRect(centerX - width / 2, centerY - height / 2, width, height, 8, 8);
+            gc.setStroke(GOLD_TEXT);
+            gc.setLineWidth(1);
+            gc.strokeRoundRect(centerX - width / 2, centerY - height / 2, width, height, 8, 8);
+        }
+
+        gc.setFont(menuFont);
+        gc.setTextAlign(TextAlignment.LEFT);
+        gc.setFill(selected ? MESSAGE_TEXT : MESSAGE_FADED);
+        gc.fillText(label, centerX - width / 2 + 22, centerY);
+
+        gc.setTextAlign(TextAlignment.RIGHT);
+        gc.setFill(selected ? GOLD_TEXT : HUD_TEXT);
+        gc.fillText(selected ? "< " + value + " >" : value, centerX + width / 2 - 22, centerY);
+    }
+
+    /** Yardım sayfası: duraklatma perdesindeki tuş listesinin aynısı. */
+    private void drawHelpPane(GraphicsContext gc, double mapWidth) {
+        drawKeyList(gc, mapWidth, 230);
     }
 
     /** Menüde tek satır; seçili olan çerçeveli ve parlak. */
     private void drawMenuRow(GraphicsContext gc, String label, double centerX, double centerY,
                              boolean selected) {
-        double width = Math.max(300, measure(label, titleFont) * 0.55 + 80);
+        double width = MENU_ROW_WIDTH;
         double height = 34;
 
         if (selected) {
@@ -331,6 +440,25 @@ public class GameRenderer {
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setFill(HUD_TEXT);
         gc.fillText("- / +  ile ayarla,  M  ile sustur", mapWidth / 2, rowY);
+
+        // Zorluk ve otomatik kaydetme burada yalnızca gösteriliyor. Oyunun
+        // ortasında ok tuşlarıyla zorluk değiştirmek kolayca yanlışlıkla
+        // yapılırdı; ikisi de menüdeki ayarlar sayfasından değişiyor.
+        rowY += 24;
+        gc.setTextAlign(TextAlignment.RIGHT);
+        gc.setFill(MESSAGE_TEXT);
+        gc.fillText("Zorluk", mapWidth / 2 - 20, rowY);
+        gc.setTextAlign(TextAlignment.LEFT);
+        gc.setFill(GOLD_TEXT);
+        gc.fillText(settings.getDifficulty().getLabel(), mapWidth / 2 + 20, rowY);
+
+        rowY += 20;
+        gc.setTextAlign(TextAlignment.RIGHT);
+        gc.setFill(MESSAGE_TEXT);
+        gc.fillText("Otomatik kaydetme", mapWidth / 2 - 20, rowY);
+        gc.setTextAlign(TextAlignment.LEFT);
+        gc.setFill(settings.isAutoSave() ? GOLD_TEXT : HUD_TEXT);
+        gc.fillText(settings.isAutoSave() ? "acik" : "kapali", mapWidth / 2 + 20, rowY);
 
         return rowY;
     }

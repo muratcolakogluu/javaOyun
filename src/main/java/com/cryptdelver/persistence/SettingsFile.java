@@ -1,5 +1,6 @@
 package com.cryptdelver.persistence;
 
+import com.cryptdelver.game.Difficulty;
 import com.cryptdelver.game.Settings;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -55,6 +56,8 @@ public class SettingsFile {
         List<String> lines = new ArrayList<>();
         lines.add("volume|" + settings.getVolume());
         lines.add("muted|" + settings.isMuted());
+        lines.add("difficulty|" + settings.getDifficulty().name());
+        lines.add("autosave|" + settings.isAutoSave());
 
         try {
             Path parent = path.getParent();
@@ -76,10 +79,28 @@ public class SettingsFile {
         switch (parts[0]) {
             case "volume" -> settings.setVolume(Double.parseDouble(parts[1]));
             case "muted" -> settings.setMuted(Boolean.parseBoolean(parts[1]));
+            case "difficulty" -> settings.setDifficulty(parseDifficulty(parts[1]));
+            case "autosave" -> settings.setAutoSave(Boolean.parseBoolean(parts[1]));
             default -> {
                 // Tanımadığımız satırı yok sayıyoruz; ileride eklenen bir ayar
                 // eski sürümü çalıştırmayı engellemesin.
             }
         }
+    }
+
+    /**
+     * Zorluk etiketini çözer; tanımadığımız değer varsayılana düşüyor.
+     *
+     * <p>Elle düzenlenmiş ya da ileride kaldırılmış bir kademe yüzünden oyunun
+     * açılmaması saçma olurdu — dosyadaki diğer ayarlar okunmaya devam
+     * ediyor.</p>
+     */
+    private Difficulty parseDifficulty(String value) {
+        for (Difficulty candidate : Difficulty.values()) {
+            if (candidate.name().equalsIgnoreCase(value)) {
+                return candidate;
+            }
+        }
+        return Difficulty.NORMAL;
     }
 }

@@ -4,22 +4,29 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Oyun açılınca karşılayan menü.
+ * Oyun açılınca karşılayan menü ve alt sayfaları.
  *
  * <p>Önce pencere açılır açılmaz zindanın ortasına düşüyordun. Hem oyunun bir
  * başlangıcı yoktu hem de kayıtlı oyunu yüklemek için önce ölmeyi göze alıp
- * {@code F9}'a basman gerekiyordu. Menü bu ikisini de çözüyor.</p>
+ * {@code F9}'a basman gerekiyordu.</p>
  *
- * <p>Menü yalnızca <em>seçimi</em> tutuyor; seçilen şeyin ne yaptığını
- * {@link GameScreen} biliyor. Bu ayrım sayesinde burası pencere, kayıt ya da
- * oyun durumu hakkında hiçbir şey bilmiyor ve tek başına sınanabiliyor.</p>
+ * <p>Menü yalnızca <em>nerede olduğunu ve neyin seçili olduğunu</em> tutuyor.
+ * Seçilen şeyin ne yaptığını {@link GameScreen}, nasıl göründüğünü
+ * {@link GameRenderer} biliyor. Bu ayrım sayesinde burası pencere, kayıt ya da
+ * oyun durumu hakkında hiçbir şey bilmiyor ve JavaFX açmadan
+ * sınanabiliyor.</p>
  */
 public class StartMenu {
 
-    /** Menüdeki bir satır. */
+    /** Menünün hangi sayfası açık. */
+    public enum Pane { MAIN, SETTINGS, HELP }
+
+    /** Ana sayfadaki satırlar. */
     public enum Option {
         NEW_GAME("Yeni Oyun"),
         CONTINUE("Kayitli Oyuna Devam Et"),
+        SETTINGS("Ayarlar"),
+        HELP("Nasil Oynanir"),
         QUIT("Cikis");
 
         private final String label;
@@ -33,9 +40,36 @@ public class StartMenu {
         }
     }
 
+    /**
+     * Ayarlar sayfasındaki satırlar.
+     *
+     * <p>{@code BACK} de bir satır: "geri dönmek için ESC" diye ayrı bir kural
+     * ezberletmek yerine listede görünür bir çıkış duruyor. ESC de çalışıyor,
+     * ama bilmen gerekmiyor.</p>
+     */
+    public enum SettingRow {
+        VOLUME("Ses seviyesi"),
+        MUTE("Sessiz"),
+        DIFFICULTY("Zorluk"),
+        AUTO_SAVE("Otomatik kaydetme"),
+        BACK("Geri");
+
+        private final String label;
+
+        SettingRow(String label) {
+            this.label = label;
+        }
+
+        public String getLabel() {
+            return label;
+        }
+    }
+
     private final List<Option> options = new ArrayList<>();
 
-    private int index;
+    private Pane pane = Pane.MAIN;
+    private int mainIndex;
+    private int settingIndex;
     private boolean open = true;
 
     /**
@@ -48,19 +82,34 @@ public class StartMenu {
         if (saveExists) {
             options.add(Option.CONTINUE);
         }
+        options.add(Option.SETTINGS);
+        options.add(Option.HELP);
         options.add(Option.QUIT);
+    }
+
+    public Pane getPane() {
+        return pane;
     }
 
     public List<Option> getOptions() {
         return List.copyOf(options);
     }
 
+    public List<SettingRow> getSettingRows() {
+        return List.of(SettingRow.values());
+    }
+
+    /** Açık sayfadaki seçili satırın sırası; çizim bunu vurguluyor. */
     public int getIndex() {
-        return index;
+        return pane == Pane.SETTINGS ? settingIndex : mainIndex;
     }
 
     public Option getSelected() {
-        return options.get(index);
+        return options.get(mainIndex);
+    }
+
+    public SettingRow getSelectedSetting() {
+        return SettingRow.values()[settingIndex];
     }
 
     /** Menü ekranda mı; kapandıktan sonra oyun akmaya başlıyor. */
@@ -72,12 +121,36 @@ public class StartMenu {
         open = false;
     }
 
+    public void openPane(Pane target) {
+        this.pane = target;
+    }
+
+    /**
+     * Bir adım geri: alt sayfadan ana sayfaya, ana sayfadan hiçbir yere.
+     *
+     * <p>Ana sayfada ESC'nin oyunu kapatmaması bilinçli: yanlışlıkla basınca
+     * pencerenin kapanması, kazanılabilecek en ucuz sinir bozukluğu olurdu.
+     * Çıkış listede duruyor.</p>
+     */
+    public void back() {
+        pane = Pane.MAIN;
+    }
+
     /** Seçim listenin başına ve sonuna sarıyor: son satırdan aşağı ilki. */
     public void moveDown() {
-        index = (index + 1) % options.size();
+        move(1);
     }
 
     public void moveUp() {
-        index = (index - 1 + options.size()) % options.size();
+        move(-1);
+    }
+
+    private void move(int step) {
+        if (pane == Pane.SETTINGS) {
+            int count = SettingRow.values().length;
+            settingIndex = (settingIndex + step + count) % count;
+        } else {
+            mainIndex = (mainIndex + step + options.size()) % options.size();
+        }
     }
 }

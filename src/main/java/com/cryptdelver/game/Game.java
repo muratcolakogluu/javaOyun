@@ -1247,7 +1247,10 @@ public class Game {
      */
     private int enemyCountForDepth() {
         int count = Math.min(MAX_ENEMIES_PER_FLOOR, BASE_ENEMIES_PER_FLOOR + depth - 1);
-        return isBossFloor() ? (int) Math.round(count * BOSS_FLOOR_ENEMY_RATIO) : count;
+        if (isBossFloor()) {
+            count = (int) Math.round(count * BOSS_FLOOR_ENEMY_RATIO);
+        }
+        return settings.getDifficulty().scaleCrowd(count);
     }
 
     /**
@@ -1301,10 +1304,12 @@ public class Game {
      * bir — yani ilerleme hep oyuncunun lehine, ama fark kapanmıyor.</p>
      */
     private void applyDepthBonus(Enemy enemy) {
+        Difficulty difficulty = settings.getDifficulty();
+
         enemy.strengthen(
-                (depth - 1) / DEPTHS_PER_HP_BONUS,
-                (depth - 1) / DEPTHS_PER_ATTACK_BONUS,
-                (depth - 1) / DEPTHS_PER_DEFENSE_BONUS);
+                difficulty.scaleDepthBonus((depth - 1) / DEPTHS_PER_HP_BONUS),
+                difficulty.scaleDepthBonus((depth - 1) / DEPTHS_PER_ATTACK_BONUS),
+                difficulty.scaleDepthBonus((depth - 1) / DEPTHS_PER_DEFENSE_BONUS));
     }
 
     /**
