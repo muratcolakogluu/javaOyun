@@ -12,9 +12,13 @@ import java.util.List;
  *
  * <h2>Dayanıklılık</h2>
  * <p>Kullandıkça aşınıyor: silah isabet ettikçe, zırh darbe yedikçe. Sıfıra
- * inince parça <em>kırılıyor</em> ve bonusunun yarısını veriyor. Tamamen işe
- * yaramaz hâle getirmedim: kırık kılıçla kalan oyuncunun bir sonraki boss
- * katına kadar hiç şansı kalmazdı, oysa büyücü yalnızca orada.</p>
+ * inince parça <em>kırılıyor</em> ve bonusunu tamamen kaybediyor — kırık
+ * kılıç elinde sopa, kırık zırh üstünde paçavra.</p>
+ *
+ * <p>Bu, dayanıklılığı gerçek bir kaynak yapıyor: büyücü beş katta bir
+ * olduğu için "bu kılıçla iki kat daha idare eder miyim" sorusunun bedeli
+ * var. Yumuşak cezalar (yarım, çeyrek bonus) denendi ve fark
+ * edilmiyordu.</p>
  *
  * <h2>Yükseltme</h2>
  * <p>Her kademe bonusa +1 ekliyor ve parçayı yeniliyor. Tavanı
@@ -24,16 +28,6 @@ import java.util.List;
  */
 public abstract class Equipment extends Item {
 
-    /**
-     * Kırık parçanın bonusu bu katsayıyla küçülür.
-     *
-     * <p>Önce yarıydı ve hissedilmiyordu: taban vuruş zaten 4, Paslı Kılıç +2
-     * kırılınca +1 oluyordu — yani 6 yerine 5 vuruş. Oyuncu kırık kılıçla
-     * katlarca dolaşıp farkı anlamadı. Çeyrekte alt kademelerde bonus sıfıra
-     * iniyor (kırık paslı kılıç gerçekten hurda), üst kademelerde ise hâlâ
-     * bir şey kalıyor: Kript Kılıcı +9 kırıkken +2 veriyor.</p>
-     */
-    private static final double BROKEN_RATIO = 0.25;
 
     private final int baseBonus;
     private final int maxDurability;
@@ -67,9 +61,21 @@ public abstract class Equipment extends Item {
         return baseBonus + upgradeLevel;
     }
 
-    /** Dövüşte gerçekten işleyen bonus; kırıksa yarısı. */
+    /**
+     * Dövüşte gerçekten işleyen bonus; <b>kırık parça hiçbir şey vermiyor</b>.
+     *
+     * <p>Önce yarısı, sonra çeyreği veriliyordu. İkisi de yetmedi: taban vuruş
+     * zaten 4 olduğu için kırık kılıçla katlarca dolaşıp farkı anlamamak
+     * mümkündü. Sıfır, kuralı tartışmasız yapıyor — kırık kılıç elinde
+     * sopadan farksız, kırık zırh üstünde paçavra.</p>
+     *
+     * <p>Parça yine de kaybolmuyor: dayanıklılığı sıfır, ama tamir edilince
+     * bütün bonusu geri geliyor. Ayakta kalmanı sağlayan şey oyuncunun taban
+     * vuruşu — yani kırık takımla dövüşebiliyorsun, sadece kötü
+     * dövüşüyorsun.</p>
+     */
     public int getEffectiveBonus() {
-        return isBroken() ? (int) (getBonus() * BROKEN_RATIO) : getBonus();
+        return isBroken() ? 0 : getBonus();
     }
 
     public int getBaseBonus() {

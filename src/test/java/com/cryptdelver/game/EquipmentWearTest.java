@@ -109,8 +109,8 @@ class EquipmentWearTest {
     }
 
     @Test
-    @DisplayName("Dayanikliligi biten parca kirilir ve ceyrek is gorur")
-    void brokenGearGivesAQuarterOfTheBonus() {
+    @DisplayName("Dayanikliligi biten parca kirilir ve bonusunu tumden kaybeder")
+    void brokenGearGivesNothing() {
         Weapon weapon = sword(1);
         player.equip(weapon);
         game.addEnemy(new Skeleton(5, 4));
@@ -120,7 +120,24 @@ class EquipmentWearTest {
         game.playerAttacks();
 
         assertTrue(weapon.isBroken());
-        assertEquals(1, weapon.getAttackBonus(), "Kirikken ceyregi");
+        assertEquals(0, weapon.getAttackBonus(), "Kirikken hicbir sey");
+    }
+
+    /** Zirh da ayni kurala tabi: kirilinca savunma sifirlaniyor. */
+    @Test
+    @DisplayName("Kirik zirh hic korumuyor")
+    void brokenArmourStopsProtecting() {
+        Armor armor = mail(1);
+        player.equip(armor);
+        Skeleton skeleton = new Skeleton(5, 4);
+        game.addEnemy(skeleton);
+
+        assertEquals(2, player.getDefense(), "Saglamken koruyor");
+
+        game.enemyAttacksPlayer(skeleton);
+
+        assertTrue(armor.isBroken());
+        assertEquals(0, player.getDefense(), "Kirik zirh zirhsizlikla ayni");
     }
 
     /**
@@ -131,10 +148,10 @@ class EquipmentWearTest {
      * kanitlamiyor. Ayni dusmana saglam ve kirik kilicla vurup toplam hasari
      * karsilastiriyoruz.</p>
      *
-     * <p>Oran nicin sifira yakin degil: hasarin bir kismi kilictan degil
-     * oyuncunun taban vurusundan (4) geliyor, yani kirik kilicla da yumruktan
-     * iyi vuruyorsun. Zirhsiz kuklada olculen fark ucte bir civari; zirhli
-     * dusmanda acilir, cunku savunma once tabani yiyor.</p>
+     * <p>Oran nicin tam sifir degil: bonus gitse de oyuncunun taban vurusu
+     * (4) duruyor, yani kirik kilicla yumruk atiyorsun. Olculen fark yariya
+     * yakin; zirhli dusmanda daha da acilir, cunku savunma once tabani
+     * yiyor.</p>
      */
     @Test
     @DisplayName("Kirik kilic gozle gorulur daha az hasar veriyor")
@@ -145,7 +162,7 @@ class EquipmentWearTest {
         broken.restoreState(0, 0);
         int damaged = totalDamageOverSwings(broken);
 
-        assertTrue(damaged < healthy * 0.7,
+        assertTrue(damaged < healthy * 0.6,
                 "Kirik kilic belirgin sekilde az vurmali: saglam " + healthy
                         + ", kirik " + damaged);
     }
@@ -168,19 +185,26 @@ class EquipmentWearTest {
     }
 
     /**
-     * Kirik parca sifira dusmuyor: bir sonraki büyücü bes kat asagida
-     * olabilir, o zamana kadar oyuncunun elinde hicbir sey kalmamasi cezayi
-     * oyunu bitiren bir seye cevirirdi.
+     * Kirik takimla dovusmek hala mumkun, cunku oyuncunun taban vurusu
+     * duruyor. Ceza sert ama oyunu bitiren bir sey degil: bir sonraki
+     * buyucuye kadar kotu dovusuyorsun, catisamaz hale gelmiyorsun.
      */
     @Test
-    @DisplayName("Kirik parca tamamen ise yaramaz hale gelmez")
-    void brokenGearStillHelps() {
+    @DisplayName("Kirik kilicla hala vurulabiliyor")
+    void aBrokenWeaponStillLetsYouFight() {
         Weapon weapon = sword(1);
         player.equip(weapon);
-        game.addEnemy(new Skeleton(5, 4));
+        Skeleton skeleton = new Skeleton(5, 4);
+        game.addEnemy(skeleton);
         game.playerAttacks();
 
-        assertTrue(weapon.getAttackBonus() > 0, "Yarim da olsa bir sey vermeli");
+        assertTrue(weapon.isBroken());
+        assertTrue(player.getAttackPower() > 0, "Taban vurus duruyor");
+
+        int before = skeleton.getHp();
+        game.playerAttacks();
+
+        assertTrue(skeleton.getHp() < before, "Kirik kilicla da hasar veriliyor");
     }
 
     @Test

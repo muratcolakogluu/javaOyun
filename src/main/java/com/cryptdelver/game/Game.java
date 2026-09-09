@@ -819,7 +819,7 @@ public class Game {
         }
 
         if (item.wear()) {
-            messageLog.add(label + " kırıldı! Büyücüye uğrayana kadar yarım iş görür.");
+            messageLog.add(label + " kırıldı! Büyücüye uğrayana kadar hiçbir işe yaramaz.");
         }
     }
 

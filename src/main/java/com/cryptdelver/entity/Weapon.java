@@ -25,7 +25,7 @@ public class Weapon extends Equipment {
         super(tileX, tileY, name, attackBonus, spriteName, maxDurability);
     }
 
-    /** Dövüşte işleyen bonus: kırık kılıç yarım iş görür. */
+    /** Dövüşte işleyen bonus: kırık kılıç hiçbir şey vermiyor. */
     public int getAttackBonus() {
         return getEffectiveBonus();
     }

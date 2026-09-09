@@ -25,7 +25,7 @@ public class Armor extends Equipment {
         super(tileX, tileY, name, defenseBonus, spriteName, maxDurability);
     }
 
-    /** Dövüşte işleyen bonus: parçalanmış zırh yarım korur. */
+    /** Dövüşte işleyen bonus: parçalanmış zırh hiç korumuyor. */
     public int getDefenseBonus() {
         return getEffectiveBonus();
     }
