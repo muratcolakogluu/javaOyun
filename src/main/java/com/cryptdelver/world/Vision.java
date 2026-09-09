@@ -28,8 +28,15 @@ package com.cryptdelver.world;
  */
 public class Vision {
 
-    /** Kaç kare öteyi görebiliyorsun. */
-    public static final int RADIUS = 8;
+    /**
+     * Kaç kare öteyi görebiliyorsun.
+     *
+     * <p>Sekizde başladı ama dar geliyordu: 40 karelik bir katta kendi
+     * etrafında küçük bir cepten bakıyor gibisin ve odanın karşı duvarını bile
+     * göremiyorsun. On bir kare, bir odayı bir bakışta görmene yetiyor ama
+     * katın tamamını hâlâ göstermiyor — keşif duruyor, klostrofobi gidiyor.</p>
+     */
+    public static final int RADIUS = 11;
 
     private final int width;
     private final int height;
