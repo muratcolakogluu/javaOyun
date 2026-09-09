@@ -118,6 +118,10 @@ public class GameRenderer {
     private static final Color OVERLAY_TITLE = Color.web("#c9564f");
     private static final Color DURABILITY_FULL = Color.web("#6f9a5a");
 
+    /** Etkin iksir rozetlerinin renkleri. */
+    private static final Color HASTE_BADGE = Color.web("#6fd0a0");
+    private static final Color FURY_BADGE = Color.web("#e8a24a");
+
     /** Dayanıklılık bunun altına düşünce çubuk sarıya döner. */
     private static final double DURABILITY_WARNING = 0.35;
 
@@ -852,6 +856,43 @@ public class GameRenderer {
         gc.setFill(HUD_TEXT);
         gc.fillText(String.format("Sure %.0fs", game.getElapsedSeconds()), STATUS_PANEL_X + 62, line);
         gc.fillText("Dusman " + game.getEnemies().size(), STATUS_PANEL_X + 150, line);
+
+        drawActiveEffects(gc, game.getPlayer(), mapHeight);
+    }
+
+    /**
+     * Etkin iksirlerin kalan süresi, can çubuğunun sağında.
+     *
+     * <p>Süreli etki ekranda görünmezse oyuncu ne zaman bittiğini bilemez ve
+     * hızın kesildiği anı ancak bir düşmana yakalanınca fark eder. İki kısa
+     * rozet yetiyor: harf ve saniye.</p>
+     */
+    private void drawActiveEffects(GraphicsContext gc, Player player, double mapHeight) {
+        double x = STATUS_PANEL_X + 186;
+        double y = mapHeight + 36;
+
+        if (player.isHasted()) {
+            drawEffectBadge(gc, "H", player.getHasteRemaining(), HASTE_BADGE, x, y);
+            x += 30;
+        }
+        if (player.isFurious()) {
+            drawEffectBadge(gc, "O", player.getFuryRemaining(), FURY_BADGE, x, y);
+        }
+    }
+
+    private void drawEffectBadge(GraphicsContext gc, String letter, double remaining,
+                                 Color color, double x, double centerY) {
+        gc.setFill(HP_BAR_BACKGROUND);
+        gc.fillRoundRect(x, centerY - 9, 26, 18, 5, 5);
+        gc.setStroke(color);
+        gc.setLineWidth(1);
+        gc.strokeRoundRect(x, centerY - 9, 26, 18, 5, 5);
+
+        gc.setFont(slotFont);
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setFill(color);
+        gc.fillText(letter + (int) Math.ceil(remaining), x + 13, centerY);
+        gc.setFont(hudFont);
     }
 
     /** Orta panel: çanta slotları ve kuşanılan parçaların durumu. */

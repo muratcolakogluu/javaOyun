@@ -1,14 +1,18 @@
 package com.cryptdelver.game;
 
 import com.cryptdelver.entity.Armor;
+import com.cryptdelver.entity.Bomb;
 import com.cryptdelver.entity.Boss;
 import com.cryptdelver.entity.Combatant;
 import com.cryptdelver.entity.Enchantment;
 import com.cryptdelver.entity.Enemy;
 import com.cryptdelver.entity.Entity;
 import com.cryptdelver.entity.Equipment;
+import com.cryptdelver.entity.EscapePotion;
+import com.cryptdelver.entity.FuryPotion;
 import com.cryptdelver.entity.Goblin;
 import com.cryptdelver.entity.Gold;
+import com.cryptdelver.entity.HastePotion;
 import com.cryptdelver.entity.Imp;
 import com.cryptdelver.entity.Item;
 import com.cryptdelver.entity.Orc;
@@ -110,6 +114,16 @@ public class Game {
     /** Yenilenme büyüsü: kaç saniyede bir kaç can. */
     private static final double REGEN_INTERVAL = 5.0;
     private static final int REGEN_AMOUNT = 1;
+
+    /**
+     * Nadir eşyalar için kat başına kaç zar, hangi olasılıkla.
+     *
+     * <p>İki zar ve her biri %20: kat başına ortalama 0.4 eşya, yirmi katlık
+     * bir koşuda kabaca sekiz tane. Bulmak olay olacak kadar seyrek, ama
+     * "hiç görmedim" diyecek kadar da değil.</p>
+     */
+    private static final int RARE_ITEM_ROLLS = 2;
+    private static final double RARE_ITEM_CHANCE = 0.20;
 
     private static final int POTIONS_PER_FLOOR = 4;
     private static final int GOLD_PILES_PER_FLOOR = 5;
@@ -752,6 +766,58 @@ public class Game {
     }
 
     /**
+     * Oyuncunun çevresindeki düşmanları patlatır; bomba bunu çağırıyor.
+     *
+     * <p>Hasar zırhtan geçmiyor: bu bir vuruş değil patlama. Böylece derin
+     * katlardaki kalın zırhlı düşmanlara karşı da işe yarıyor ve bomba
+     * "saklamaya değer" bir eşya olarak kalıyor.</p>
+     *
+     * <p>Kopya üzerinde geziliyor: patlama öldürdükçe liste değişiyor.</p>
+     */
+    public void detonate(int radius, int damage) {
+        int hit = 0;
+
+        for (Enemy enemy : List.copyOf(enemies)) {
+            if (enemy.tileDistanceTo(player) > radius) {
+                continue;
+            }
+
+            enemy.takeDamage(damage);
+            hit++;
+            if (!enemy.isAlive()) {
+                buryEnemy(enemy);
+            }
+        }
+
+        sounds.play(SoundEffect.KILL);
+        messageLog.add(hit == 0
+                ? "Bomba boşluğa patladı."
+                : "Bomba patladı: " + hit + " düşman vuruldu.");
+    }
+
+    /**
+     * Oyuncuyu merdivenin başına ışınlar; kaçış iksiri bunu çağırıyor.
+     *
+     * <p>Merdivenin bossla tutulu olması engel değil — iksir seni oraya
+     * bırakıyor, gerisi sana kalıyor. "Her durumda güvenli" bir çıkış
+     * olsaydı boss katlarının anlamı kalmazdı.</p>
+     *
+     * @return ışınlandıysa {@code true}; merdiven yoksa eşya harcanmıyor
+     */
+    public boolean teleportToStairs() {
+        if (stairs == null) {
+            messageLog.add("Bu katta merdiven yok.");
+            return false;
+        }
+
+        player.setTile(stairs);
+        lastPickupTile = player.getTile();
+        sounds.play(SoundEffect.STAIRS);
+        messageLog.add("Kaçış iksiri: merdivenin başındasın.");
+        return true;
+    }
+
+    /**
      * Yerini yenisi alan parçayı çantadan çıkarıp ayağının dibine bırakır.
      *
      * <p>Daha iyi bir zırh bulunca eskisi çantada duruyordu ve slotlar birkaç
@@ -1088,6 +1154,10 @@ public class Game {
     private Item createItem(SaveData.ItemData data) {
         return switch (data.kind()) {
             case "POTION" -> new Potion(data.x(), data.y());
+            case "BOMB" -> new Bomb(data.x(), data.y());
+            case "HASTE" -> new HastePotion(data.x(), data.y());
+            case "FURY" -> new FuryPotion(data.x(), data.y());
+            case "ESCAPE" -> new EscapePotion(data.x(), data.y());
             case "GOLD" -> new Gold(data.x(), data.y(), data.value());
             case "WEAPON" -> restoreGear(
                     new Weapon(data.x(), data.y(), data.name(), data.value(), data.spriteName()), data);
@@ -1443,6 +1513,7 @@ public class Game {
         int goldPiles = 0;
         boolean weaponPlaced = false;
         boolean armorPlaced = false;
+        int rareItems = 0;
 
         for (Position spot : spots) {
             if (used.contains(spot)) {
@@ -1463,11 +1534,38 @@ public class Game {
                 addGroundItem(LootTable.armorForTier(tier, spot.x(), spot.y()));
                 armorPlaced = true;
 
+            } else if (rareItems < RARE_ITEM_ROLLS) {
+                // Nadir eşyalar için tek tek zar atılıyor; tutmayan zar kareyi
+                // boş bırakıyor, yani "her katta bir tane" olmuyor.
+                rareItems++;
+                if (random.nextDouble() < RARE_ITEM_CHANCE) {
+                    addGroundItem(rollRareItem(spot));
+                } else {
+                    continue;
+                }
+
             } else {
                 return;
             }
 
             used.add(spot);
         }
+    }
+
+    /**
+     * Nadir eşyalardan birini seçer.
+     *
+     * <p>Dördü de tüketilen ve dördü de farklı bir soruna cevap: bomba
+     * kalabalığa, öfke tek hedefe, hız sıkışmaya, kaçış uzaklığa. Eşit
+     * olasılık veriyorum — birini diğerinden nadir yapmak, oyuncunun hangisini
+     * saklayacağına dair kararını zarla almak olurdu.</p>
+     */
+    private Item rollRareItem(Position spot) {
+        return switch (random.nextInt(4)) {
+            case 0 -> new Bomb(spot.x(), spot.y());
+            case 1 -> new HastePotion(spot.x(), spot.y());
+            case 2 -> new FuryPotion(spot.x(), spot.y());
+            default -> new EscapePotion(spot.x(), spot.y());
+        };
     }
 }

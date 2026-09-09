@@ -26,6 +26,9 @@ public class Player extends Combatant implements Actor {
 
     /** Çeviklik ve Acele büyülerinin çarpanları. */
     private static final double SWIFT_SPEED_SCALE = 1.35;
+
+    /** Hız iksirinin hız çarpanı; büyüden belirgin şekilde güçlü. */
+    private static final double HASTE_SPEED_SCALE = 1.6;
     private static final double HASTE_COOLDOWN_SCALE = 0.65;
 
     /**
@@ -50,6 +53,8 @@ public class Player extends Combatant implements Actor {
     private boolean attackRequested;
     private double attackCooldown;
     private double swingTimer;
+    private double hasteTimer;
+    private double furyTimer;
 
     public Player(int tileX, int tileY) {
         super(tileX, tileY, "Kaşif", STARTING_HP);
@@ -58,7 +63,8 @@ public class Player extends Combatant implements Actor {
     /** Çıplak elle vuruş gücü, üstüne kuşanılan silahın bonusu. */
     @Override
     public int getAttackPower() {
-        return STARTING_ATTACK + (equippedWeapon == null ? 0 : equippedWeapon.getAttackBonus());
+        int power = STARTING_ATTACK + (equippedWeapon == null ? 0 : equippedWeapon.getAttackBonus());
+        return isFurious() ? power + FuryPotion.ATTACK_BONUS : power;
     }
 
     /** Elindeki silah; hiçbiri kuşanılmadıysa {@code null}. */
@@ -178,6 +184,8 @@ public class Player extends Combatant implements Actor {
         equippedArmor = null;
         attackCooldown = 0;
         swingTimer = 0;
+        hasteTimer = 0;
+        furyTimer = 0;
         attackRequested = false;
         setMoveInput(0, 0);
         facingX = 1;
@@ -189,6 +197,8 @@ public class Player extends Combatant implements Actor {
         tickTimers(delta);
         attackCooldown = Math.max(0, attackCooldown - delta);
         swingTimer = Math.max(0, swingTimer - delta);
+        hasteTimer = Math.max(0, hasteTimer - delta);
+        furyTimer = Math.max(0, furyTimer - delta);
 
         if (!isAlive()) {
             return;
@@ -204,6 +214,41 @@ public class Player extends Combatant implements Actor {
         attackRequested = false;
     }
 
+    // ------------------------------------------------------- geçici etkiler
+
+    /**
+     * Hız iksirinin etkisini başlatır.
+     *
+     * <p>Süre <em>yenileniyor</em>, birikmiyor: ikinci iksiri içmek sayacı
+     * baştan kuruyor. Biriktirseydi beş iksiri arka arkaya içip yarım dakika
+     * uçmak mümkün olurdu; iksirin amacı bir anı kurtarmak.</p>
+     */
+    public void applyHaste(double seconds) {
+        hasteTimer = Math.max(hasteTimer, seconds);
+    }
+
+    /** Öfke iksirinin etkisini başlatır; süre yine yenileniyor. */
+    public void applyFury(double seconds) {
+        furyTimer = Math.max(furyTimer, seconds);
+    }
+
+    public boolean isHasted() {
+        return hasteTimer > 0;
+    }
+
+    public boolean isFurious() {
+        return furyTimer > 0;
+    }
+
+    /** Ekranda gösterilen kalan süreler. */
+    public double getHasteRemaining() {
+        return hasteTimer;
+    }
+
+    public double getFuryRemaining() {
+        return furyTimer;
+    }
+
     /**
      * Yürüme hızı; Çeviklik büyüsü varsa artıyor.
      *
@@ -212,7 +257,8 @@ public class Player extends Combatant implements Actor {
      * kuralı bu yüzden bozulmuyor.</p>
      */
     public double getSpeed() {
-        return hasArmorEnchantment(Enchantment.CEVIKLIK) ? SPEED * SWIFT_SPEED_SCALE : SPEED;
+        double speed = hasArmorEnchantment(Enchantment.CEVIKLIK) ? SPEED * SWIFT_SPEED_SCALE : SPEED;
+        return isHasted() ? speed * HASTE_SPEED_SCALE : speed;
     }
 
     /** İki savuruş arası bekleme; Acele büyüsü varsa kısalıyor. */

@@ -19,6 +19,10 @@ adlarla kopyalandı:
   skeleton.png     <- skelet_idle_anim_f0.png
   boss.png         <- big_demon_idle_anim_f0.png
   potion.png       <- flask_red.png
+  bomb_f0..f2      <- bomb_f0..f2 (fitili yanan animasyon)
+  potion_haste.png <- flask_big_green.png
+  potion_fury.png  <- flask_big_yellow.png
+  potion_escape.png<- flask_big_blue.png
   gold.png         <- coin_anim_f0.png
   sword.png        <- weapon_rusty_sword.png
   sword_steel.png  <- weapon_regular_sword.png
