@@ -1,6 +1,7 @@
 package com.cryptdelver.ui;
 
 import com.cryptdelver.entity.Armor;
+import com.cryptdelver.entity.Blacksmith;
 import com.cryptdelver.entity.Enchantment;
 import com.cryptdelver.entity.Enemy;
 import com.cryptdelver.entity.Entity;
@@ -21,6 +22,7 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.effect.ColorAdjust;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
+import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 
 /**
@@ -105,11 +107,19 @@ public class GameRenderer {
     /** Dayanıklılık bunun altına düşünce çubuk sarıya döner. */
     private static final double DURABILITY_WARNING = 0.35;
 
+    /** Demircinin ayağının dibindeki ocak ışığı. */
+    private static final Color FORGE_GLOW = Color.web("#ff8a3d");
+    private static final int FORGE_GLOW_RINGS = 3;
+    private static final long FORGE_PULSE_MILLIS = 1600;
+
     private final SpriteRegistry sprites = new SpriteRegistry();
     private final ColorAdjust hitEffect = new ColorAdjust(0, -0.6, 0.7, 0);
     private final Font hudFont = Font.font("Consolas", 13);
     private final Font slotFont = Font.font("Consolas", 10);
     private final Font titleFont = Font.font("Consolas", 46);
+
+    /** Yazı genişliği ölçmek için tutulan görünmez düğüm; {@link #measure} kullanıyor. */
+    private final Text textMeasure = new Text();
 
     /** Haritayı, varlıkları, bilgi şeridini ve gerekiyorsa ölüm ekranını çizer. */
     public void render(GraphicsContext gc, Game game) {
@@ -140,8 +150,9 @@ public class GameRenderer {
         }
 
         if (game.getBlacksmith() != null) {
+            drawForgeGlow(gc, game.getBlacksmith());
             drawEntity(gc, game.getBlacksmith(), 1.0);
-            drawBlacksmithHint(gc, game);
+            drawBlacksmithSign(gc, game);
         }
 
         for (Enemy enemy : game.getEnemies()) {
@@ -681,27 +692,109 @@ public class GameRenderer {
     }
 
     /**
-     * Demircinin başında "F" ipucu.
+     * Demircinin ayağının dibindeki ocak ışığı.
      *
-     * <p>Yalnızca yanına gidince çıkıyor: haritada sürekli duran bir etiket
-     * gözü yorardı, oysa bilgi tam da o an gerekiyor.</p>
+     * <p>Cüce gövdesi tek başına düşmanlardan ayırt edilmiyordu — haritada
+     * hareket etmeyen bir yaratık gibi duruyordu. Sıcak turuncu bir halka onu
+     * anında "burada bir şeyler oluyor" karesine çeviriyor. Hafifçe nefes
+     * alıyor: sabit bir daire dekor gibi kalırdı, kıpırdayınca ateş oluyor.</p>
+     *
+     * <p>Işık gövdenin <em>altına</em> çiziliyor, üstüne değil. Daha önce
+     * karakterin üstüne bindirilen çizimlerin nasıl durduğunu gördük.</p>
      */
-    private void drawBlacksmithHint(GraphicsContext gc, Game game) {
-        if (!game.isNearBlacksmith() || game.isForgeOpen()) {
-            return;
+    private void drawForgeGlow(GraphicsContext gc, Entity smith) {
+        double centerX = smith.getRenderX() * TILE_SIZE + TILE_SIZE / 2.0;
+        double centerY = smith.getRenderY() * TILE_SIZE + TILE_SIZE * 0.72;
+
+        // Saniyede bir tam nefes; sinüs 0..1 arasına çekiliyor.
+        double phase = (System.currentTimeMillis() % FORGE_PULSE_MILLIS) / (double) FORGE_PULSE_MILLIS;
+        double breath = 0.5 + 0.5 * Math.sin(phase * 2 * Math.PI);
+
+        for (int ring = FORGE_GLOW_RINGS; ring >= 1; ring--) {
+            double radius = TILE_SIZE * 0.34 * ring * (0.94 + 0.06 * breath);
+            double alpha = 0.10 / ring * (0.75 + 0.25 * breath);
+
+            gc.setFill(Color.color(FORGE_GLOW.getRed(), FORGE_GLOW.getGreen(),
+                    FORGE_GLOW.getBlue(), alpha));
+            gc.fillOval(centerX - radius, centerY - radius * 0.55, radius * 2, radius * 1.1);
         }
+    }
 
-        Entity smith = game.getBlacksmith();
+    /**
+     * Demircinin üstündeki isim etiketi ve konuşma balonu.
+     *
+     * <p>Etiket her zaman duruyor: haritada kim olduğunu uzaktan da anlamalısın.
+     * Balon ise yalnızca yanına gidince açılıyor ve içindeki cümleyi demircinin
+     * kendisi seçiyor — takımın kırıksa onu söylüyor, sağlamsa başka bir şey.
+     * Böylece balon hem "bu bir demirci" diyor hem de işe yarıyor.</p>
+     */
+    private void drawBlacksmithSign(GraphicsContext gc, Game game) {
+        Blacksmith smith = game.getBlacksmith();
         double x = smith.getRenderX() * TILE_SIZE + TILE_SIZE / 2.0;
-        double y = smith.getRenderY() * TILE_SIZE - 6;
+        double top = smith.getRenderY() * TILE_SIZE;
 
-        gc.setFont(hudFont);
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setTextBaseline(VPos.CENTER);
+
+        drawNamePlate(gc, smith.getName(), x, top - 6);
+
+        if (game.isNearBlacksmith() && !game.isForgeOpen()) {
+            drawSpeechBubble(gc, smith.greetingFor(game), x, top - 26);
+        }
+    }
+
+    /** Küçük, soluk ad etiketi; balon yokken de kim olduğu belli olsun diye. */
+    private void drawNamePlate(GraphicsContext gc, String name, double centerX, double centerY) {
+        gc.setFont(slotFont);
+        double width = measure(name, slotFont) + 12;
+
         gc.setFill(HINT_BACKGROUND);
-        gc.fillRoundRect(x - 55, y - 11, 110, 22, 6, 6);
-        gc.setFill(GOLD_TEXT);
-        gc.fillText("F: demirci", x, y);
+        gc.fillRoundRect(centerX - width / 2, centerY - 8, width, 16, 5, 5);
+        gc.setFill(HUD_ACCENT);
+        gc.fillText(name, centerX, centerY);
+    }
+
+    /**
+     * Kuyruklu konuşma balonu.
+     *
+     * <p>Genişliği yazıya göre ölçülüyor. Sabit genişlik verseydim kısa
+     * cümlelerde kocaman, uzunlarda dar kalırdı; ölçmek {@link #measure} ile
+     * tek satır.</p>
+     */
+    private void drawSpeechBubble(GraphicsContext gc, String line, double centerX, double bottomY) {
+        gc.setFont(hudFont);
+        String text = line + "   [F]";
+        double width = measure(text, hudFont) + 22;
+        double height = 26;
+        double top = bottomY - height;
+
+        gc.setFill(HINT_BACKGROUND);
+        gc.fillRoundRect(centerX - width / 2, top, width, height, 8, 8);
+        gc.setStroke(GOLD_TEXT);
+        gc.setLineWidth(1);
+        gc.strokeRoundRect(centerX - width / 2, top, width, height, 8, 8);
+
+        // Balonun demirciye bakan sivri ucu.
+        gc.setFill(HINT_BACKGROUND);
+        gc.fillPolygon(
+                new double[] {centerX - 6, centerX + 6, centerX},
+                new double[] {bottomY - 1, bottomY - 1, bottomY + 7}, 3);
+
+        gc.setFill(MESSAGE_TEXT);
+        gc.fillText(text, centerX, top + height / 2);
+    }
+
+    /**
+     * Yazının piksel genişliği.
+     *
+     * <p>{@code GraphicsContext} metin ölçmüyor, o yüzden görünmez bir
+     * {@code Text} düğümü tutuyoruz. Tek örnek yeniden kullanılıyor: her karede
+     * yeni düğüm yaratmak boşuna çöp üretirdi.</p>
+     */
+    private double measure(String value, Font font) {
+        textMeasure.setFont(font);
+        textMeasure.setText(value);
+        return textMeasure.getLayoutBounds().getWidth();
     }
 
     /**

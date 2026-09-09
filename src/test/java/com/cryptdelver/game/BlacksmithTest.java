@@ -12,6 +12,8 @@ import com.cryptdelver.entity.Enchantment;
 import com.cryptdelver.entity.Player;
 import com.cryptdelver.entity.Weapon;
 import com.cryptdelver.world.BspGenerator;
+import com.cryptdelver.world.Dungeon;
+import com.cryptdelver.world.Tile;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
@@ -150,6 +152,71 @@ class BlacksmithTest {
 
             assertNotNull(game.getBlacksmith());
             assertEquals(before, game.getBlacksmith().getTile());
+        }
+    }
+
+    /**
+     * Demircinin agzindan cikan tek satir.
+     *
+     * <p>Balonun icindeki cumleyi demirci seciyor. Sirasi onemli: en acil olan
+     * kazanmali, yoksa kirik kilicla dolasan oyuncuya "demir sicak" der.</p>
+     */
+    @Nested
+    class Chatter {
+
+        private final Player player = new Player(4, 4);
+        private final Game game = newGame(player);
+        private final Blacksmith smith = new Blacksmith(5, 4);
+
+        private Game newGame(Player player) {
+            Dungeon dungeon = new Dungeon(11, 9);
+            dungeon.fill(Tile.FLOOR);
+            return new Game(dungeon, player);
+        }
+
+        @Test
+        @DisplayName("Kirik parca her seyin onune geciyor")
+        void brokenGearComesFirst() {
+            Weapon weapon = new Weapon(0, 0, "Test Kilici", 2, "sword", 10);
+            weapon.restoreState(0, 0);
+            player.equip(weapon);
+
+            assertTrue(smith.greetingFor(game).contains("Kırılmış"));
+        }
+
+        @Test
+        @DisplayName("Yipranmis takim tamire cagiriyor")
+        void wornGearAsksForRepair() {
+            Weapon weapon = new Weapon(0, 0, "Test Kilici", 2, "sword", 10);
+            weapon.restoreState(3, 0);
+            player.equip(weapon);
+
+            assertTrue(smith.greetingFor(game).contains("Tamir"));
+        }
+
+        @Test
+        @DisplayName("Cirilciplak oyuncuya baska sey soyluyor")
+        void barehandedPlayerGetsItsOwnLine() {
+            assertTrue(smith.greetingFor(game).contains("Elin boş"));
+        }
+
+        @Test
+        @DisplayName("Saglam ama yukseltilebilir takimda altindan bahsediyor")
+        void healthyGearGetsAnUpgradePitch() {
+            Weapon weapon = new Weapon(0, 0, "Test Kilici", 2, "sword", 10);
+            player.equip(weapon);
+
+            assertTrue(smith.greetingFor(game).contains("Altın"));
+        }
+
+        @Test
+        @DisplayName("Yapacak bir sey kalmayinca selam veriyor")
+        void nothingToDoFallsBackToAGreeting() {
+            Weapon weapon = new Weapon(0, 0, "Test Kilici",
+                    LootTable.weaponBonusForTier(LootTable.MAX_TIER), "sword", 10);
+            player.equip(weapon);
+
+            assertTrue(smith.greetingFor(game).contains("Demir sıcak"));
         }
     }
 
