@@ -13,6 +13,7 @@ import com.cryptdelver.game.FloorTheme;
 import com.cryptdelver.game.Forge;
 import com.cryptdelver.game.Game;
 import com.cryptdelver.game.Inventory;
+import com.cryptdelver.game.Records;
 import com.cryptdelver.game.Settings;
 import com.cryptdelver.world.Dungeon;
 import com.cryptdelver.world.DungeonGenerator;
@@ -183,7 +184,7 @@ public class GameRenderer {
      *
      * @param menu başlangıç menüsü; {@code null} verilebilir (menüsüz çizim)
      */
-    public void render(GraphicsContext gc, Game game, StartMenu menu) {
+    public void render(GraphicsContext gc, Game game, StartMenu menu, Records records) {
         // Tıklanabilir bölgeler her karede sıfırdan kuruluyor: ekranda ne
         // varsa tıklanabilir olan da odur.
         clicks.clear();
@@ -192,7 +193,7 @@ public class GameRenderer {
 
         if (menu != null && menu.isOpen()) {
             Dungeon dungeon = game.getDungeon();
-            drawStartMenu(gc, menu, game, dungeon.getWidth() * (double) TILE_SIZE,
+            drawStartMenu(gc, menu, game, records, dungeon.getWidth() * (double) TILE_SIZE,
                     dungeon.getHeight() * (double) TILE_SIZE);
         }
     }
@@ -209,7 +210,7 @@ public class GameRenderer {
      * ve başlık geliyor. Boş siyah bir ekran yerine oyunu göstermek, menüyü
      * oyunun bir parçası gibi hissettiriyor.</p>
      */
-    private void drawStartMenu(GraphicsContext gc, StartMenu menu, Game game,
+    private void drawStartMenu(GraphicsContext gc, StartMenu menu, Game game, Records records,
                                double mapWidth, double mapHeight) {
         gc.setFill(MENU_BACKDROP);
         gc.fillRect(0, 0, mapWidth, mapHeight + HUD_HEIGHT);
@@ -229,7 +230,10 @@ public class GameRenderer {
         gc.fillText("Kripte in, ganimeti topla, Kript Lordunu gec.", centerX, 158);
 
         switch (menu.getPane()) {
-            case MAIN -> drawMainPane(gc, menu, centerX);
+            case MAIN -> {
+                drawMainPane(gc, menu, centerX);
+                drawRecords(gc, records, centerX, mapHeight);
+            }
             case SETTINGS -> drawSettingsPane(gc, menu, game.getSettings(), centerX);
             case HELP -> drawHelpPane(gc, mapWidth);
         }
@@ -241,6 +245,41 @@ public class GameRenderer {
                         ? "Yon tuslariyla sec, Enter ile onayla"
                         : "Yon tuslariyla degistir, ESC ile geri don",
                 centerX, mapHeight - 60);
+    }
+
+    /**
+     * Menünün altındaki rekor satırı.
+     *
+     * <p>Ölünce her şey siliniyordu ve geriye hiçbir kayıt kalmıyordu.
+     * Kaybedilen bir koşunun da bir anlamı olsun diye: "15'i geçebildim" diye
+     * bir hedef ancak önceki denemeyi hatırlarsan doğuyor.</p>
+     *
+     * <p>Hiç koşu yoksa hiçbir şey yazılmıyor — sıfırlarla dolu bir satır
+     * yeni oyuncuya bir şey söylemez, yalnızca ekranı doldururdu.</p>
+     */
+    private void drawRecords(GraphicsContext gc, Records records, double centerX,
+                             double mapHeight) {
+        if (records == null || !records.hasAnyRun()) {
+            return;
+        }
+
+        double y = mapHeight - 110;
+
+        gc.setFont(hudFont);
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setFill(HUD_ACCENT);
+        gc.fillText("— GECMIS —", centerX, y);
+
+        gc.setFill(MESSAGE_TEXT);
+        gc.fillText("En derin kat " + records.getDeepestFloor() + "/" + FloorTheme.MAX_DEPTH
+                        + "   ·   En cok altin " + records.getMostGold(),
+                centerX, y + 22);
+
+        gc.setFill(records.getWins() > 0 ? GOLD_TEXT : MESSAGE_FADED);
+        gc.fillText(records.getWins() > 0
+                        ? records.getRuns() + " kosu, " + records.getWins() + " kez kurtuldun"
+                        : records.getRuns() + " kosu, henuz kurtulamadin",
+                centerX, y + 42);
     }
 
     /** Menüyü çerçeveleyen ince altın hat; ekranı bir "sayfa" gibi topluyor. */

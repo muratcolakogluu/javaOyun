@@ -2,7 +2,9 @@ package com.cryptdelver.ui;
 
 import com.cryptdelver.entity.Enchantment;
 import com.cryptdelver.game.Game;
+import com.cryptdelver.game.Records;
 import com.cryptdelver.game.Settings;
+import com.cryptdelver.persistence.RecordsFile;
 import com.cryptdelver.persistence.SaveData;
 import com.cryptdelver.persistence.SaveFile;
 import com.cryptdelver.persistence.SettingsFile;
@@ -67,9 +69,12 @@ public class GameScreen {
     private final SaveFile saveFile = new SaveFile();
     private final SettingsFile settingsFile = new SettingsFile();
     private final StartMenu menu;
+    private final Records records = new Records();
+    private final RecordsFile recordsFile = new RecordsFile();
 
     private AnimationTimer loop;
     private long lastFrameNanos;
+    private boolean runRecorded;
 
     public GameScreen(Game game) {
         this.game = game;
@@ -94,6 +99,7 @@ public class GameScreen {
 
         // "Devam et" satırı yalnızca gerçekten kayıt varsa görünsün.
         this.menu = new StartMenu(saveFile.exists());
+        recordsFile.load(records);
     }
 
     /**
@@ -274,6 +280,7 @@ public class GameScreen {
                 if (!menu.isOpen()) {
                     applyInput();
                     game.update(delta);
+                    noteFinishedRun();
                 }
                 render();
             }
@@ -287,9 +294,30 @@ public class GameScreen {
         }
     }
 
+    /**
+     * Koşu yeni bittiyse rekorlara işler.
+     *
+     * <p>Bitişi oyun bildirmiyor, ekran <em>fark ediyor</em>: {@code isOver} ya
+     * da {@code isWon} ilk kez doğru olduğunda bir kez sayılıyor. Bayrak
+     * olmasaydı her karede yeniden kaydedilirdi — koşu sayısı saniyede altmış
+     * artardı.</p>
+     *
+     * <p>Rekorları oyunun kendisine koymadım: {@code Game} bir koşu, rekorlar
+     * ise koşular <em>arası</em> bir şey. Oyun onları bilmek zorunda değil.</p>
+     */
+    private void noteFinishedRun() {
+        if (runRecorded || (!game.isOver() && !game.isWon())) {
+            return;
+        }
+
+        runRecorded = true;
+        records.recordRun(game.getDepth(), game.getGold(), game.isWon());
+        recordsFile.save(records);
+    }
+
     /** Ekranı oyunun güncel durumuna göre çizer. */
     public void render() {
-        renderer.render(canvas.getGraphicsContext2D(), game, menu);
+        renderer.render(canvas.getGraphicsContext2D(), game, menu, records);
     }
 
     /** Basılı yön tuşunu oyuncunun yönüne, boşluğu saldırı isteğine çevirir. */
@@ -480,6 +508,7 @@ public class GameScreen {
                 // perde de aynı yerde aynı şeyi yazıyor.
                 if (game.isOver() || game.isWon()) {
                     game.restart();
+                    runRecorded = false;
                 }
             }
             // Shift basılıysa eşya kullanılmaz, yere bırakılır.
