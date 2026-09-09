@@ -9,6 +9,7 @@ import com.cryptdelver.entity.Item;
 import com.cryptdelver.entity.Player;
 import com.cryptdelver.entity.Weapon;
 import com.cryptdelver.entity.Wizard;
+import com.cryptdelver.game.FloorTheme;
 import com.cryptdelver.game.Forge;
 import com.cryptdelver.game.Game;
 import com.cryptdelver.game.Inventory;
@@ -341,6 +342,7 @@ public class GameRenderer {
         gc.fillRect(0, 0, mapWidth, mapHeight + HUD_HEIGHT);
 
         drawDungeon(gc, dungeon, game.isStairsLocked());
+        drawThemeWash(gc, game.getTheme(), mapWidth, mapHeight);
 
         for (Item item : game.getGroundItems()) {
             drawEntity(gc, item, GROUND_ITEM_SCALE);
@@ -383,6 +385,10 @@ public class GameRenderer {
 
         if (game.isPaused()) {
             drawPauseScreen(gc, game, mapWidth, mapHeight);
+        }
+
+        if (game.isWon()) {
+            drawVictory(gc, game, mapWidth, mapHeight);
         }
 
         if (game.isOver()) {
@@ -755,7 +761,7 @@ public class GameRenderer {
 
         line += 18;
         gc.setFill(HUD_ACCENT);
-        gc.fillText("Kat " + game.getDepth(), STATUS_PANEL_X, line);
+        gc.fillText("Kat " + game.getDepth() + "/" + FloorTheme.MAX_DEPTH, STATUS_PANEL_X, line);
 
         gc.setFill(HUD_TEXT);
         gc.fillText(String.format("Sure %.0fs", game.getElapsedSeconds()), STATUS_PANEL_X + 62, line);
@@ -834,11 +840,13 @@ public class GameRenderer {
         gc.setFill(HUD_TEXT);
         gc.fillText("ESC: durdur, ayarlar ve tuslar", mapWidth - 10, mapHeight + 14);
 
-        DungeonGenerator generator = game.getCurrentGenerator();
-        if (generator != null) {
-            gc.setFill(HUD_ACCENT);
-            gc.fillText(generator.getName(), mapWidth - 10, mapHeight + HUD_HEIGHT - 14);
-        }
+        // Burada eskiden zindan üreticisinin adı yazıyordu. Oyuncu üreticiyi
+        // artık seçemediği için o bilgi ona bir şey söylemiyordu; yerini
+        // bulunduğu bölgenin adı aldı.
+        gc.setFill(HUD_ACCENT);
+        gc.fillText(game.getTheme().getLabel() + " · " + game.getDepth() + "/"
+                        + FloorTheme.MAX_DEPTH,
+                mapWidth - 10, mapHeight + HUD_HEIGHT - 14);
     }
 
     /** Can çubuğu: sayıyı okumadan da kalan canı görebilesin diye. */
@@ -948,7 +956,16 @@ public class GameRenderer {
     /** Merdivenin üstündeyken haritanın altında beliren ipucu. */
     private void drawStairsHint(GraphicsContext gc, Game game, double mapWidth, double mapHeight) {
         boolean locked = game.isStairsLocked();
-        String hint = locked ? "Merdiveni tutan seyi once yen" : "E ile bir alt kata in";
+        String hint;
+        if (locked) {
+            hint = "Merdiveni tutan seyi once yen";
+        } else if (game.isFinalFloor()) {
+            // Yirminci katın merdiveni aşağı değil dışarı çıkıyor.
+            hint = "E ile kriptten cik";
+        } else {
+            hint = "E ile bir alt kata in";
+        }
+
         double boxWidth = locked ? 230 : 190;
         double boxHeight = 26;
         double x = (mapWidth - boxWidth) / 2;
@@ -1234,6 +1251,54 @@ public class GameRenderer {
         gc.fillText(cost, mapWidth / 2 + 300, y);
 
         return y + 30;
+    }
+
+    /**
+     * Bölgenin rengini haritanın üstüne ince bir perde olarak serer.
+     *
+     * <p>Karo çizimlerini boyamak denenebilirdi ama taş neredeyse gri:
+     * doygunluğu artırmak griyi renklendirmiyor, ton kaydırmanın da
+     * kaydıracağı renk yok. Perde ise işe yarıyor.</p>
+     *
+     * <p>Perde <em>varlıklardan önce</em> çiziliyor: oyuncu, düşmanlar ve
+     * eşyalar üstünde kalıyor, yani zemin renk değiştirirken okunaklılık
+     * bozulmuyor.</p>
+     */
+    private void drawThemeWash(GraphicsContext gc, FloorTheme theme,
+                               double mapWidth, double mapHeight) {
+        gc.setFill(Color.web(theme.getTint(), theme.getTintAlpha()));
+        gc.fillRect(0, 0, mapWidth, mapHeight);
+    }
+
+    /**
+     * Zafer perdesi: yirminci katı geçince.
+     *
+     * <p>Ölüm ekranıyla aynı yapıda ama tersi bir renkte — kırmızı yerine
+     * altın. Aynı yapıyı kullanmak bilinçli: oyuncu ekranın nerede ne
+     * yazdığını zaten biliyor, öğrenecek yeni bir şey yok.</p>
+     */
+    private void drawVictory(GraphicsContext gc, Game game, double mapWidth, double mapHeight) {
+        gc.setFill(OVERLAY);
+        gc.fillRect(0, 0, mapWidth, mapHeight);
+
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setTextBaseline(VPos.CENTER);
+
+        gc.setFont(titleFont);
+        gc.setFill(GOLD_TEXT);
+        gc.fillText("KURTULDUN", mapWidth / 2, mapHeight / 2 - 60);
+
+        gc.setFont(menuFont);
+        gc.setFill(MESSAGE_TEXT);
+        gc.fillText("Yirmi kat indin ve geri dondun.", mapWidth / 2, mapHeight / 2 - 10);
+
+        gc.setFont(hudFont);
+        gc.setFill(HUD_ACCENT);
+        gc.fillText(String.format("%d altin  ·  %.0f saniye", game.getGold(),
+                game.getElapsedSeconds()), mapWidth / 2, mapHeight / 2 + 26);
+
+        gc.setFill(HUD_TEXT);
+        gc.fillText("Enter ile yeniden basla", mapWidth / 2, mapHeight / 2 + 58);
     }
 
     private void drawGameOver(GraphicsContext gc, Game game, double mapWidth, double mapHeight) {

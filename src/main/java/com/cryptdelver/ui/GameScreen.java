@@ -357,7 +357,9 @@ public class GameScreen {
         switch (code) {
             case E -> descend();
             case ENTER -> {
-                if (game.isOver()) {
+                // Ölünce de kazanınca da aynı tuş yeniden başlatıyor: iki
+                // perde de aynı yerde aynı şeyi yazıyor.
+                if (game.isOver() || game.isWon()) {
                     game.restart();
                 }
             }

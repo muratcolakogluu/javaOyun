@@ -78,6 +78,17 @@ public class Game {
      */
     private static final int WIZARD_MIN_DISTANCE = 2;
 
+    /** Sıradan bir katta gezgin büyücüye rastlama olasılığı. */
+    private static final double WIZARD_WANDER_CHANCE = 0.05;
+
+    /**
+     * Büyücü zarını katın tohumundan ayırmak için karıştırılan sayı.
+     *
+     * <p>Doğrudan tohumu kullansaydık zar, aynı tohumdan üretilen haritayla
+     * ilişkili çıkardı; karıştırmak ikisini bağımsızlaştırıyor.</p>
+     */
+    private static final long WIZARD_ROLL_SALT = 0x5DEECE66DL;
+
     /** Vampirlik büyüsünün öldürme başına verdiği can. */
     private static final int VAMPIRISM_HEAL = 2;
 
@@ -111,6 +122,7 @@ public class Game {
     private Position lastPickupTile;
     private boolean paused;
     private boolean forgeOpen;
+    private boolean won;
     private SoundListener sounds = SoundListener.SILENT;
     private final Settings settings = new Settings();
 
@@ -225,12 +237,36 @@ public class Game {
             return false;
         }
 
+        // Son katın merdiveni aşağı değil dışarı çıkıyor: zindanın bir sonu
+        // olması, "sonsuza kadar in" hissinden çok daha iyi bir hedef veriyor.
+        if (depth >= FloorTheme.MAX_DEPTH) {
+            won = true;
+            sounds.play(SoundEffect.STAIRS);
+            messageLog.add("Kriptten çıktın. Zindan arkanda kaldı.");
+            return true;
+        }
+
         depth++;
         sounds.play(SoundEffect.STAIRS);
         generateFloor(random.nextLong());
 
-        messageLog.add(depth + ". kata indin.");
+        messageLog.add(depth + ". kata indin (" + getTheme().getLabel() + ").");
         return true;
+    }
+
+    /** Bu katın bölgesi; görüntüsünü ve adını buradan alıyor. */
+    public FloorTheme getTheme() {
+        return FloorTheme.forDepth(depth);
+    }
+
+    /** Oyun kazanıldı mı: son katın bossu geçilip dışarı çıkıldı mı. */
+    public boolean isWon() {
+        return won;
+    }
+
+    /** Son kattayız; merdiven aşağı değil dışarı çıkıyor. */
+    public boolean isFinalFloor() {
+        return depth >= FloorTheme.MAX_DEPTH;
     }
 
     /** O an kullanılan üretici; sabit haritayla kurulduysa {@code null}. */
@@ -298,7 +334,7 @@ public class Game {
      * birlikte bir koşul daha biriktirirdi.</p>
      */
     public boolean isFrozen() {
-        return paused || forgeOpen;
+        return paused || forgeOpen || won;
     }
 
     // -------------------------------------------------------------- büyücü
@@ -1095,6 +1131,7 @@ public class Game {
         inventory.clear();
         gold = 0;
         depth = 1;
+        won = false;
         elapsedSeconds = 0;
         enemies.clear();
         groundItems.clear();
@@ -1137,9 +1174,30 @@ public class Game {
         stairs = dungeon.findFarthestWalkableFrom(spawn);
         dungeon.setTile(stairs.x(), stairs.y(), Tile.STAIRS_DOWN);
 
-        wizard = isBossFloor() ? placeWizard(spawn) : null;
+        wizard = hasWizard(seed) ? placeWizard(spawn) : null;
 
         return spawn;
+    }
+
+    /**
+     * Bu katta büyücü var mı.
+     *
+     * <p>Boss katlarında her zaman var — orası tezgâhın sabit adresi. Sıradan
+     * katlarda ise {@value #WIZARD_WANDER_CHANCE} olasılıkla çıkıyor: beş kat
+     * boyunca kırık kılıçla yürümek bazen fazla uzun bir ceza oluyordu ve
+     * arada bir gezgin büyücüye rastlamak, katı açmaya değer küçük bir
+     * sürpriz.</p>
+     *
+     * <p>Zar katın <em>tohumundan</em> atılıyor, oyunun genel rastgeleliğinden
+     * değil. Sebebi kayıt: kaydı yüklerken kat tohumdan yeniden kuruluyor,
+     * genel rastgelelikten zar atsaydık büyücü kaydettiğinde varken
+     * yüklediğinde yok olabilirdi.</p>
+     */
+    private boolean hasWizard(long seed) {
+        if (isBossFloor()) {
+            return true;
+        }
+        return new Random(seed ^ WIZARD_ROLL_SALT).nextDouble() < WIZARD_WANDER_CHANCE;
     }
 
     /**
