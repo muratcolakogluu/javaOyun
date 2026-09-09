@@ -126,6 +126,9 @@ public class GameRenderer {
 
     private final SpriteRegistry sprites = new SpriteRegistry();
     private final ColorAdjust hitEffect = new ColorAdjust(0, -0.6, 0.7, 0);
+
+    /** Kırık parçanın soluk görünümü: rengi çekilmiş ve kararmış. */
+    private final ColorAdjust brokenEffect = new ColorAdjust(0, -0.85, -0.35, 0);
     private final Font hudFont = Font.font("Consolas", 13);
     private final Font slotFont = Font.font("Consolas", 10);
     private final Font titleFont = Font.font("Consolas", 46);
@@ -409,10 +412,12 @@ public class GameRenderer {
         gc.translate(pivotX, pivotY);
         gc.rotate(angle);
 
-        // Büyülü silah baştan uca parlıyor. Efekt sprite'ın kendisine
-        // uygulanıyor: hale kılıcın siluetini takip ediyor, altına konan bir
-        // dairenin aksine sapta toplanmıyor.
-        if (weapon.isEnchanted()) {
+        // Kırık kılıç haritada da kırık görünüyor: rengi çekiliyor ve
+        // kararıyor. Büyü halesi kırıkken görünmüyor — parlayan bir hurda
+        // yanlış mesaj verirdi.
+        if (weapon.isBroken()) {
+            gc.setEffect(brokenEffect);
+        } else if (weapon.isEnchanted()) {
             gc.setEffect(enchantAura(ENCHANT_AURA_RADIUS));
         }
 
@@ -576,7 +581,14 @@ public class GameRenderer {
         gc.setFont(hudFont);
         gc.setTextAlign(TextAlignment.LEFT);
         gc.setFill(item.isBroken() ? HP_TEXT : SLOT_EQUIPPED);
-        gc.fillText(item.getFullName(), INVENTORY_PANEL_X, centerY);
+
+        // Kırık parça ayrıca yazıyla söyleniyor. Yalnızca kırmızı ad ve boş
+        // çubuk yetmiyordu: oyuncu kırık kılıçla katlarca dolaşıp durumu fark
+        // etmedi. "KIRIK" kelimesi gözden kaçmıyor.
+        String label = item.isBroken()
+                ? item.getFullName() + "  KIRIK"
+                : item.getFullName();
+        gc.fillText(label, INVENTORY_PANEL_X, centerY);
 
         double barX = INVENTORY_PANEL_X + 170;
         double barWidth = 140;

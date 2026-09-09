@@ -109,8 +109,8 @@ class EquipmentWearTest {
     }
 
     @Test
-    @DisplayName("Dayanikliligi biten parca kirilir ve yarim is gorur")
-    void brokenGearGivesHalfBonus() {
+    @DisplayName("Dayanikliligi biten parca kirilir ve ceyrek is gorur")
+    void brokenGearGivesAQuarterOfTheBonus() {
         Weapon weapon = sword(1);
         player.equip(weapon);
         game.addEnemy(new Skeleton(5, 4));
@@ -120,7 +120,51 @@ class EquipmentWearTest {
         game.playerAttacks();
 
         assertTrue(weapon.isBroken());
-        assertEquals(2, weapon.getAttackBonus(), "Kirikken yarisi");
+        assertEquals(1, weapon.getAttackBonus(), "Kirikken ceyregi");
+    }
+
+    /**
+     * Asil soru bonus degeri degil, dovuste ne oldugu.
+     *
+     * <p>Bu sinav olmadan "kirilma var mi" sorusuna bakarak yanit
+     * veremiyorduk: bonusun dusmesi tek basina hasarin dustugunu
+     * kanitlamiyor. Ayni dusmana saglam ve kirik kilicla vurup toplam hasari
+     * karsilastiriyoruz.</p>
+     *
+     * <p>Oran nicin sifira yakin degil: hasarin bir kismi kilictan degil
+     * oyuncunun taban vurusundan (4) geliyor, yani kirik kilicla da yumruktan
+     * iyi vuruyorsun. Zirhsiz kuklada olculen fark ucte bir civari; zirhli
+     * dusmanda acilir, cunku savunma once tabani yiyor.</p>
+     */
+    @Test
+    @DisplayName("Kirik kilic gozle gorulur daha az hasar veriyor")
+    void brokenWeaponsHitSofter() {
+        int healthy = totalDamageOverSwings(sword(500));
+
+        Weapon broken = sword(1);
+        broken.restoreState(0, 0);
+        int damaged = totalDamageOverSwings(broken);
+
+        assertTrue(damaged < healthy * 0.7,
+                "Kirik kilic belirgin sekilde az vurmali: saglam " + healthy
+                        + ", kirik " + damaged);
+    }
+
+    /** Verilen silahla dayanikli bir kuklaya 40 kez vurup toplam hasari olcer. */
+    private int totalDamageOverSwings(Weapon weapon) {
+        Player striker = new Player(4, 4);
+        Game arena = new Game(game.getDungeon(), striker);
+        striker.equip(weapon);
+
+        Skeleton dummy = new Skeleton(5, 4);
+        dummy.strengthen(10_000, 0, 0);
+        arena.addEnemy(dummy);
+
+        int before = dummy.getHp();
+        for (int i = 0; i < 40; i++) {
+            arena.playerAttacks();
+        }
+        return before - dummy.getHp();
     }
 
     /**

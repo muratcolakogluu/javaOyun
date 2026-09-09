@@ -24,8 +24,16 @@ import java.util.List;
  */
 public abstract class Equipment extends Item {
 
-    /** Kırık parçanın bonusu bu katsayıyla küçülür. */
-    private static final double BROKEN_RATIO = 0.5;
+    /**
+     * Kırık parçanın bonusu bu katsayıyla küçülür.
+     *
+     * <p>Önce yarıydı ve hissedilmiyordu: taban vuruş zaten 4, Paslı Kılıç +2
+     * kırılınca +1 oluyordu — yani 6 yerine 5 vuruş. Oyuncu kırık kılıçla
+     * katlarca dolaşıp farkı anlamadı. Çeyrekte alt kademelerde bonus sıfıra
+     * iniyor (kırık paslı kılıç gerçekten hurda), üst kademelerde ise hâlâ
+     * bir şey kalıyor: Kript Kılıcı +9 kırıkken +2 veriyor.</p>
+     */
+    private static final double BROKEN_RATIO = 0.25;
 
     private final int baseBonus;
     private final int maxDurability;
