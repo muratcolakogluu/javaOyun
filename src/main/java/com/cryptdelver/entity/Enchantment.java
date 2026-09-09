@@ -21,7 +21,7 @@ public enum Enchantment {
     /** Sana vuran düşman da hasar alıyor; kalabalığın ortasında işe yarıyor. */
     DIKEN("Diken", "sana vurana 1 hasar", 200),
 
-    /** Parça yarı hızda yıpranıyor; demirciye daha az altın bırakmanın yolu. */
+    /** Parça yarı hızda yıpranıyor; büyücüye daha az altın bırakmanın yolu. */
     SAGLAMLIK("Sağlamlık", "yıpranma yarı hızda", 160);
 
     private final String label;

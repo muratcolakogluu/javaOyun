@@ -7,10 +7,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.cryptdelver.entity.Armor;
-import com.cryptdelver.entity.Blacksmith;
 import com.cryptdelver.entity.Enchantment;
 import com.cryptdelver.entity.Player;
 import com.cryptdelver.entity.Weapon;
+import com.cryptdelver.entity.Wizard;
 import com.cryptdelver.world.BspGenerator;
 import com.cryptdelver.world.Dungeon;
 import com.cryptdelver.world.Tile;
@@ -21,18 +21,18 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Demirci: altinin harcandigi tek yer.
+ * Büyücü: altinin harcandigi tek yer.
  *
- * <p>Iki soru ayri ayri kovalaniyor. <b>Yerlesim</b>: demirci yalnizca boss
+ * <p>Iki soru ayri ayri kovalaniyor. <b>Yerlesim</b>: büyücü yalnizca boss
  * katlarinda ve ulasilabilir bir yerde mi. <b>Tezgah</b>: tamir ve yukseltme
  * altini dogru dusuyor mu, tavan tutuyor mu.</p>
  */
-class BlacksmithTest {
+class WizardTest {
 
     private static final int WIDTH = 40;
     private static final int HEIGHT = 22;
 
-    /** Bos katlarina inip demirciyi bulmak. */
+    /** Bos katlarina inip büyücüyü bulmak. */
     @Nested
     class Placement {
 
@@ -46,35 +46,35 @@ class BlacksmithTest {
         }
 
         @Test
-        @DisplayName("Siradan katlarda demirci yok")
-        void ordinaryFloorsHaveNoBlacksmith() {
+        @DisplayName("Siradan katlarda büyücü yok")
+        void ordinaryFloorsHaveNoWizard() {
             assertFalse(game.isBossFloor());
-            assertNull(game.getBlacksmith());
+            assertNull(game.getWizard());
         }
 
         @Test
-        @DisplayName("Boss katinda demirci var")
-        void bossFloorsHaveABlacksmith() {
+        @DisplayName("Boss katinda büyücü var")
+        void bossFloorsHaveAWizard() {
             for (int i = 0; i < 4; i++) {
                 goDownOneFloor();
             }
 
             assertTrue(game.isBossFloor(), "5. kat boss kati");
-            assertNotNull(game.getBlacksmith(), "Boss katinda demirci olmali");
+            assertNotNull(game.getWizard(), "Boss katinda büyücü olmali");
         }
 
         /**
-         * Demirci merdivenin uzerinde olsaydi bossun dibinde durur, tezgaha
+         * Büyücü merdivenin uzerinde olsaydi bossun dibinde durur, tezgaha
          * ancak dovusun ortasinda gidilebilirdi.
          */
         @Test
-        @DisplayName("Demirci merdivenin ve dogulan yerin uzerinde degil")
-        void blacksmithKeepsItsOwnTile() {
+        @DisplayName("Büyücü merdivenin ve dogulan yerin uzerinde degil")
+        void wizardKeepsItsOwnTile() {
             for (int i = 0; i < 4; i++) {
                 goDownOneFloor();
             }
 
-            Blacksmith smith = game.getBlacksmith();
+            Wizard smith = game.getWizard();
             assertFalse(smith.getTile().equals(game.getStairs()), "Merdiveni kapatmamali");
             assertTrue(game.getDungeon().isWalkable(smith.getTileX(), smith.getTileY()),
                     "Duvarin icinde olmamali");
@@ -83,82 +83,82 @@ class BlacksmithTest {
         /**
          * Asil sinav bu: kus ucusu yakin olmasi yetmiyor, <em>yuruyerek</em>
          * yakin olmali. Onceki hali Manhattan mesafesine bakiyordu ve duvarin
-         * obur yanindaki kareyi "3 kare otede" sanip demirciyi katin ta oteki
+         * obur yanindaki kareyi "3 kare otede" sanip büyücüyü katin ta oteki
          * ucuna koyabiliyordu.
          */
         @Test
-        @DisplayName("Demirci dogulan yere birkac adim uzakta")
-        void blacksmithStandsNextToTheSpawn() {
+        @DisplayName("Büyücü dogulan yere birkac adim uzakta")
+        void wizardStandsNextToTheSpawn() {
             for (int i = 0; i < 4; i++) {
                 goDownOneFloor();
             }
 
-            Blacksmith smith = game.getBlacksmith();
+            Wizard smith = game.getWizard();
             Integer steps = game.getDungeon()
                     .walkableDistancesFrom(player.getTile())
                     .get(smith.getTile());
 
-            assertNotNull(steps, "Demirciye yuruyerek gidilebilmeli");
+            assertNotNull(steps, "Büyücüye yuruyerek gidilebilmeli");
             assertTrue(steps <= 4, "Birkac adimda varilmali, bulundu: " + steps);
             assertTrue(steps >= 2, "Oyuncunun tepesinde belirmemeli");
         }
 
         /**
-         * Demircinin karesinden gecilemedigi icin tek karelik bir koridora
+         * Büyücünün karesinden gecilemedigi icin tek karelik bir koridora
          * denk gelirse merdiveni kapatabilirdi. En yakin kareyi sectigimiz
          * icin risk kucuk degil: dogulan odanin cikisi tam orada olabilir.
          */
         @Test
-        @DisplayName("Demirci merdivenin yolunu kesmiyor")
-        void blacksmithNeverSealsTheFloor() {
+        @DisplayName("Büyücü merdivenin yolunu kesmiyor")
+        void wizardNeverSealsTheFloor() {
             for (int floor = 0; floor < 4; floor++) {
                 goDownOneFloor();
             }
 
             for (int attempt = 0; attempt < 10; attempt++) {
-                Blacksmith smith = game.getBlacksmith();
+                Wizard smith = game.getWizard();
                 assertNotNull(smith);
 
                 assertTrue(game.getDungeon()
                                 .walkableDistancesFrom(player.getTile(), Set.of(smith.getTile()))
                                 .containsKey(game.getStairs()),
-                        "Demirci kapaliyken de merdivene ulasilabilmeli");
+                        "Büyücü kapaliyken de merdivene ulasilabilmeli");
 
                 game.regenerateFloor();
             }
         }
 
         @Test
-        @DisplayName("Demircinin karesinden gecilemez")
-        void blacksmithBlocksItsTile() {
+        @DisplayName("Büyücünün karesinden gecilemez")
+        void wizardBlocksItsTile() {
             for (int i = 0; i < 4; i++) {
                 goDownOneFloor();
             }
 
-            Blacksmith smith = game.getBlacksmith();
+            Wizard smith = game.getWizard();
             assertFalse(game.isTileFree(smith.getTileX(), smith.getTileY(), player));
         }
 
-        /** Ayni tohum ayni kati verdigi icin demirci de ayni yere dusmeli. */
+        /** Ayni tohum ayni kati verdigi icin büyücü de ayni yere dusmeli. */
         @Test
-        @DisplayName("Kayit yuklenince demirci yerinde duruyor")
-        void blacksmithSurvivesSaveAndLoad() {
+        @DisplayName("Kayit yuklenince büyücü yerinde duruyor")
+        void wizardSurvivesSaveAndLoad() {
             for (int i = 0; i < 4; i++) {
                 goDownOneFloor();
             }
-            var before = game.getBlacksmith().getTile();
+            var before = game.getWizard().getTile();
 
             game.applySave(game.captureSave());
 
-            assertNotNull(game.getBlacksmith());
-            assertEquals(before, game.getBlacksmith().getTile());
+            assertNotNull(game.getWizard());
+            assertEquals(before, game.getWizard().getTile());
         }
     }
 
     /**
-     * Demircinin agzindan cikan tek satir.
+     * Büyücünün agzindan cikan tek satir.
      *
-     * <p>Balonun icindeki cumleyi demirci seciyor. Sirasi onemli: en acil olan
+     * <p>Balonun icindeki cumleyi büyücü seciyor. Sirasi onemli: en acil olan
      * kazanmali, yoksa kirik kilicla dolasan oyuncuya "demir sicak" der.</p>
      */
     @Nested
@@ -166,7 +166,7 @@ class BlacksmithTest {
 
         private final Player player = new Player(4, 4);
         private final Game game = newGame(player);
-        private final Blacksmith smith = new Blacksmith(5, 4);
+        private final Wizard smith = new Wizard(5, 4);
 
         private Game newGame(Player player) {
             Dungeon dungeon = new Dungeon(11, 9);
@@ -216,7 +216,7 @@ class BlacksmithTest {
                     LootTable.weaponBonusForTier(LootTable.MAX_TIER), "sword", 10);
             player.equip(weapon);
 
-            assertTrue(smith.greetingFor(game).contains("Demir sıcak"));
+            assertTrue(smith.greetingFor(game).contains("Ocak yanıyor"));
         }
     }
 
@@ -228,9 +228,9 @@ class BlacksmithTest {
         private final Game game = new Game(List.of(new BspGenerator()), WIDTH, HEIGHT, player);
 
         /**
-         * Oyuncuyu demircinin yanina tasiyip tezgahi acar.
+         * Oyuncuyu büyücünün yanina tasiyip tezgahi acar.
          *
-         * <p>Bes kat inmek yerine katin kendi demircisini kullaniyoruz:
+         * <p>Bes kat inmek yerine katin kendi büyücüsini kullaniyoruz:
          * yerlesimi zaten {@link Placement} sinaviyor, burada tezgah lazim.</p>
          */
         private void openForgeAt(int depth) {
@@ -239,7 +239,7 @@ class BlacksmithTest {
                 assertTrue(game.descend());
             }
 
-            Blacksmith smith = game.getBlacksmith();
+            Wizard smith = game.getWizard();
             assertNotNull(smith, "Bu kat boss kati olmali");
             player.setTile(smith.getTileX() + 1, smith.getTileY());
             game.toggleForge();
@@ -254,11 +254,11 @@ class BlacksmithTest {
         }
 
         @Test
-        @DisplayName("Tezgah yalnizca demircinin yaninda acilir")
-        void forgeNeedsTheBlacksmith() {
+        @DisplayName("Tezgah yalnizca büyücünün yaninda acilir")
+        void forgeNeedsTheWizard() {
             game.toggleForge();
 
-            assertFalse(game.isForgeOpen(), "Ortada demirci yokken acilmamali");
+            assertFalse(game.isForgeOpen(), "Ortada büyücü yokken acilmamali");
         }
 
         @Test

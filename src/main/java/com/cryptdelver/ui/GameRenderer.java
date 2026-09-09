@@ -1,7 +1,6 @@
 package com.cryptdelver.ui;
 
 import com.cryptdelver.entity.Armor;
-import com.cryptdelver.entity.Blacksmith;
 import com.cryptdelver.entity.Enchantment;
 import com.cryptdelver.entity.Enemy;
 import com.cryptdelver.entity.Entity;
@@ -9,6 +8,7 @@ import com.cryptdelver.entity.Equipment;
 import com.cryptdelver.entity.Item;
 import com.cryptdelver.entity.Player;
 import com.cryptdelver.entity.Weapon;
+import com.cryptdelver.entity.Wizard;
 import com.cryptdelver.game.Forge;
 import com.cryptdelver.game.Game;
 import com.cryptdelver.game.Inventory;
@@ -20,6 +20,7 @@ import java.util.List;
 import javafx.geometry.VPos;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.effect.ColorAdjust;
+import javafx.scene.effect.DropShadow;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
@@ -107,15 +108,21 @@ public class GameRenderer {
     /** Dayanıklılık bunun altına düşünce çubuk sarıya döner. */
     private static final double DURABILITY_WARNING = 0.35;
 
-    /** Demircinin ayağının dibindeki ocak ışığı. */
+    /** Büyücünün ayağının dibindeki ocak ışığı. */
     private static final Color FORGE_GLOW = Color.web("#ff8a3d");
     private static final int FORGE_GLOW_RINGS = 3;
     private static final long FORGE_PULSE_MILLIS = 1600;
 
     /** Büyülü parçaların çevresindeki parıltı. */
-    private static final Color ENCHANT_GLOW = Color.web("#b06cf0");
-    private static final int ENCHANT_GLOW_RINGS = 3;
+    private static final Color ENCHANT_GLOW = Color.web("#c07cff");
+    private static final int ENCHANT_GLOW_RINGS = 4;
     private static final long ENCHANT_PULSE_MILLIS = 1400;
+
+    /** Silahı saran halenin yayılma yarıçapı, piksel. */
+    private static final double ENCHANT_AURA_RADIUS = 22;
+
+    /** Çantadaki büyülü eşyanın ikonunu saran halenin yarıçapı. */
+    private static final double ENCHANT_SLOT_RADIUS = 12;
 
     private final SpriteRegistry sprites = new SpriteRegistry();
     private final ColorAdjust hitEffect = new ColorAdjust(0, -0.6, 0.7, 0);
@@ -125,6 +132,9 @@ public class GameRenderer {
 
     /** Yazı genişliği ölçmek için tutulan görünmez düğüm; {@link #measure} kullanıyor. */
     private final Text textMeasure = new Text();
+
+    /** Büyülü parçaları saran hale; her karede nefesine göre güncelleniyor. */
+    private final DropShadow enchantAura = new DropShadow(ENCHANT_AURA_RADIUS, ENCHANT_GLOW);
 
     /** Haritayı, varlıkları, bilgi şeridini ve gerekiyorsa ölüm ekranını çizer. */
     public void render(GraphicsContext gc, Game game) {
@@ -154,10 +164,10 @@ public class GameRenderer {
             drawSwing(gc, player);
         }
 
-        if (game.getBlacksmith() != null) {
-            drawForgeGlow(gc, game.getBlacksmith());
-            drawEntity(gc, game.getBlacksmith(), 1.0);
-            drawBlacksmithSign(gc, game);
+        if (game.getWizard() != null) {
+            drawForgeGlow(gc, game.getWizard());
+            drawEntity(gc, game.getWizard(), 1.0);
+            drawWizardSign(gc, game);
         }
 
         for (Enemy enemy : game.getEnemies()) {
@@ -273,7 +283,7 @@ public class GameRenderer {
                 {"1-8", "cantadaki esyayi kullan / kusan"},
                 {"Shift + 1-8", "esyayi yere birak"},
                 {"E", "merdivende bir alt kata in"},
-                {"F", "demircinin yaninda tezgahi ac"},
+                {"F", "büyücünün yaninda tezgahi ac"},
                 {"F5 / F9", "kaydet / yukle"},
                 {"R / G", "yeni kat / zindan ureticisini degistir"},
                 {"Enter", "olunce yeniden basla"},
@@ -395,34 +405,40 @@ public class GameRenderer {
         double pivotY = player.getRenderY() * TILE_SIZE + TILE_SIZE * HAND_DROP
                 + facingY * TILE_SIZE * HAND_REACH;
 
-        // Büyülü silah haritada da parlıyor; parıltı bıçağın arkasında kalsın
-        // diye döndürmeden önce, sabit bir daire olarak çiziliyor.
-        if (weapon.isEnchanted()) {
-            drawEnchantHalo(gc, pivotX, pivotY, size * 0.5);
-        }
-
         gc.save();
         gc.translate(pivotX, pivotY);
         gc.rotate(angle);
+
+        // Büyülü silah baştan uca parlıyor. Efekt sprite'ın kendisine
+        // uygulanıyor: hale kılıcın siluetini takip ediyor, altına konan bir
+        // dairenin aksine sapta toplanmıyor.
+        if (weapon.isEnchanted()) {
+            gc.setEffect(enchantAura(ENCHANT_AURA_RADIUS));
+        }
+
         // Sprite tabana hizalı çizildiği için, merkezi yarım boy yukarı almak
         // sapı tam dönme merkezine oturtuyor.
         sprites.get(weapon.getSpriteName()).draw(gc, 0, -size / 2, size);
+
+        gc.setEffect(null);
         gc.restore();
     }
 
-    /** Büyülü silahın çevresindeki mor hale. */
-    private void drawEnchantHalo(GraphicsContext gc, double centerX, double centerY,
-                                 double radius) {
+    /**
+     * Büyü halesi: çizilen şeklin çevresine yayılan mor ışık.
+     *
+     * <p>{@code DropShadow} gölge için düşünülmüş ama kaydırmayı sıfır bırakıp
+     * rengi açık seçince tam da istediğimiz şeye dönüşüyor: şeklin dış hattını
+     * saran bir parıltı. Tek nesne tutulup her karede nefesine göre
+     * güncelleniyor.</p>
+     */
+    private DropShadow enchantAura(double radius) {
         double breath = enchantBreath();
 
-        for (int ring = ENCHANT_GLOW_RINGS; ring >= 1; ring--) {
-            double r = radius * (0.5 + 0.35 * ring) * (0.88 + 0.12 * breath);
-            double alpha = 0.16 / ring * (0.6 + 0.4 * breath);
-
-            gc.setFill(Color.color(ENCHANT_GLOW.getRed(), ENCHANT_GLOW.getGreen(),
-                    ENCHANT_GLOW.getBlue(), alpha));
-            gc.fillOval(centerX - r, centerY - r, r * 2, r * 2);
-        }
+        enchantAura.setRadius(radius * (0.7 + 0.3 * breath));
+        enchantAura.setColor(Color.color(ENCHANT_GLOW.getRed(), ENCHANT_GLOW.getGreen(),
+                ENCHANT_GLOW.getBlue(), 0.65 + 0.35 * breath));
+        return enchantAura;
     }
 
     /** Büyü parıltısının nefesi: 0 ile 1 arasında gidip geliyor. */
@@ -660,8 +676,12 @@ public class GameRenderer {
             gc.strokeRoundRect(x, top, SLOT_SIZE, SLOT_SIZE, 5, 5);
 
             if (item != null) {
+                if (item.isEnchanted()) {
+                    gc.setEffect(enchantAura(ENCHANT_SLOT_RADIUS));
+                }
                 sprites.get(item.getSpriteName())
                         .draw(gc, x + SLOT_SIZE / 2.0, top + SLOT_SIZE / 2.0, SLOT_SIZE * 0.82);
+                gc.setEffect(null);
             }
 
             gc.setFont(slotFont);
@@ -730,7 +750,7 @@ public class GameRenderer {
     }
 
     /**
-     * Demircinin ayağının dibindeki ocak ışığı.
+     * Büyücünün ayağının dibindeki ocak ışığı.
      *
      * <p>Cüce gövdesi tek başına düşmanlardan ayırt edilmiyordu — haritada
      * hareket etmeyen bir yaratık gibi duruyordu. Sıcak turuncu bir halka onu
@@ -759,15 +779,15 @@ public class GameRenderer {
     }
 
     /**
-     * Demircinin üstündeki isim etiketi ve konuşma balonu.
+     * Büyücünün üstündeki isim etiketi ve konuşma balonu.
      *
      * <p>Etiket her zaman duruyor: haritada kim olduğunu uzaktan da anlamalısın.
-     * Balon ise yalnızca yanına gidince açılıyor ve içindeki cümleyi demircinin
+     * Balon ise yalnızca yanına gidince açılıyor ve içindeki cümleyi büyücünün
      * kendisi seçiyor — takımın kırıksa onu söylüyor, sağlamsa başka bir şey.
-     * Böylece balon hem "bu bir demirci" diyor hem de işe yarıyor.</p>
+     * Böylece balon hem "bu bir büyücü" diyor hem de işe yarıyor.</p>
      */
-    private void drawBlacksmithSign(GraphicsContext gc, Game game) {
-        Blacksmith smith = game.getBlacksmith();
+    private void drawWizardSign(GraphicsContext gc, Game game) {
+        Wizard smith = game.getWizard();
         double x = smith.getRenderX() * TILE_SIZE + TILE_SIZE / 2.0;
         double top = smith.getRenderY() * TILE_SIZE;
 
@@ -776,7 +796,7 @@ public class GameRenderer {
 
         drawNamePlate(gc, smith.getName(), x, top - 6);
 
-        if (game.isNearBlacksmith() && !game.isForgeOpen()) {
+        if (game.isNearWizard() && !game.isForgeOpen()) {
             drawSpeechBubble(gc, smith.greetingFor(game), x, top - 26);
         }
     }
@@ -812,7 +832,7 @@ public class GameRenderer {
         gc.setLineWidth(1);
         gc.strokeRoundRect(centerX - width / 2, top, width, height, 8, 8);
 
-        // Balonun demirciye bakan sivri ucu.
+        // Balonun büyücüye bakan sivri ucu.
         gc.setFill(HINT_BACKGROUND);
         gc.fillPolygon(
                 new double[] {centerX - 6, centerX + 6, centerX},
@@ -859,7 +879,7 @@ public class GameRenderer {
     }
 
     /**
-     * Demirci tezgâhı.
+     * Büyücü tezgâhı.
      *
      * <p>Dört satır, dört rakam: her satırda ne olduğu, ne kadar tuttuğu ve
      * yapılabilir olup olmadığı yazılı. Yapılamayan satırlar soluk ve
@@ -874,7 +894,7 @@ public class GameRenderer {
         gc.setTextBaseline(VPos.CENTER);
         gc.setFont(titleFont);
         gc.setFill(GOLD_TEXT);
-        gc.fillText("DEMIRCI", mapWidth / 2, mapHeight / 2 - 190);
+        gc.fillText("BUYUCU", mapWidth / 2, mapHeight / 2 - 190);
 
         gc.setFont(hudFont);
         gc.setFill(HUD_TEXT);

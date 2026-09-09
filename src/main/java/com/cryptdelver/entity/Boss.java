@@ -23,10 +23,10 @@ import java.util.Random;
 public class Boss extends Enemy {
 
     /**
-     * Boss değerleri, demirci geldikten sonra yeniden ayarlandı.
+     * Boss değerleri, büyücü geldikten sonra yeniden ayarlandı.
      *
      * <p>Artık oyuncunun 5. kata iki farklı hâlde gelmesi mümkün: altınını
-     * harcamadan (8 vuruş, 2 savunma) ya da demircide takımını tavana
+     * harcamadan (8 vuruş, 2 savunma) ya da büyücüde takımını tavana
      * yükselterek (10 vuruş, 4 savunma). Değerler ikincisine göre seçildi —
      * yükseltilmiş takımla dövüş kabaca 4 saniye, yükseltmesiz 7 saniye
      * sürüyor. Yani <b>altını harcamamak artık bir seçim, ihmal değil</b>:
@@ -73,7 +73,7 @@ public class Boss extends Enemy {
     private static final int ENEMY_LIMIT = 16;
 
     /**
-     * Ganimet altını demirciyle birlikte yükseltildi: altının harcanacağı bir
+     * Ganimet altını büyücüyle birlikte yükseltildi: altının harcanacağı bir
      * yer olduğu için bossu geçmek artık doğrudan bir sonraki yükseltmeyi
      * ödüyor.
      */

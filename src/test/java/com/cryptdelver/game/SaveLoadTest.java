@@ -192,7 +192,7 @@ class SaveLoadTest {
     }
 
     /**
-     * Yipranma kaydedilmeseydi kaydedip yuklemek bedava tamir olurdu; demirci
+     * Yipranma kaydedilmeseydi kaydedip yuklemek bedava tamir olurdu; büyücü
      * de anlamsizlasirdi.
      */
     @Test

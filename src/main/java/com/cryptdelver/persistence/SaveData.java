@@ -60,7 +60,7 @@ public record SaveData(
      * @param kind         POTION, GOLD, WEAPON ya da ARMOR
      * @param value        altın miktarı ya da <em>taban</em> vuruş/savunma bonusu
      * @param durability   kalan dayanıklılık
-     * @param upgradeLevel demircide kaç kademe yükseltildiği
+     * @param upgradeLevel büyücüde kaç kademe yükseltildiği
      * @param enchantment  basılı büyünün etiketi; büyü yoksa boş dizge
      */
     public record ItemData(String kind, int x, int y, String name, int value, String spriteName,

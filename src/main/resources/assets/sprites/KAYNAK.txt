@@ -79,7 +79,7 @@ Her karakterin duruş ve yürüyüş animasyonu 4'er kare, 0x72 paketinden:
   goblin_*                            <- goblin_idle / goblin_run
   orc_*                               <- orc_warrior_idle / orc_warrior_run
   boss_*                              <- big_demon_idle / big_demon_run
-  blacksmith_f0..f3                   <- wizzard_m_idle
+  wizard_f0..f3                       <- wizzard_m_idle
 
 Zırh giymiş gövdeler (player_leather_*, player_chain_*, player_plate_*,
 player_crypt_*) scratchpad'deki ArmorSkins aracıyla üretildi: oyuncu
@@ -89,13 +89,13 @@ zamanında ton kaydırmak da denendi ama teni ve saçı da kaydırıp karakteri
 mor bir lekeye çeviriyordu; önceden boyamak hem doğru sonucu veriyor hem
 pikselleri keskin bırakıyor.
 
-Demircinin yürüyüş karesi yok, çünkü yerinden kıpırdamıyor: boss katlarında
+Büyücünün yürüyüş karesi yok, çünkü yerinden kıpırdamıyor: boss katlarında
 sabit duran bir NPC.
 
 Önce cüce gövdesi (dwarf_m) denendi ama haritada kişi gibi durmuyordu: kare
 neredeyse tamamen saç ve sakal, gövde seçilmiyor. Büyücü gövdesi (wizzard_m)
 seçildi — külah, sakal, cübbe; siluet uzaktan bakınca da bir karakter. Koyu
-zeminde kontrastı da yüksek. Adı demirci ama tezgâhta büyü de basıyor, o
+zeminde kontrastı da yüksek. Adı büyücü ama tezgâhta büyü de basıyor, o
 yüzden görüntü işine ters düşmüyor.
 
 SpriteRegistry önce <ad>_f0.png arıyor (animasyon), yoksa <ad>.png, o da

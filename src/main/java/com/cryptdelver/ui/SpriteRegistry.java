@@ -85,7 +85,7 @@ public class SpriteRegistry {
      * için: resim paketi yoksa oyun yine de oynanabilsin diye. Listede olmayan
      * bir ad ilk istendiğinde dosyadan yükleniyor ve sonuç saklanıyor.</p>
      *
-     * <p>Önce liste sabitti ve her yeni ad elle eklenmek zorundaydı; demirci ve
+     * <p>Önce liste sabitti ve her yeni ad elle eklenmek zorundaydı; büyücü ve
      * zırhlı gövdeler eklenince bu unutuldu ve ekranda magenta yer tutucular
      * belirdi. Tembel yükleme bu sınıfı yeni adlardan haberdar olmak zorunda
      * bırakmıyor — dosyayı koymak yetiyor.</p>

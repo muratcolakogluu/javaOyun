@@ -217,6 +217,43 @@ class ArmorTest {
         assertNotEquals(light, heavy, "Iki kademe farkli gorunmeli");
     }
 
+    /**
+     * Eski zirhi cantada tutmanin anlami yoktu: geri donup kotusunu giymek
+     * diye bir sey yok ama slotlar birkac katta doluyordu.
+     */
+    @Test
+    @DisplayName("Daha iyi zirh alinca eskisi yere dusuyor")
+    void betterArmourPushesTheOldOneToTheGround() {
+        Armor weak = LootTable.armorForTier(1, 0, 0);
+        game.getInventory().add(weak);
+        game.useItem(0);
+
+        Armor strong = LootTable.armorForTier(3, player.getTileX(), player.getTileY());
+        game.getInventory().add(strong);
+        strong.onPickup(game);
+
+        assertSame(strong, player.getEquippedArmor(), "Iyisi kusanilmali");
+        assertEquals(1, game.getInventory().size(), "Canta sismemeli");
+        assertTrue(game.getGroundItems().contains(weak), "Eskisi ayaginin dibinde olmali");
+    }
+
+    /** Kotusu kusanilmiyor, dolayisiyla iyisi de yere atilmiyor. */
+    @Test
+    @DisplayName("Daha kotu zirh ustundekini yere attirmiyor")
+    void worseArmourLeavesTheEquippedOneAlone() {
+        Armor strong = LootTable.armorForTier(3, 0, 0);
+        game.getInventory().add(strong);
+        game.useItem(0);
+
+        Armor weak = LootTable.armorForTier(1, player.getTileX(), player.getTileY());
+        game.getInventory().add(weak);
+        weak.onPickup(game);
+
+        assertSame(strong, player.getEquippedArmor(), "Iyisi ustunde kalmali");
+        assertTrue(game.getGroundItems().isEmpty(), "Hicbir sey yere atilmamali");
+        assertEquals(2, game.getInventory().size(), "Kotusu cantada beklemeli");
+    }
+
     /** Tanimadigimiz bir zirh sprite'i govdeyi bozmuyor, taban govde kaliyor. */
     @Test
     @DisplayName("Bilinmeyen zirh sprite'i tabana duser")

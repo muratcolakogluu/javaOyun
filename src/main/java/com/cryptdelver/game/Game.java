@@ -1,7 +1,6 @@
 package com.cryptdelver.game;
 
 import com.cryptdelver.entity.Armor;
-import com.cryptdelver.entity.Blacksmith;
 import com.cryptdelver.entity.Boss;
 import com.cryptdelver.entity.Combatant;
 import com.cryptdelver.entity.Enchantment;
@@ -17,6 +16,7 @@ import com.cryptdelver.entity.Player;
 import com.cryptdelver.entity.Potion;
 import com.cryptdelver.entity.Skeleton;
 import com.cryptdelver.entity.Weapon;
+import com.cryptdelver.entity.Wizard;
 import com.cryptdelver.persistence.SaveData;
 import com.cryptdelver.world.Dungeon;
 import com.cryptdelver.world.DungeonGenerator;
@@ -70,13 +70,13 @@ public class Game {
     private static final double BOSS_FLOOR_ENEMY_RATIO = 0.6;
 
     /**
-     * Demirci doğulan yerden en az bu kadar <em>adım</em> uzağa konur.
+     * Büyücü doğulan yerden en az bu kadar <em>adım</em> uzağa konur.
      *
      * <p>Kuş uçuşu değil yürüme mesafesi: duvarın öbür yanındaki kare yakın
      * görünüp uzak olabiliyordu. İki adım, "indiğin anda görüyorsun ama
      * üstünde belirmiş gibi durmuyor" dengesi.</p>
      */
-    private static final int BLACKSMITH_MIN_DISTANCE = 2;
+    private static final int WIZARD_MIN_DISTANCE = 2;
 
     /** Vampirlik büyüsünün öldürme başına verdiği can. */
     private static final int VAMPIRISM_HEAL = 2;
@@ -107,7 +107,7 @@ public class Game {
     private int depth = 1;
     private Position stairs;
     private Boss boss;
-    private Blacksmith blacksmith;
+    private Wizard wizard;
     private Position lastPickupTile;
     private boolean paused;
     private boolean forgeOpen;
@@ -279,7 +279,7 @@ public class Game {
      * ilerletmeden dönüyor. Oyun bittiyse duraklatmanın anlamı yok.</p>
      */
     public void togglePause() {
-        // Demirci ekranı açıksa ESC önce onu kapatıyor: tek "geri" tuşu.
+        // Büyücü ekranı açıksa ESC önce onu kapatıyor: tek "geri" tuşu.
         if (forgeOpen) {
             forgeOpen = false;
             return;
@@ -293,7 +293,7 @@ public class Game {
     /**
      * Zaman akıyor mu.
      *
-     * <p>Duraklatma ve demirci ekranı aynı şeyi istiyor: dünya dursun. İkisini
+     * <p>Duraklatma ve büyücü ekranı aynı şeyi istiyor: dünya dursun. İkisini
      * tek soruda topladım, yoksa {@link #update(double)} her yeni ekranla
      * birlikte bir koşul daha biriktirirdi.</p>
      */
@@ -301,32 +301,32 @@ public class Game {
         return paused || forgeOpen;
     }
 
-    // -------------------------------------------------------------- demirci
+    // -------------------------------------------------------------- büyücü
 
-    /** Bu kattaki demirci; yoksa {@code null}. */
-    public Blacksmith getBlacksmith() {
-        return blacksmith;
+    /** Bu kattaki büyücü; yoksa {@code null}. */
+    public Wizard getWizard() {
+        return wizard;
     }
 
-    /** Demirci ekranı açık mı. */
+    /** Büyücü ekranı açık mı. */
     public boolean isForgeOpen() {
         return forgeOpen;
     }
 
     /**
-     * Oyuncu demirciyle konuşacak kadar yakın mı.
+     * Oyuncu büyücüyle konuşacak kadar yakın mı.
      *
-     * <p>Komşu kare yetiyor, üstüne basmak gerekmiyor — demirci kendi karesini
+     * <p>Komşu kare yetiyor, üstüne basmak gerekmiyor — büyücü kendi karesini
      * tuttuğu için zaten üstüne basılamaz.</p>
      */
-    public boolean isNearBlacksmith() {
-        return blacksmith != null && blacksmith.tileDistanceTo(player) <= 1;
+    public boolean isNearWizard() {
+        return wizard != null && wizard.tileDistanceTo(player) <= 1;
     }
 
     /**
-     * Demirci ekranını açıp kapatır.
+     * Büyücü ekranını açıp kapatır.
      *
-     * <p>Uzaktan açılmıyor: demirci boss katlarının tek sabit noktası, oraya
+     * <p>Uzaktan açılmıyor: büyücü boss katlarının tek sabit noktası, oraya
      * gitmek işin bir parçası.</p>
      */
     public void toggleForge() {
@@ -339,8 +339,8 @@ public class Game {
             return;
         }
 
-        if (!isNearBlacksmith()) {
-            messageLog.add("Yakında demirci yok. Demirciler boss katlarında.");
+        if (!isNearWizard()) {
+            messageLog.add("Yakında büyücü yok. Büyücüler boss katlarında.");
             return;
         }
 
@@ -414,7 +414,7 @@ public class Game {
         }
 
         item.upgrade();
-        messageLog.add(item.getDisplayName() + " dövüldü (-" + cost + " altın).");
+        messageLog.add(item.getDisplayName() + " yükseltildi (-" + cost + " altın).");
         sounds.play(SoundEffect.EQUIP);
     }
 
@@ -470,7 +470,7 @@ public class Game {
         if (forgeOpen) {
             return true;
         }
-        messageLog.add("Önce demirciye git.");
+        messageLog.add("Önce büyücüye git.");
         return false;
     }
 
@@ -578,8 +578,8 @@ public class Game {
         if (player != ignored && player.occupies(x, y)) {
             return false;
         }
-        // Demirci dövüşmez ama karesini tutar; üstünden geçilmiyor.
-        if (blacksmith != null && blacksmith != ignored && blacksmith.occupies(x, y)) {
+        // Büyücü dövüşmez ama karesini tutar; üstünden geçilmiyor.
+        if (wizard != null && wizard != ignored && wizard.occupies(x, y)) {
             return false;
         }
 
@@ -671,6 +671,28 @@ public class Game {
 
         lastPickupTile = player.getTile();
         return true;
+    }
+
+    /**
+     * Yerini yenisi alan parçayı çantadan çıkarıp ayağının dibine bırakır.
+     *
+     * <p>Daha iyi bir zırh bulunca eskisi çantada duruyordu ve slotlar birkaç
+     * katta doluyordu — oysa geri dönüp kötü zırhı giymek diye bir şey yok.
+     * Yere bırakmak hem çantayı açıyor hem de fikrini değiştirirsen parça hâlâ
+     * orada duruyor.</p>
+     *
+     * <p>Bırakılan kare {@code lastPickupTile} olarak işaretleniyor: yoksa aynı
+     * karede durduğun için parçayı anında geri toplardın.</p>
+     */
+    public void discardToGround(Item item) {
+        if (item == null || !inventory.remove(item)) {
+            return;
+        }
+
+        item.setTile(player.getTile());
+        addGroundItem(item);
+        lastPickupTile = player.getTile();
+        messageLog.add(item.getName() + " yere bırakıldı.");
     }
 
     // ---------------------------------------------------------------- savaş
@@ -797,7 +819,7 @@ public class Game {
         }
 
         if (item.wear()) {
-            messageLog.add(label + " kırıldı! Demirciye uğrayana kadar yarım iş görür.");
+            messageLog.add(label + " kırıldı! Büyücüye uğrayana kadar yarım iş görür.");
         }
     }
 
@@ -1095,47 +1117,47 @@ public class Game {
         stairs = dungeon.findFarthestWalkableFrom(spawn);
         dungeon.setTile(stairs.x(), stairs.y(), Tile.STAIRS_DOWN);
 
-        blacksmith = isBossFloor() ? placeBlacksmith(spawn) : null;
+        wizard = isBossFloor() ? placeWizard(spawn) : null;
 
         return spawn;
     }
 
     /**
-     * Demirciyi doğulan yerin yakınına koyar.
+     * Büyücüyü doğulan yerin yakınına koyar.
      *
-     * <p>Merdivenin yanına koymak cazipti ama orada boss duruyor: demirciyi
+     * <p>Merdivenin yanına koymak cazipti ama orada boss duruyor: büyücüyü
      * dövüşün ortasına yerleştirmiş olurduk. Girişin dibinde olması daha doğru
      * — kata inip önce hazırlanıyor, sonra bossa yürüyorsun.</p>
      *
      * <p>Yerleştirme <em>rastgele değil</em>: doğulan yerden yayılan BFS'in
      * sırasında ilk uygun kare seçiliyor, yani en yakını. Merdiven gibi bu da
      * katın sabit döşemesi — aynı tohum aynı yeri veriyor ve kayıt yüklerken
-     * demirciyi ayrıca saklamaya gerek kalmıyor.</p>
+     * büyücüyü ayrıca saklamaya gerek kalmıyor.</p>
      */
-    private Blacksmith placeBlacksmith(Position spawn) {
+    private Wizard placeWizard(Position spawn) {
         Map<Position, Integer> distances = dungeon.walkableDistancesFrom(spawn);
 
         // BFS sırası yakından uzağa; ilk uyan kare en yakın uygun kare oluyor.
         for (Map.Entry<Position, Integer> candidate : distances.entrySet()) {
             Position spot = candidate.getKey();
 
-            if (candidate.getValue() < BLACKSMITH_MIN_DISTANCE || spot.equals(stairs)) {
+            if (candidate.getValue() < WIZARD_MIN_DISTANCE || spot.equals(stairs)) {
                 continue;
             }
             if (wouldSealTheFloor(spot, spawn)) {
                 continue;
             }
 
-            return new Blacksmith(spot.x(), spot.y());
+            return new Wizard(spot.x(), spot.y());
         }
 
         return null;
     }
 
     /**
-     * Demirci bu kareye konursa merdiven ulaşılmaz kalır mı.
+     * Büyücü bu kareye konursa merdiven ulaşılmaz kalır mı.
      *
-     * <p>Demircinin karesinden geçilemiyor. Tek karelik bir koridora denk
+     * <p>Büyücünün karesinden geçilemiyor. Tek karelik bir koridora denk
      * gelirse katı ikiye bölüp merdiveni kapatabilirdi — üstelik en yakın kareyi
      * seçtiğimiz için tam da doğulan odanın çıkışına oturma ihtimali yüksek.
      * Tahmin yürütmek yerine doğrudan soruyoruz: o kare kapalıyken merdivene
@@ -1165,8 +1187,8 @@ public class Game {
             // Merdivenin üstü boş kalsın; eşya ya da düşmanla kapanmasın.
             used.add(stairs);
         }
-        if (blacksmith != null) {
-            used.add(blacksmith.getTile());
+        if (wizard != null) {
+            used.add(wizard.getTile());
         }
 
         // Boss merdivenin üstünde doğar: geçmek için onu yenmen gerekiyor.

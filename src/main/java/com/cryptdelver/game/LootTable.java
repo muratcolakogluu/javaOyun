@@ -15,7 +15,7 @@ import com.cryptdelver.entity.Weapon;
  * kademesinden silah bırakır. Yani bossu geçmek, sıradan katları soymaktan
  * daha hızlı güçlendiriyor.</p>
  *
- * <p>Bu tablo aynı zamanda <b>yükseltmenin tavanını</b> belirliyor: demircide
+ * <p>Bu tablo aynı zamanda <b>yükseltmenin tavanını</b> belirliyor: büyücüde
  * bir parçayı en fazla, o katta bossun bırakacağı parçanın seviyesine kadar
  * çıkarabiliyorsun. Altınla bossu atlamak yok.</p>
  */

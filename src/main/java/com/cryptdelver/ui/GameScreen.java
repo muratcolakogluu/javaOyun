@@ -173,7 +173,7 @@ public class GameScreen {
     /** Basılı yön tuşunu oyuncunun yönüne, boşluğu saldırı isteğine çevirir. */
     private void applyInput() {
         // Dünya durmuşken basılı tuşları okumuyoruz; yoksa duraklatma ya da
-        // demirci ekranı kapanır kapanmaz birikmiş bir saldırı boşalıyordu.
+        // büyücü ekranı kapanır kapanmaz birikmiş bir saldırı boşalıyordu.
         if (game.isFrozen()) {
             return;
         }
@@ -244,7 +244,7 @@ public class GameScreen {
 
     /** Yalnızca oyun akarken işleyen tek seferlik komutlar. */
     private void handlePlayCommand(KeyCode code, KeyEvent event) {
-        // Demirci ekranı açıkken rakamlar çantayı değil tezgâhı yönetiyor.
+        // Büyücü ekranı açıkken rakamlar çantayı değil tezgâhı yönetiyor.
         if (game.isForgeOpen()) {
             handleForgeCommand(code);
             return;
@@ -307,7 +307,7 @@ public class GameScreen {
     }
 
     /**
-     * Demirci tezgâhının tuşları.
+     * Büyücü tezgâhının tuşları.
      *
      * <p>Çanta ile aynı rakamları kullanıyor ama karışmıyor: tezgâh açıkken
      * çanta komutları hiç çalışmıyor, kapalıyken de tezgâh komutları. Ekranda

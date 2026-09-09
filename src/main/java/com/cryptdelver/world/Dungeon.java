@@ -126,7 +126,7 @@ public class Dungeon {
      *
      * <p>Kuş uçuşu mesafe burada işe yaramıyor: duvarın öbür yanındaki kare
      * iki kare ötede görünür ama oraya varmak koridoru dolaşmayı gerektirebilir.
-     * Demirciyi doğulan yerin <em>yürüme</em> mesafesine göre koyabilmemiz için
+     * Büyücüyü doğulan yerin <em>yürüme</em> mesafesine göre koyabilmemiz için
      * bu ayrım gerekiyordu.</p>
      *
      * <p>Dönen eşleme BFS sırasında: ilk giren en yakın, son giren en uzak

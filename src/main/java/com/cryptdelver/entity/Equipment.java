@@ -14,7 +14,7 @@ import java.util.List;
  * <p>Kullandıkça aşınıyor: silah isabet ettikçe, zırh darbe yedikçe. Sıfıra
  * inince parça <em>kırılıyor</em> ve bonusunun yarısını veriyor. Tamamen işe
  * yaramaz hâle getirmedim: kırık kılıçla kalan oyuncunun bir sonraki boss
- * katına kadar hiç şansı kalmazdı, oysa demirci yalnızca orada.</p>
+ * katına kadar hiç şansı kalmazdı, oysa büyücü yalnızca orada.</p>
  *
  * <h2>Yükseltme</h2>
  * <p>Her kademe bonusa +1 ekliyor ve parçayı yeniliyor. Tavanı
@@ -168,7 +168,7 @@ public abstract class Equipment extends Item {
         return getBonus() < upgradeCeiling(depth);
     }
 
-    /** Çantada ve demircide görünen ad; yükseltilmişse kademesiyle. */
+    /** Çantada ve büyücüde görünen ad; yükseltilmişse kademesiyle. */
     public String getDisplayName() {
         return upgradeLevel > 0 ? getName() + " +" + upgradeLevel : getName();
     }

@@ -124,7 +124,7 @@ class EquipmentWearTest {
     }
 
     /**
-     * Kirik parca sifira dusmuyor: bir sonraki demirci bes kat asagida
+     * Kirik parca sifira dusmuyor: bir sonraki büyücü bes kat asagida
      * olabilir, o zamana kadar oyuncunun elinde hicbir sey kalmamasi cezayi
      * oyunu bitiren bir seye cevirirdi.
      */

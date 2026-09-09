@@ -3,30 +3,30 @@ package com.cryptdelver.entity;
 import com.cryptdelver.game.Game;
 
 /**
- * Boss katlarında duran demirci.
+ * Boss katlarında duran büyücü.
  *
  * <p>Dövüşmez, hareket etmez, ölmez — bu yüzden {@link Combatant} değil düz bir
  * {@link Entity}. Tek işi orada durmak; ne yapabileceğine {@code Game} karar
- * veriyor, yanına gidip {@code F} tuşuna basınca demirci ekranı açılıyor.</p>
+ * veriyor, yanına gidip {@code F} tuşuna basınca büyücü ekranı açılıyor.</p>
  *
  * <p>Neden yalnızca boss katlarında: altının bir yere harcanması gerekiyordu ama
- * her katta bir demirci olsaydı yıpranma diye bir şey kalmazdı — her kat sonu
+ * her katta bir büyücü olsaydı yıpranma diye bir şey kalmazdı — her kat sonu
  * uğrar, hiç düşünmeden tamir ettirirdin. Beş katta bir olunca dayanıklılık
  * gerçekten bir kaynak oluyor: "bu kılıçla iki kat daha idare eder miyim?"
  * sorusu ancak böyle anlam kazanıyor.</p>
  *
  * <p><b>Ne söyleyeceğini de kendi biliyor.</b> {@link #greetingFor(Game)}
  * takımının hâline bakıp tek bir cümle seçiyor. Rastgele lafların sırayla
- * dönmesi de olurdu ama o zaman balon süs olurdu; böyle bakınca demirci sana
+ * dönmesi de olurdu ama o zaman balon süs olurdu; böyle bakınca büyücü sana
  * <em>o an</em> işine yarayacak şeyi söylüyor.</p>
  */
-public class Blacksmith extends Entity {
+public class Wizard extends Entity {
 
-    /** Dayanıklılık bunun altına düşünce demirci laf atmaya başlıyor. */
+    /** Dayanıklılık bunun altına düşünce büyücü laf atmaya başlıyor. */
     private static final double WORN_RATIO = 0.5;
 
-    public Blacksmith(int tileX, int tileY) {
-        super(tileX, tileY, "Demirci");
+    public Wizard(int tileX, int tileY) {
+        super(tileX, tileY, "Büyücü");
     }
 
     /**
@@ -41,13 +41,13 @@ public class Blacksmith extends Entity {
         Equipment armor = player.getEquippedArmor();
 
         if (isBroken(weapon) || isBroken(armor)) {
-            return "Kırılmış o! Bırak da döveyim.";
+            return "Kırılmış o! Bırak da onarayım.";
         }
         if (isWorn(weapon) || isWorn(armor)) {
             return "Şu takımın hâline baksana. Tamir ister.";
         }
         if (weapon == null && armor == null) {
-            return "Elin boş gezme. Bir demir bul, işleyeyim.";
+            return "Elin boş gezme. Bir şey getir, üstünde çalışayım.";
         }
         if (canUpgrade(weapon, game) || canUpgrade(armor, game)) {
             return "Altınını sayma, çeliğini büyütelim.";
@@ -55,7 +55,7 @@ public class Blacksmith extends Entity {
         if (game.isStairsLocked()) {
             return "Aşağıdakine böyle gitme, bir düşün.";
         }
-        return "Demir sıcak, çekiç hazır.";
+        return "Ocak yanıyor, büyüler hazır.";
     }
 
     private static boolean isBroken(Equipment item) {
@@ -72,6 +72,6 @@ public class Blacksmith extends Entity {
 
     @Override
     public String getSpriteName() {
-        return "blacksmith";
+        return "wizard";
     }
 }

@@ -3,7 +3,7 @@ package com.cryptdelver.game;
 import com.cryptdelver.entity.Equipment;
 
 /**
- * Demircinin fiyat listesi.
+ * Büyücünün fiyat listesi.
  *
  * <p>Kuralları oyundan ayrı tuttum: burada ne mesaj yazılıyor ne kese
  * karıştırılıyor, yalnızca "bu işin fiyatı kaç" sorusu yanıtlanıyor. Denge

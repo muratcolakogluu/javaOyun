@@ -76,20 +76,28 @@ public class Armor extends Equipment {
     }
 
     /**
-     * Yerden alındığında, üstündekinden iyiyse kendiliğinden kuşanılır.
+     * Yerden alındığında, üstündekinden iyiyse kendiliğinden kuşanılır ve
+     * <em>eskisi yere bırakılır</em>.
      *
-     * <p>Silahla aynı kural: karşılaştırma kağıt üstündeki değerle yapılıyor ve
-     * daha kötüsü otomatik takılmıyor, çantada bekliyor.</p>
+     * <p>Karşılaştırma yıpranmış değerle değil kağıt üstündeki değerle
+     * yapılıyor; daha kötüsü otomatik takılmıyor, çantada bekliyor.</p>
+     *
+     * <p>Eski zırhı çantada tutmanın bir anlamı yoktu: geri dönüp kötü zırhı
+     * giymek diye bir şey yok, ama slotlar birkaç katta doluyordu. Artık yere
+     * düşüyor — fikrini değiştirirsen hâlâ ayağının dibinde.</p>
      */
     @Override
     public void onPickup(Game game) {
         Player player = game.getPlayer();
         Armor current = player.getEquippedArmor();
 
-        if (current == null || getBonus() > current.getBonus()) {
-            player.equip(this);
-            game.getMessageLog().add(getDisplayName() + " kuşandın (+" + getBonus() + " savunma).");
+        if (current != null && getBonus() <= current.getBonus()) {
+            return;
         }
+
+        player.equip(this);
+        game.getMessageLog().add(getDisplayName() + " kuşandın (+" + getBonus() + " savunma).");
+        game.discardToGround(current);
     }
 
     /** Kuşanılmış zırh yere bırakılırsa üstünden de çıkar. */
