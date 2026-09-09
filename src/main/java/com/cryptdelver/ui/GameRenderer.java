@@ -17,6 +17,7 @@ import com.cryptdelver.game.Settings;
 import com.cryptdelver.world.Dungeon;
 import com.cryptdelver.world.DungeonGenerator;
 import com.cryptdelver.world.Tile;
+import com.cryptdelver.world.Vision;
 import java.util.List;
 import javafx.geometry.VPos;
 import javafx.scene.canvas.GraphicsContext;
@@ -106,6 +107,9 @@ public class GameRenderer {
 
     /** Menü perdesi oyun perdesinden daha kapalı: menü ön planda.  */
     private static final Color MENU_BACKDROP = Color.web("#0b0b10", 0.92);
+
+    /** Hatırlanan ama görünmeyen karelerin üstündeki perde. */
+    private static final Color FORGOTTEN_VEIL = Color.web("#05050a", 0.66);
 
     /** Menü çerçevesinin ve satırlarının genişliği. */
     private static final double MENU_FRAME_WIDTH = 620;
@@ -394,11 +398,17 @@ public class GameRenderer {
         gc.setFill(BACKGROUND);
         gc.fillRect(0, 0, mapWidth, mapHeight + HUD_HEIGHT);
 
-        drawDungeon(gc, dungeon, game.isStairsLocked());
+        Vision vision = game.getVision();
+        drawDungeon(gc, dungeon, vision, game.isStairsLocked());
         drawThemeWash(gc, game.getTheme(), mapWidth, mapHeight);
 
+        // Varlıklar yalnızca ışık altındayken çiziliyor. Hatırlanan karede
+        // zemini biliyorsun ama üstünde ne olduğunu bilmiyorsun — düşman da
+        // eşya da hareket edebilir, onları "hatırlamak" yanlış bilgi olurdu.
         for (Item item : game.getGroundItems()) {
-            drawEntity(gc, item, GROUND_ITEM_SCALE);
+            if (isSeen(vision, item)) {
+                drawEntity(gc, item, GROUND_ITEM_SCALE);
+            }
         }
 
         Player player = game.getPlayer();
@@ -409,13 +419,16 @@ public class GameRenderer {
             drawSwing(gc, player);
         }
 
-        if (game.getWizard() != null) {
+        if (game.getWizard() != null && isSeen(vision, game.getWizard())) {
             drawForgeGlow(gc, game.getWizard());
             drawEntity(gc, game.getWizard(), 1.0);
             drawWizardSign(gc, game);
         }
 
         for (Enemy enemy : game.getEnemies()) {
+            if (!isSeen(vision, enemy)) {
+                continue;
+            }
             drawEntity(gc, enemy, 1.0);
             drawHealthBar(gc, enemy);
         }
@@ -583,26 +596,49 @@ public class GameRenderer {
      * klasöre konduğunda harita da onunla görünsün diye. Merdiven, zeminin
      * üstüne ikinci bir sprite olarak biniyor.</p>
      */
-    private void drawDungeon(GraphicsContext gc, Dungeon dungeon, boolean stairsLocked) {
+    /**
+     * Varlık şu anda ışık altında mı.
+     *
+     * <p>Adım halindeki varlık iki karenin arasında; hangisine bakılacağı
+     * belirsiz olmasın diye mantıksal karesine bakılıyor.</p>
+     */
+    private boolean isSeen(Vision vision, Entity entity) {
+        return vision.isVisible(entity.getTileX(), entity.getTileY());
+    }
+
+    private void drawDungeon(GraphicsContext gc, Dungeon dungeon, Vision vision,
+                             boolean stairsLocked) {
         Sprite floor = sprites.get("floor");
         Sprite wall = sprites.get("wall");
         Sprite stairs = sprites.get("stairs");
 
         for (int x = 0; x < dungeon.getWidth(); x++) {
             for (int y = 0; y < dungeon.getHeight(); y++) {
+                // Hiç görülmemiş kare hiç çizilmiyor: arkasında ne olduğunu
+                // bilmiyorsun, harita orada boş kalıyor.
+                if (!vision.isRemembered(x, y)) {
+                    continue;
+                }
+
                 double cx = x * TILE_SIZE + TILE_SIZE / 2.0;
                 double cy = y * TILE_SIZE + TILE_SIZE / 2.0;
 
                 Tile tile = dungeon.getTile(x, y);
                 if (tile == Tile.WALL) {
                     wall.draw(gc, cx, cy, TILE_SIZE);
-                    continue;
+                } else {
+                    floor.draw(gc, cx, cy, TILE_SIZE);
+                    if (tile == Tile.STAIRS_DOWN) {
+                        stairs.draw(gc, cx, cy, TILE_SIZE);
+                        drawStairsFrame(gc, cx, cy, stairsLocked);
+                    }
                 }
 
-                floor.draw(gc, cx, cy, TILE_SIZE);
-                if (tile == Tile.STAIRS_DOWN) {
-                    stairs.draw(gc, cx, cy, TILE_SIZE);
-                    drawStairsFrame(gc, cx, cy, stairsLocked);
+                // Hatırlanan ama şu an görünmeyen kare soluk: yerini
+                // biliyorsun, üstünde ne olduğunu bilmiyorsun.
+                if (!vision.isVisible(x, y)) {
+                    gc.setFill(FORGOTTEN_VEIL);
+                    gc.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
                 }
             }
         }

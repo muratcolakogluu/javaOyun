@@ -28,6 +28,7 @@ import com.cryptdelver.persistence.SaveData;
 import com.cryptdelver.world.Dungeon;
 import com.cryptdelver.world.DungeonGenerator;
 import com.cryptdelver.world.Position;
+import com.cryptdelver.world.Vision;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -87,6 +88,7 @@ public class Game {
     private boolean forgeOpen;
     private boolean won;
     private double regenTimer;
+    private Vision vision;
     private SoundListener sounds = SoundListener.SILENT;
     private final Settings settings = new Settings();
 
@@ -95,6 +97,8 @@ public class Game {
         this.dungeon = dungeon;
         this.player = player;
         this.floors = null;
+        this.vision = new Vision(dungeon.getWidth(), dungeon.getHeight());
+        refreshVision();
     }
 
     /** Üreticilerle kurar; ilk kat hemen üretilir, oyuncu, düşmanlar ve eşyalar yerleşir. */
@@ -212,6 +216,16 @@ public class Game {
 
         messageLog.add(depth + ". kata indin (" + getTheme().getLabel() + ").");
         return true;
+    }
+
+    /**
+     * Oyuncunun bu kattan ne gördüğü ve neyi hatırladığı.
+     *
+     * <p>Görüş oyunun durumunun parçası, çizimin değil: hangi düşmanın
+     * göründüğü bir kural sorusu ve testten sorulabilmesi gerekiyor.</p>
+     */
+    public Vision getVision() {
+        return vision;
     }
 
     /** Bu katın bölgesi; görüntüsünü ve adını buradan alıyor. */
@@ -521,6 +535,7 @@ public class Game {
         }
 
         player.update(this, delta);
+        refreshVision();
 
         // Toplama yalnızca yeni bir kareye <em>girildiğinde</em> deneniyor.
         // Her karede denemek iki soruna yol açıyordu: yere bıraktığın eşya
@@ -740,6 +755,7 @@ public class Game {
 
         player.setTile(stairs);
         lastPickupTile = player.getTile();
+        refreshVision();
         sounds.play(SoundEffect.STAIRS);
         messageLog.add("Kaçış iksiri: merdivenin başındasın.");
         return true;
@@ -1205,6 +1221,21 @@ public class Game {
 
         player.setTile(floor.spawn());
         lastPickupTile = player.getTile();
+
+        // Yeni kat baştan karanlık: bir önceki katın hatırladıkları buraya
+        // taşınmamalı.
+        vision = new Vision(dungeon.getWidth(), dungeon.getHeight());
+        refreshVision();
+    }
+
+    /**
+     * Görüşü oyuncunun bulunduğu kareye göre tazeler.
+     *
+     * <p>{@link Vision} aynı kareden ikinci kez çağrıldığında hiçbir şey
+     * yapmıyor, o yüzden bunu her karede çağırmak sorun değil.</p>
+     */
+    private void refreshVision() {
+        vision.update(dungeon, player.getTileX(), player.getTileY());
     }
 
     /** Boss katına inince uyarı; sesle birlikte. */
