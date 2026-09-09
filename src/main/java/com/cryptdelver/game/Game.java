@@ -28,14 +28,9 @@ import com.cryptdelver.persistence.SaveData;
 import com.cryptdelver.world.Dungeon;
 import com.cryptdelver.world.DungeonGenerator;
 import com.cryptdelver.world.Position;
-import com.cryptdelver.world.Tile;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
 /**
  * Oyunun durumu ve kuralları: harita, oyuncu, düşmanlar, eşyalar, hareket ve
@@ -51,61 +46,6 @@ import java.util.Set;
  */
 public class Game {
 
-    /** İlk kattaki düşman sayısı; her kat bir artar. */
-    private static final int BASE_ENEMIES_PER_FLOOR = 8;
-
-    /** Ne kadar inersen in, bir kata bundan fazla düşman doğmaz. */
-    private static final int MAX_ENEMIES_PER_FLOOR = 20;
-
-    /** Düşmanlar oyuncunun bu kadar yakınına doğmaz (kare). */
-    private static final int MIN_SPAWN_DISTANCE = 8;
-
-    /** Yeni türlerin oyuna girdiği katlar. */
-    private static final int GOBLIN_MIN_DEPTH = 2;
-    private static final int ORC_MIN_DEPTH = 4;
-
-    /**
-     * Yeni türler bölge sınırlarında giriyor: zombi Sarnıçta, şaman Korlukta.
-     *
-     * <p>Bölge değiştiğinde yalnızca renk değil karşına çıkan şey de
-     * değişiyor; yeni bölgeye inmenin ilk dakikası böylece bir şey
-     * öğretiyor.</p>
-     */
-    private static final int ZOMBI_MIN_DEPTH = 6;
-    private static final int SAMAN_MIN_DEPTH = 11;
-
-
-    /** Derin katlarda düşmanlar kaç katta bir güçlenir. */
-    private static final int DEPTHS_PER_HP_BONUS = 2;
-    private static final int DEPTHS_PER_ATTACK_BONUS = 3;
-    private static final int DEPTHS_PER_DEFENSE_BONUS = 4;
-
-    /** Kaç katta bir boss çıkar. */
-    private static final int FLOORS_PER_BOSS = 5;
-
-    /** Boss katlarında sıradan düşman sayısı bu oranda azalır. */
-    private static final double BOSS_FLOOR_ENEMY_RATIO = 0.6;
-
-    /**
-     * Büyücü doğulan yerden en az bu kadar <em>adım</em> uzağa konur.
-     *
-     * <p>Kuş uçuşu değil yürüme mesafesi: duvarın öbür yanındaki kare yakın
-     * görünüp uzak olabiliyordu. İki adım, "indiğin anda görüyorsun ama
-     * üstünde belirmiş gibi durmuyor" dengesi.</p>
-     */
-    private static final int WIZARD_MIN_DISTANCE = 2;
-
-    /** Sıradan bir katta gezgin büyücüye rastlama olasılığı. */
-    private static final double WIZARD_WANDER_CHANCE = 0.05;
-
-    /**
-     * Büyücü zarını katın tohumundan ayırmak için karıştırılan sayı.
-     *
-     * <p>Doğrudan tohumu kullansaydık zar, aynı tohumdan üretilen haritayla
-     * ilişkili çıkardı; karıştırmak ikisini bağımsızlaştırıyor.</p>
-     */
-    private static final long WIZARD_ROLL_SALT = 0x5DEECE66DL;
-
     /** Vampirlik büyüsünün öldürme başına verdiği can. */
     private static final int VAMPIRISM_HEAL = 2;
 
@@ -116,39 +56,22 @@ public class Game {
     private static final double REGEN_INTERVAL = 5.0;
     private static final int REGEN_AMOUNT = 1;
 
-    /**
-     * Nadir eşyalar için kat başına kaç zar, hangi olasılıkla.
-     *
-     * <p>İki zar ve her biri %20: kat başına ortalama 0.4 eşya, yirmi katlık
-     * bir koşuda kabaca sekiz tane. Bulmak olay olacak kadar seyrek, ama
-     * "hiç görmedim" diyecek kadar da değil.</p>
-     */
-    private static final int RARE_ITEM_ROLLS = 2;
-    private static final double RARE_ITEM_CHANCE = 0.20;
-
-    /**
-     * Efsanevi kılıcın bir katta çıkma olasılığı: binde bir.
-     *
-     * <p>Yirmi katlık bir koşuda görme ihtimali yüzde ikinin altında. Kasten
-     * böyle: efsanevi olmasının anlamı bu. Bulan oyuncu için de bir daha
-     * bulamayacağını bilmek onu değerli kılıyor.</p>
-     */
-    private static final double LEGEND_CHANCE = 0.001;
-
-    private static final int POTIONS_PER_FLOOR = 4;
-    private static final int GOLD_PILES_PER_FLOOR = 5;
-    private static final int MIN_GOLD = 5;
-    private static final int MAX_GOLD = 25;
-
     private final Player player;
     private final Inventory inventory = new Inventory();
     private final MessageLog messageLog = new MessageLog();
     private final List<Enemy> enemies = new ArrayList<>();
     private final List<Item> groundItems = new ArrayList<>();
-    private final List<DungeonGenerator> generators;
     private final Random random = new Random();
-    private final int floorWidth;
-    private final int floorHeight;
+
+    /**
+     * Katları kuran taraf; sabit haritayla kurulmuş oyunlarda {@code null}.
+     *
+     * <p>Kat kurulumu buraya taşındı çünkü "oyunun kuralları" ile "kat nasıl
+     * doğar" farklı sorular: kurallar her karede işliyor, kat kurulumu kat
+     * başına bir kez. İkisi aynı sınıftayken hangi alanın hangi işe ait olduğu
+     * okunmuyordu.</p>
+     */
+    private final FloorBuilder floors;
 
     private Dungeon dungeon;
     private int generatorIndex;
@@ -171,9 +94,7 @@ public class Game {
     public Game(Dungeon dungeon, Player player) {
         this.dungeon = dungeon;
         this.player = player;
-        this.generators = List.of();
-        this.floorWidth = dungeon.getWidth();
-        this.floorHeight = dungeon.getHeight();
+        this.floors = null;
     }
 
     /** Üreticilerle kurar; ilk kat hemen üretilir, oyuncu, düşmanlar ve eşyalar yerleşir. */
@@ -181,9 +102,7 @@ public class Game {
         if (generators.isEmpty()) {
             throw new IllegalArgumentException("En az bir zindan üreticisi gerekli");
         }
-        this.generators = List.copyOf(generators);
-        this.floorWidth = floorWidth;
-        this.floorHeight = floorHeight;
+        this.floors = new FloorBuilder(generators, floorWidth, floorHeight);
         this.player = player;
         generateFloor(random.nextLong());
         messageLog.add("Zindana indin. Boşluk vurur, 1-8 eşya kullanır.");
@@ -247,7 +166,7 @@ public class Game {
 
     /** Bu katta boss var mı. */
     public boolean isBossFloor() {
-        return depth % FLOORS_PER_BOSS == 0;
+        return FloorBuilder.isBossFloor(depth);
     }
 
     /** Kattaki yaşayan boss; yoksa {@code null}. */
@@ -270,7 +189,7 @@ public class Game {
      * @return inildiyse {@code true}
      */
     public boolean descend() {
-        if (isOver() || !isPlayerOnStairs() || generators.isEmpty()) {
+        if (isOver() || !isPlayerOnStairs() || floors == null) {
             return false;
         }
         if (isStairsLocked()) {
@@ -312,7 +231,7 @@ public class Game {
 
     /** O an kullanılan üretici; sabit haritayla kurulduysa {@code null}. */
     public DungeonGenerator getCurrentGenerator() {
-        return generators.isEmpty() ? null : generators.get(generatorIndex);
+        return floors == null ? null : floors.generatorAt(generatorIndex);
     }
 
     /**
@@ -1009,33 +928,9 @@ public class Game {
 
     /** Aynı derinlikte yeni bir kat üretir. */
     public void regenerateFloor() {
-        if (!generators.isEmpty()) {
+        if (floors != null) {
             generateFloor(random.nextLong());
         }
-    }
-
-    /**
-     * Katın hangi üreticiyle kurulacağı: <b>derinliğin kararı, oyuncunun
-     * değil.</b>
-     *
-     * <p>Önce oyuncu {@code G} ile üreticiyi elle değiştirebiliyordu. Bu bir
-     * hata ayıklama kolaylığıydı ve oyunun akışını bozuyordu: zindan bir yol
-     * olmaktan çıkıp ayar penceresine dönüyordu. Şimdi sıra sabit ve
-     * öngörülebilir:</p>
-     *
-     * <ul>
-     *   <li><b>Boss katları hep odalı.</b> Boss yavaş ama durmak bilmez;
-     *       vurup geri çekilerek dövüşmek için alan gerekiyor. Mağara
-     *       koridorlarında sıkışıp kalıyordun.</li>
-     *   <li><b>Diğer katlar sırayla değişiyor:</b> tek katlar odalı, çift
-     *       katlar mağara. Aynı görüntüde üst üste inmiyorsun.</li>
-     * </ul>
-     */
-    private int generatorForDepth(int depth) {
-        if (generators.size() < 2 || depth % FLOORS_PER_BOSS == 0) {
-            return 0;
-        }
-        return depth % 2 == 0 ? 1 : 0;
     }
 
     // ------------------------------------------------------------ kaydetme
@@ -1080,16 +975,19 @@ public class Game {
      * her şey kayıttan kurulur.
      */
     public void applySave(SaveData data) {
-        if (generators.isEmpty()) {
+        if (floors == null) {
             throw new IllegalStateException("Kayıt yüklemek için zindan üreticisi gerekli");
         }
 
         depth = data.depth();
-        generatorIndex = Math.floorMod(data.generatorIndex(), generators.size());
+        generatorIndex = floors.clampGeneratorIndex(data.generatorIndex());
         gold = data.gold();
         elapsedSeconds = data.elapsedSeconds();
 
-        buildFloor(data.seed());
+        // Yalnızca döşeme kuruluyor: düşmanlar ve eşyalar kayıttan geliyor.
+        // Aynı tohum aynı haritayı, merdiveni ve büyücüyü verdiği için bunlar
+        // kayıt dosyasında saklanmak zorunda değil.
+        adopt(floors.layout(generatorIndex, depth, data.seed()));
         inventory.clear();
 
         restorePlayer(data);
@@ -1239,7 +1137,7 @@ public class Game {
             case "BOSS" -> {
                 // Bossun gövdesi ve adı kaçıncı boss olduğuna bağlı; kayıtta
                 // ayrı bir alan tutmak yerine derinlikten çıkarıyoruz.
-                Boss restored = new Boss(data.x(), data.y(), depth / FLOORS_PER_BOSS);
+                Boss restored = new Boss(data.x(), data.y(), FloorBuilder.bossNumber(depth));
                 boss = restored;
                 yield restored;
             }
@@ -1273,326 +1171,49 @@ public class Game {
         messageLog.add("Yeniden zindana indin.");
     }
 
+    /**
+     * Yeni bir kat üretip devralır.
+     *
+     * <p>Katı {@link FloorBuilder} kuruyor; burası yalnızca sonucu sahipleniyor
+     * ve oyuncuyu yerleştiriyor. Üretici seçimi katın kendi kuralı, ama kayıt
+     * yüklerken kayıttan geldiği için alan burada tutuluyor.</p>
+     */
     private void generateFloor(long seed) {
-        // Üretici katın kendi kuralı; kayıt yüklerken ise kayıttan geliyor,
-        // o yüzden burada, buildFloor'da değil.
-        generatorIndex = generatorForDepth(depth);
+        generatorIndex = floors.generatorForDepth(depth);
 
-        Position spawn = buildFloor(seed);
-
-        player.setTile(spawn);
-        lastPickupTile = player.getTile();
-
-        populateFloor();
+        adopt(floors.build(generatorIndex, depth, seed, settings.getDifficulty()));
+        announceBoss();
     }
 
     /**
-     * Haritayı tohumdan üretir ve merdiveni yerleştirir; içini doldurmaz.
+     * Kurulmuş katı oyunun durumuna geçirir.
      *
-     * <p>Yeni kat üretirken de kayıt yüklerken de aynı adımlar işlemeli, yoksa
-     * kaydedilen katın merdiveni yüklenince başka yere düşerdi.</p>
-     *
-     * @return oyuncunun doğduğu kare
+     * <p>Kat bir <em>değer</em> olarak geliyor, yani kurulum sırasında oyunun
+     * hiçbir alanı değişmiyor; devralma tek bir yerde ve gözle görülür.</p>
      */
-    private Position buildFloor(long seed) {
-        currentSeed = seed;
-        dungeon = generators.get(generatorIndex).generate(floorWidth, floorHeight, seed);
+    private void adopt(Floor floor) {
+        currentSeed = floor.seed();
+        dungeon = floor.dungeon();
+        stairs = floor.stairs();
+        wizard = floor.wizard();
+        boss = floor.boss();
+
         enemies.clear();
+        enemies.addAll(floor.enemies());
         groundItems.clear();
-        boss = null;
+        groundItems.addAll(floor.groundItems());
 
-        Position spawn = dungeon.findWalkableNear(floorWidth / 2, floorHeight / 2);
-
-        // Merdiven, doğulan yerden yürüyerek gidilebilen en uzak kareye konur.
-        stairs = dungeon.findFarthestWalkableFrom(spawn);
-        dungeon.setTile(stairs.x(), stairs.y(), Tile.STAIRS_DOWN);
-
-        wizard = hasWizard(seed) ? placeWizard(spawn) : null;
-
-        return spawn;
+        player.setTile(floor.spawn());
+        lastPickupTile = player.getTile();
     }
 
-    /**
-     * Bu katta büyücü var mı.
-     *
-     * <p>Boss katlarında her zaman var — orası tezgâhın sabit adresi. Sıradan
-     * katlarda ise {@value #WIZARD_WANDER_CHANCE} olasılıkla çıkıyor: beş kat
-     * boyunca kırık kılıçla yürümek bazen fazla uzun bir ceza oluyordu ve
-     * arada bir gezgin büyücüye rastlamak, katı açmaya değer küçük bir
-     * sürpriz.</p>
-     *
-     * <p>Zar katın <em>tohumundan</em> atılıyor, oyunun genel rastgeleliğinden
-     * değil. Sebebi kayıt: kaydı yüklerken kat tohumdan yeniden kuruluyor,
-     * genel rastgelelikten zar atsaydık büyücü kaydettiğinde varken
-     * yüklediğinde yok olabilirdi.</p>
-     */
-    private boolean hasWizard(long seed) {
-        if (isBossFloor()) {
-            return true;
-        }
-        return new Random(seed ^ WIZARD_ROLL_SALT).nextDouble() < WIZARD_WANDER_CHANCE;
-    }
-
-    /**
-     * Büyücüyü doğulan yerin yakınına koyar.
-     *
-     * <p>Merdivenin yanına koymak cazipti ama orada boss duruyor: büyücüyü
-     * dövüşün ortasına yerleştirmiş olurduk. Girişin dibinde olması daha doğru
-     * — kata inip önce hazırlanıyor, sonra bossa yürüyorsun.</p>
-     *
-     * <p>Yerleştirme <em>rastgele değil</em>: doğulan yerden yayılan BFS'in
-     * sırasında ilk uygun kare seçiliyor, yani en yakını. Merdiven gibi bu da
-     * katın sabit döşemesi — aynı tohum aynı yeri veriyor ve kayıt yüklerken
-     * büyücüyü ayrıca saklamaya gerek kalmıyor.</p>
-     */
-    private Wizard placeWizard(Position spawn) {
-        Map<Position, Integer> distances = dungeon.walkableDistancesFrom(spawn);
-
-        // BFS sırası yakından uzağa; ilk uyan kare en yakın uygun kare oluyor.
-        for (Map.Entry<Position, Integer> candidate : distances.entrySet()) {
-            Position spot = candidate.getKey();
-
-            if (candidate.getValue() < WIZARD_MIN_DISTANCE || spot.equals(stairs)) {
-                continue;
-            }
-            if (wouldSealTheFloor(spot, spawn)) {
-                continue;
-            }
-
-            return new Wizard(spot.x(), spot.y());
+    /** Boss katına inince uyarı; sesle birlikte. */
+    private void announceBoss() {
+        if (boss == null) {
+            return;
         }
 
-        return null;
-    }
-
-    /**
-     * Büyücü bu kareye konursa merdiven ulaşılmaz kalır mı.
-     *
-     * <p>Büyücünün karesinden geçilemiyor. Tek karelik bir koridora denk
-     * gelirse katı ikiye bölüp merdiveni kapatabilirdi — üstelik en yakın kareyi
-     * seçtiğimiz için tam da doğulan odanın çıkışına oturma ihtimali yüksek.
-     * Tahmin yürütmek yerine doğrudan soruyoruz: o kare kapalıyken merdivene
-     * hâlâ yürünebiliyor mu.</p>
-     */
-    private boolean wouldSealTheFloor(Position spot, Position spawn) {
-        if (stairs == null) {
-            return false;
-        }
-        return !dungeon.walkableDistancesFrom(spawn, Set.of(spot)).containsKey(stairs);
-    }
-
-    /**
-     * Katı düşman ve eşyalarla doldurur.
-     *
-     * <p>Uygun kareleri bir kez karıştırıp sırayla dağıtıyoruz; kullanılan
-     * kareleri işaretlemek, iki şeyin aynı kareye konmasını kendiliğinden
-     * engelliyor.</p>
-     */
-    private void populateFloor() {
-        List<Position> spots = new ArrayList<>(dungeon.walkablePositions());
-        Collections.shuffle(spots, random);
-
-        Set<Position> used = new HashSet<>();
-        used.add(player.getTile());
-        if (stairs != null) {
-            // Merdivenin üstü boş kalsın; eşya ya da düşmanla kapanmasın.
-            used.add(stairs);
-        }
-        if (wizard != null) {
-            used.add(wizard.getTile());
-        }
-
-        // Boss merdivenin üstünde doğar: geçmek için onu yenmen gerekiyor.
-        if (isBossFloor() && stairs != null) {
-            int bossNumber = depth / FLOORS_PER_BOSS;
-            boss = new Boss(stairs.x(), stairs.y(), bossNumber);
-            applyDepthBonus(boss);
-            boss.scaleTo(bossNumber);
-            addEnemy(boss);
-            messageLog.add(boss.getName() + " merdiveni tutuyor. Yavaş — vur ve geri çekil.");
-            sounds.play(SoundEffect.BOSS);
-        }
-
-        int target = enemyCountForDepth();
-        int spawned = 0;
-        for (Position spot : spots) {
-            if (spawned >= target) {
-                break;
-            }
-            if (used.contains(spot) || spot.manhattanDistance(player.getTile()) < MIN_SPAWN_DISTANCE) {
-                continue;
-            }
-
-            used.add(spot);
-            addEnemy(createEnemyForDepth(spot));
-            spawned++;
-        }
-
-        placeItems(spots, used);
-    }
-
-    /**
-     * Her kat bir düşman daha; belli bir sayıdan sonra artmıyor.
-     *
-     * <p>Boss katlarında sıradan düşman sayısı azaltılıyor: asıl tehdit boss ve
-     * çağırdığı yaratıklar olsun, kalabalık boğmasın.</p>
-     */
-    private int enemyCountForDepth() {
-        int count = Math.min(MAX_ENEMIES_PER_FLOOR, BASE_ENEMIES_PER_FLOOR + depth - 1);
-        if (isBossFloor()) {
-            count = (int) Math.round(count * BOSS_FLOOR_ENEMY_RATIO);
-        }
-        return settings.getDifficulty().scaleCrowd(count);
-    }
-
-    /**
-     * Derinliğe uygun bir düşman üretir.
-     *
-     * <p>İki kaldıraç var: aşağı indikçe iskelet oranı artıyor (kalabalık
-     * sertleşiyor) ve düşmanlar can/güç bonusu alıyor. Yeni tür yazmadan
-     * zorluk eğrisi elde etmenin ucuz yolu bu.</p>
-     */
-    private Enemy createEnemyForDepth(Position spot) {
-        Enemy enemy = rollEnemyKind(spot);
-        applyDepthBonus(enemy);
-        return enemy;
-    }
-
-    /**
-     * Derinliğe göre ağırlıklı düşman seçimi.
-     *
-     * <p>Katlar tür değiştirerek zorlaşıyor, yalnızca sayı büyüterek değil:
-     * imp yukarıda kalabalık, aşağı indikçe yerini iskelete ve orka bırakıyor.
-     * Goblin 2., ork 4. kattan itibaren giriyor; ağırlıkları derinlikle
-     * arttığı için karşına çıkan sürü de yavaş yavaş sertleşiyor.</p>
-     */
-    private Enemy rollEnemyKind(Position spot) {
-        int impWeight = Math.max(1, 7 - depth);
-        int skeletonWeight = 2 + depth;
-        int goblinWeight = depth >= GOBLIN_MIN_DEPTH ? 3 : 0;
-        int orcWeight = depth >= ORC_MIN_DEPTH ? depth - 2 : 0;
-        int zombiWeight = depth >= ZOMBI_MIN_DEPTH ? depth - 3 : 0;
-        int samanWeight = depth >= SAMAN_MIN_DEPTH ? depth - 8 : 0;
-
-        int roll = random.nextInt(impWeight + skeletonWeight + goblinWeight + orcWeight
-                + zombiWeight + samanWeight);
-
-        if (roll < impWeight) {
-            return new Imp(spot.x(), spot.y());
-        }
-        roll -= impWeight;
-
-        if (roll < skeletonWeight) {
-            return new Skeleton(spot.x(), spot.y());
-        }
-        roll -= skeletonWeight;
-
-        if (roll < goblinWeight) {
-            return new Goblin(spot.x(), spot.y());
-        }
-        roll -= goblinWeight;
-
-        if (roll < orcWeight) {
-            return new Orc(spot.x(), spot.y());
-        }
-        roll -= orcWeight;
-
-        return roll < zombiWeight ? new Zombi(spot.x(), spot.y()) : new Saman(spot.x(), spot.y());
-    }
-
-    /**
-     * Derinliğe göre can/güç/savunma bonusu uygular.
-     *
-     * <p>Savunma en yavaş artan değer: hızlı artsaydı kılıcın kademesi geride
-     * kaldığı anda düşmanlar delinmez olurdu. Oyuncunun ekipman kademesi
-     * {@link LootTable} ile 3 katta bir yükseliyor, düşman savunması 4 katta
-     * bir — yani ilerleme hep oyuncunun lehine, ama fark kapanmıyor.</p>
-     */
-    private void applyDepthBonus(Enemy enemy) {
-        Difficulty difficulty = settings.getDifficulty();
-
-        enemy.strengthen(
-                difficulty.scaleDepthBonus((depth - 1) / DEPTHS_PER_HP_BONUS),
-                difficulty.scaleDepthBonus((depth - 1) / DEPTHS_PER_ATTACK_BONUS),
-                difficulty.scaleDepthBonus((depth - 1) / DEPTHS_PER_DEFENSE_BONUS));
-    }
-
-    /**
-     * Kata iksir, altın ve birer ekipman parçası dağıtır.
-     *
-     * <p>Ekipmanın kademesi rastgele değil, tamamen derinliğe bağlı
-     * ({@link LootTable}): 2. katta bulduğun zırh 4. kattakinden iyi olamaz.</p>
-     */
-    private void placeItems(List<Position> spots, Set<Position> used) {
-        int tier = LootTable.tierForDepth(depth);
-        int potions = 0;
-        int goldPiles = 0;
-        boolean weaponPlaced = false;
-        boolean armorPlaced = false;
-        int rareItems = 0;
-        boolean legendRolled = false;
-
-        for (Position spot : spots) {
-            if (used.contains(spot)) {
-                continue;
-            }
-
-            if (potions < POTIONS_PER_FLOOR) {
-                addGroundItem(new Potion(spot.x(), spot.y()));
-                potions++;
-            } else if (goldPiles < GOLD_PILES_PER_FLOOR) {
-                int amount = MIN_GOLD + random.nextInt(MAX_GOLD - MIN_GOLD + 1);
-                addGroundItem(new Gold(spot.x(), spot.y(), amount));
-                goldPiles++;
-            } else if (!weaponPlaced) {
-                addGroundItem(LootTable.weaponForTier(tier, spot.x(), spot.y()));
-                weaponPlaced = true;
-            } else if (!armorPlaced) {
-                addGroundItem(LootTable.armorForTier(tier, spot.x(), spot.y()));
-                armorPlaced = true;
-
-            } else if (!legendRolled) {
-                // Efsanevi kılıç kendi zarını atıyor; nadir eşyalarla aynı
-                // havuzda olsaydı biri diğerinin şansını yerdi.
-                legendRolled = true;
-                if (random.nextDouble() < LEGEND_CHANCE) {
-                    addGroundItem(new LegendWeapon(spot.x(), spot.y()));
-                } else {
-                    continue;
-                }
-
-            } else if (rareItems < RARE_ITEM_ROLLS) {
-                // Nadir eşyalar için tek tek zar atılıyor; tutmayan zar kareyi
-                // boş bırakıyor, yani "her katta bir tane" olmuyor.
-                rareItems++;
-                if (random.nextDouble() < RARE_ITEM_CHANCE) {
-                    addGroundItem(rollRareItem(spot));
-                } else {
-                    continue;
-                }
-
-            } else {
-                return;
-            }
-
-            used.add(spot);
-        }
-    }
-
-    /**
-     * Nadir eşyalardan birini seçer.
-     *
-     * <p>Dördü de tüketilen ve dördü de farklı bir soruna cevap: bomba
-     * kalabalığa, öfke tek hedefe, hız sıkışmaya, kaçış uzaklığa. Eşit
-     * olasılık veriyorum — birini diğerinden nadir yapmak, oyuncunun hangisini
-     * saklayacağına dair kararını zarla almak olurdu.</p>
-     */
-    private Item rollRareItem(Position spot) {
-        return switch (random.nextInt(4)) {
-            case 0 -> new Bomb(spot.x(), spot.y());
-            case 1 -> new HastePotion(spot.x(), spot.y());
-            case 2 -> new FuryPotion(spot.x(), spot.y());
-            default -> new EscapePotion(spot.x(), spot.y());
-        };
+        messageLog.add(boss.getName() + " merdiveni tutuyor. Yavaş — vur ve geri çekil.");
+        sounds.play(SoundEffect.BOSS);
     }
 }
