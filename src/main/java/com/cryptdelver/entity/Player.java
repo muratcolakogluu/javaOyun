@@ -91,10 +91,12 @@ public class Player extends Combatant implements Actor {
     /**
      * Azami canı kalıcı olarak büyütür; mevcut can değişmez.
      *
-     * <p>Oyuncunun tek kalıcı büyümesi bu: silah ve zırh yerde bulunur,
-     * kaybedilebilir; can tavanı ise indikçe artıyor. Derinlikle sertleşen
-     * düşmanlara karşı ayakta kalmayı bu dengeliyor. Mevcut canı doldurmuyor,
-     * çünkü inmek bir ödül değil — yaralı indiysen yaralı devam edersin.</p>
+     * <p>Oyuncunun tek kalıcı büyümesi bu ve <b>yalnızca boss öldürünce</b>
+     * geliyor. Eskiden her inişte artıyordu; o zaman dövüşmeden merdiven
+     * merdiven kaçan oyuncu da güçleniyordu. Şimdi can tavanı doğrudan
+     * "kaç bossu geçtin" sorusunun karşılığı.</p>
+     *
+     * <p>Mevcut canı doldurmuyor: tavan yükseliyor, dolması sana kalıyor.</p>
      */
     public void gainMaxHp(int extra) {
         raiseMaxHp(extra);
@@ -156,9 +158,15 @@ public class Player extends Combatant implements Actor {
         attackRequested = true;
     }
 
-    /** Yeni bir oyuna başlarken canı ve zamanlayıcıları tazeler. */
+    /**
+     * Yeni bir oyuna başlarken canı ve zamanlayıcıları tazeler.
+     *
+     * <p>Can tavanı da taban değere dönüyor: bosslardan kazanılan azami can
+     * ölümle birlikte gidiyor. Kalsaydı ölmek bedelsiz olurdu — üst üste
+     * ölerek can biriktirip aşağı inmek mümkün olurdu.</p>
+     */
     public void restore() {
-        restoreFullHealth();
+        resetMaxHp(STARTING_HP);
         equippedWeapon = null;
         equippedArmor = null;
         attackCooldown = 0;

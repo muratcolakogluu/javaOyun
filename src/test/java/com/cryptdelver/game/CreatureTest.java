@@ -148,9 +148,14 @@ class CreatureTest {
         assertTrue(generated.getEnemies().size() > 8, "Derin kat daha kalabalik");
     }
 
+    /**
+     * Inmek eskiden azami cani buyutuyordu; artik buyutmuyor. Can tavani
+     * yalnizca bossu yenince yukseliyor, yani dovusmeden merdiven merdiven
+     * kacan oyuncu guclenmiyor.
+     */
     @Test
-    @DisplayName("Inmek azami cani buyutur ama iyilestirmez")
-    void descendingRaisesMaxHealthWithoutHealing() {
+    @DisplayName("Inmek cana hic dokunmuyor")
+    void descendingLeavesHealthAlone() {
         Player diver = new Player(0, 0);
         Game generated = new Game(List.of(new BspGenerator()), 40, 24, diver);
         diver.takeDamage(5);
@@ -162,6 +167,6 @@ class CreatureTest {
         generated.descend();
 
         assertEquals(hpBefore, diver.getHp(), "Mevcut can degismemeli");
-        assertTrue(diver.getMaxHp() > maxBefore, "Tavan yukselmeli");
+        assertEquals(maxBefore, diver.getMaxHp(), "Tavan da yukselmemeli");
     }
 }

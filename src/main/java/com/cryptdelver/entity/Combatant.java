@@ -73,6 +73,18 @@ public abstract class Combatant extends Entity {
         hp = maxHp;
     }
 
+    /**
+     * Azami canı verilen tabana döndürür ve canı doldurur.
+     *
+     * <p>Kazanılmış can tavanını <em>silmek</em> için var. Ölümden sonra yeni
+     * oyuna başlarken gerekiyor: bossları yenerek kazandığın can seninle
+     * mezara gidiyor, bir sonraki denemeye taşınmıyor.</p>
+     */
+    protected void resetMaxHp(int base) {
+        maxHp = base;
+        hp = base;
+    }
+
     /** Vuruş gücü. */
     public abstract int getAttackPower();
 

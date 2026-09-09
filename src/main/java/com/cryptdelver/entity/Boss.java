@@ -80,6 +80,9 @@ public class Boss extends Enemy {
     private static final int BASE_GOLD_DROP = 50;
     private static final int GOLD_DROP_PER_DEPTH = 18;
 
+    /** Bossu geçmenin kalıcı ödülü: azami can. */
+    private static final int MAX_HP_REWARD = 2;
+
     private static final int[][] SUMMON_SPOTS = {
             {0, -1}, {0, 1}, {-1, 0}, {1, 0}, {-1, -1}, {1, -1}, {-1, 1}, {1, 1}};
 
@@ -154,10 +157,16 @@ public class Boss extends Enemy {
     }
 
     /**
-     * Öldüğünde altın ve <em>katın bir üst kademesinden</em> silah bırakır.
+     * Öldüğünde altın, <em>katın bir üst kademesinden</em> silah ve kalıcı
+     * azami can bırakır.
      *
      * <p>Bossu geçmek bu yüzden sıradan katları soymaktan hızlı güçlendiriyor:
      * normalde birkaç kat daha inmeden bulamayacağın silahı erken veriyor.</p>
+     *
+     * <p>Azami can eskiden her inişte artıyordu. Artık yalnızca burada
+     * artıyor: can tavanı oyuncunun tek kalıcı büyümesi ve onu merdivenden
+     * inmeye değil <em>bossu yenmeye</em> bağlamak, ilerlemeyi beceriyle
+     * ilişkilendiriyor. Kaçarak inen oyuncu artık güçlenmiyor.</p>
      */
     @Override
     public void onDeath(Game game) {
@@ -170,7 +179,10 @@ public class Boss extends Enemy {
                 getTileX(), getTileY());
         game.addGroundItem(reward);
 
-        game.getMessageLog().add("Kript Lordu düştü! " + reward.getName() + " bıraktı.");
+        game.getPlayer().gainMaxHp(MAX_HP_REWARD);
+
+        game.getMessageLog().add(getName() + " düştü! " + reward.getName() + " bıraktı.");
+        game.getMessageLog().add("Gücü sana geçti: +" + MAX_HP_REWARD + " azami can.");
     }
 
     @Override

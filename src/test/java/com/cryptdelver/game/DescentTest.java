@@ -145,7 +145,7 @@ class DescentTest {
         goDownOneFloor();
 
         assertEquals(hpBefore, player.getHp(), "Inmek can doldurmamali");
-        assertTrue(player.getMaxHp() > maxHpBefore, "Inmek azami cani buyutmeli");
+        assertEquals(maxHpBefore, player.getMaxHp(), "Azami can yalnizca bossla buyur");
         assertEquals(40, game.getGold());
         assertEquals(1, game.getInventory().size());
     }

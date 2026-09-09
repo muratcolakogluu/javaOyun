@@ -57,8 +57,6 @@ public class Game {
     private static final int GOBLIN_MIN_DEPTH = 2;
     private static final int ORC_MIN_DEPTH = 4;
 
-    /** Her inişte kazanılan azami can; oyuncunun tek kalıcı büyümesi. */
-    private static final int MAX_HP_PER_FLOOR = 2;
 
     /** Derin katlarda düşmanlar kaç katta bir güçlenir. */
     private static final int DEPTHS_PER_HP_BONUS = 2;
@@ -228,11 +226,10 @@ public class Game {
         }
 
         depth++;
-        player.gainMaxHp(MAX_HP_PER_FLOOR);
         sounds.play(SoundEffect.STAIRS);
         generateFloor(random.nextLong());
 
-        messageLog.add(depth + ". kata indin (+" + MAX_HP_PER_FLOOR + " azami can).");
+        messageLog.add(depth + ". kata indin.");
         return true;
     }
 

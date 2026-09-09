@@ -77,6 +77,44 @@ class BossTest {
             assertTrue(game.isStairsLocked());
         }
 
+        /**
+         * Can tavani oyuncunun tek kalici buyumesi ve artik tek kaynagi bu.
+         * Eskiden her inisle geliyordu; o zaman dovusmeden kacan oyuncu da
+         * gucleniyordu.
+         */
+        @Test
+        @DisplayName("Bossu gecmek azami cani buyutur")
+        void killingTheBossRaisesMaxHealth() {
+            for (int i = 0; i < 4; i++) {
+                goDownOneFloor();
+            }
+            int maxBefore = player.getMaxHp();
+            int hpBefore = player.getHp();
+
+            killBoss();
+
+            assertTrue(player.getMaxHp() > maxBefore, "Tavan yukselmeli");
+            assertEquals(hpBefore, player.getHp(), "Mevcut cani doldurmamali");
+        }
+
+        /** Kazanilan can mezara gidiyor: olmek bedelsiz olmamali. */
+        @Test
+        @DisplayName("Olunce bossdan kazanilan can gider")
+        void deathTakesBackTheBossHealth() {
+            for (int i = 0; i < 4; i++) {
+                goDownOneFloor();
+            }
+            int startingMax = new Player(0, 0).getMaxHp();
+            killBoss();
+            assertTrue(player.getMaxHp() > startingMax, "Once kazanmis olmali");
+
+            player.takeDamage(player.getMaxHp());
+            assertTrue(game.isOver());
+            game.restart();
+
+            assertEquals(startingMax, player.getMaxHp(), "Yeni oyun taban canla baslamali");
+        }
+
         @Test
         @DisplayName("Boss yasarken inilemez, oldukten sonra inilir")
         void stairsUnlockWhenTheBossDies() {
