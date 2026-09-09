@@ -1,6 +1,8 @@
 package com.cryptdelver.entity;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Kuşanılan parçaların ortak atası: silah ve zırh.
@@ -35,7 +37,9 @@ public abstract class Equipment extends Item {
 
     private int durability;
     private int upgradeLevel;
-    private Enchantment enchantment;
+
+    /** Basılı büyüler; kapasitesi {@link #getEnchantSlots()}. */
+    private final List<Enchantment> enchantments = new ArrayList<>();
 
     /**
      * Kaç kez aşınma denendiği.
@@ -113,7 +117,7 @@ public abstract class Equipment extends Item {
         }
 
         wearAttempts++;
-        if (enchantment == Enchantment.SAGLAMLIK && wearAttempts % 2 != 0) {
+        if (hasEnchantment(Enchantment.SAGLAMLIK) && wearAttempts % 2 != 0) {
             return false;
         }
 
@@ -123,20 +127,54 @@ public abstract class Equipment extends Item {
 
     // ------------------------------------------------------------------ büyü
 
-    /** Parçadaki büyü; yoksa {@code null}. */
+    /**
+     * Bu parçada kaç büyü durabilir.
+     *
+     * <p>Sıradan parçalarda bir tane: üst üste yığılabilseydi tek bir kılıcı
+     * sonsuza kadar besleyip her şeyi çözerdin, tek yuva "bu kılıçta hangisi
+     * dursun" diye karar vermeni sağlıyor. Efsanevi parçalar bu kuralın
+     * istisnası ve zaten <em>bu yüzden</em> efsanevi.</p>
+     */
+    public int getEnchantSlots() {
+        return 1;
+    }
+
+    /** Parçadaki büyüler, basıldıkları sırayla. */
+    public List<Enchantment> getEnchantments() {
+        return List.copyOf(enchantments);
+    }
+
+    /** Parçanın ilk büyüsü; yoksa {@code null}. */
     public Enchantment getEnchantment() {
-        return enchantment;
+        return enchantments.isEmpty() ? null : enchantments.get(0);
+    }
+
+    public boolean hasEnchantment(Enchantment candidate) {
+        return enchantments.contains(candidate);
     }
 
     /**
-     * Büyüyü basar; parçada zaten bir büyü varsa onun yerine geçer.
+     * Büyüyü basar.
      *
-     * <p>Bir parçada bir büyü duruyor. Üst üste yığılabilseydi tek bir kılıcı
-     * sonsuza kadar besleyip her şeyi çözerdin; tek yuva olunca "bu kılıçta
-     * hangisi dursun" diye karar vermen gerekiyor.</p>
+     * <p>Boş yuva varsa oraya giriyor. Yuvalar doluysa <em>en eski</em> büyünün
+     * yerine geçiyor: en yeni basılanı silmek "az önce ne yaptım" hissi
+     * verirdi, en eskisi ise zaten geride kalmış olan.</p>
+     *
+     * @return yerinden edilen büyü; hiçbiri silinmediyse {@code null}
      */
-    public void enchant(Enchantment enchantment) {
-        this.enchantment = enchantment;
+    public Enchantment enchant(Enchantment enchantment) {
+        if (enchantment == null || enchantments.contains(enchantment)) {
+            return null;
+        }
+
+        if (enchantments.size() < getEnchantSlots()) {
+            enchantments.add(enchantment);
+            return null;
+        }
+
+        Enchantment replaced = enchantments.remove(0);
+        enchantments.add(enchantment);
+        return replaced;
     }
 
     /** Bu parçaya basılabilen büyüler; silah ve zırh farklı listeler veriyor. */
@@ -165,9 +203,15 @@ public abstract class Equipment extends Item {
 
     /** Çantada ve tezgâhta görünen tam ad: yükseltme kademesi ve büyüsüyle. */
     public String getFullName() {
-        return enchantment == null
-                ? getDisplayName()
-                : getDisplayName() + " [" + enchantment.getLabel() + "]";
+        if (enchantments.isEmpty()) {
+            return getDisplayName();
+        }
+
+        StringBuilder names = new StringBuilder();
+        for (Enchantment spell : enchantments) {
+            names.append(names.isEmpty() ? "" : ", ").append(spell.getLabel());
+        }
+        return getDisplayName() + " [" + names + "]";
     }
 
     /**
@@ -203,14 +247,15 @@ public abstract class Equipment extends Item {
         return upgradeLevel;
     }
 
+    /** Kayıtta virgülle ayrılmış etiketler; alan sayısı sabit kalıyor. */
     @Override
     public String getSaveEnchantment() {
-        return enchantment == null ? "" : enchantment.name();
+        return enchantments.stream().map(Enchantment::name).collect(Collectors.joining(","));
     }
 
     @Override
     public boolean isEnchanted() {
-        return enchantment != null;
+        return !enchantments.isEmpty();
     }
 
     @Override

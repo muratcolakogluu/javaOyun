@@ -28,6 +28,7 @@ adlarla kopyalandı:
   sword_steel.png  <- weapon_regular_sword.png
   axe.png          <- weapon_axe.png
   sword_crypt.png  <- weapon_red_gem_sword.png
+  sword_legend.png <- weapon_lavish_sword.png (efsanevi Yildizkiran)
 
 Zırhlar (armor_leather, armor_chain, armor_plate, armor_crypt) pakette yok;
 onlar ShapeSprites içindeki şekil çizimleriyle görünmeye devam ediyor.

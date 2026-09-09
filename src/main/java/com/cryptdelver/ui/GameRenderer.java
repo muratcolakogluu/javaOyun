@@ -1319,7 +1319,7 @@ public class GameRenderer {
 
         for (int i = 0; i < options.size() && i < keys.length; i++) {
             Enchantment option = options.get(i);
-            boolean active = item != null && item.getEnchantment() == option;
+            boolean active = item != null && item.hasEnchantment(option);
             boolean available = item != null && !active;
             boolean affordable = available && game.getGold() >= option.getCost();
 

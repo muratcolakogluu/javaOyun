@@ -280,11 +280,11 @@ public class Player extends Combatant implements Actor {
     }
 
     public boolean hasWeaponEnchantment(Enchantment enchantment) {
-        return equippedWeapon != null && equippedWeapon.getEnchantment() == enchantment;
+        return equippedWeapon != null && equippedWeapon.hasEnchantment(enchantment);
     }
 
     public boolean hasArmorEnchantment(Enchantment enchantment) {
-        return equippedArmor != null && equippedArmor.getEnchantment() == enchantment;
+        return equippedArmor != null && equippedArmor.hasEnchantment(enchantment);
     }
 
     /**

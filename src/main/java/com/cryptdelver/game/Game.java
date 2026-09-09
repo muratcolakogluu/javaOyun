@@ -15,6 +15,7 @@ import com.cryptdelver.entity.Gold;
 import com.cryptdelver.entity.HastePotion;
 import com.cryptdelver.entity.Imp;
 import com.cryptdelver.entity.Item;
+import com.cryptdelver.entity.LegendWeapon;
 import com.cryptdelver.entity.Orc;
 import com.cryptdelver.entity.Player;
 import com.cryptdelver.entity.Potion;
@@ -124,6 +125,15 @@ public class Game {
      */
     private static final int RARE_ITEM_ROLLS = 2;
     private static final double RARE_ITEM_CHANCE = 0.20;
+
+    /**
+     * Efsanevi kılıcın bir katta çıkma olasılığı: binde bir.
+     *
+     * <p>Yirmi katlık bir koşuda görme ihtimali yüzde ikinin altında. Kasten
+     * böyle: efsanevi olmasının anlamı bu. Bulan oyuncu için de bir daha
+     * bulamayacağını bilmek onu değerli kılıyor.</p>
+     */
+    private static final double LEGEND_CHANCE = 0.001;
 
     private static final int POTIONS_PER_FLOOR = 4;
     private static final int GOLD_PILES_PER_FLOOR = 5;
@@ -510,7 +520,7 @@ public class Game {
             return;
         }
 
-        if (item.getEnchantment() == enchantment) {
+        if (item.hasEnchantment(enchantment)) {
             messageLog.add(item.getDisplayName() + " zaten " + enchantment.getLabel()
                     + " taşıyor.");
             return;
@@ -520,15 +530,14 @@ public class Game {
             return;
         }
 
-        Enchantment previous = item.getEnchantment();
-        item.enchant(enchantment);
+        Enchantment replaced = item.enchant(enchantment);
         sounds.play(SoundEffect.EQUIP);
 
-        if (previous == null) {
+        if (replaced == null) {
             messageLog.add(item.getDisplayName() + " artık " + enchantment.getLabel()
                     + " taşıyor (-" + enchantment.getCost() + " altın).");
         } else {
-            messageLog.add(previous.getLabel() + " silindi, yerine " + enchantment.getLabel()
+            messageLog.add(replaced.getLabel() + " silindi, yerine " + enchantment.getLabel()
                     + " basıldı (-" + enchantment.getCost() + " altın).");
         }
     }
@@ -901,7 +910,7 @@ public class Game {
     /** Vampirlik büyüsü: öldürülen her düşman biraz can veriyor. */
     private void drainLife() {
         Weapon weapon = player.getEquippedWeapon();
-        if (weapon == null || weapon.getEnchantment() != Enchantment.VAMPIRLIK) {
+        if (weapon == null || !weapon.hasEnchantment(Enchantment.VAMPIRLIK)) {
             return;
         }
 
@@ -935,7 +944,7 @@ public class Game {
      */
     private void reflectThorns(Enemy enemy) {
         Armor armor = player.getEquippedArmor();
-        if (armor == null || armor.getEnchantment() != Enchantment.DIKEN || !enemy.isAlive()) {
+        if (armor == null || !armor.hasEnchantment(Enchantment.DIKEN) || !enemy.isAlive()) {
             return;
         }
 
@@ -1159,6 +1168,7 @@ public class Game {
             case "FURY" -> new FuryPotion(data.x(), data.y());
             case "ESCAPE" -> new EscapePotion(data.x(), data.y());
             case "GOLD" -> new Gold(data.x(), data.y(), data.value());
+            case "LEGEND" -> restoreGear(new LegendWeapon(data.x(), data.y()), data);
             case "WEAPON" -> restoreGear(
                     new Weapon(data.x(), data.y(), data.name(), data.value(), data.spriteName()), data);
             case "ARMOR" -> restoreGear(
@@ -1180,28 +1190,34 @@ public class Game {
             gear.restoreState(gear.getMaxDurability(), data.upgradeLevel());
         }
 
-        gear.enchant(parseEnchantment(data.enchantment(), gear));
+        restoreEnchantments(gear, data.enchantment());
         return gear;
     }
 
     /**
-     * Kayıttaki büyü etiketini çözer.
+     * Kayıttaki büyü etiketlerini çözüp parçaya basar.
      *
-     * <p>Tanımadığımız bir etiket kaydı bozmuyor, o parça büyüsüz açılıyor:
+     * <p>Alan virgülle ayrılmış: efsanevi kılıç iki büyü taşıyabildiği için
+     * tek etiket yetmiyordu. Ayırıcı olarak virgül seçildi çünkü kayıt
+     * dosyasının alan ayırıcısı {@code |} ve iç içe geçmemeleri gerekiyor.</p>
+     *
+     * <p>Tanımadığımız bir etiket kaydı bozmuyor, yalnızca o büyü atlanıyor:
      * ileride bir büyü oyundan kalkarsa eski kayıtlar hâlâ okunabilsin diye —
      * kalkan ve kaskta izlediğimiz yolun aynısı.</p>
      */
-    private Enchantment parseEnchantment(String label, Equipment gear) {
-        if (label == null || label.isBlank()) {
-            return null;
+    private void restoreEnchantments(Equipment gear, String labels) {
+        if (labels == null || labels.isBlank()) {
+            return;
         }
 
-        for (Enchantment candidate : gear.availableEnchantments()) {
-            if (candidate.name().equals(label)) {
-                return candidate;
+        for (String label : labels.split(",")) {
+            for (Enchantment candidate : gear.availableEnchantments()) {
+                if (candidate.name().equals(label.trim())) {
+                    gear.enchant(candidate);
+                    break;
+                }
             }
         }
-        return null;
     }
 
     /**
@@ -1514,6 +1530,7 @@ public class Game {
         boolean weaponPlaced = false;
         boolean armorPlaced = false;
         int rareItems = 0;
+        boolean legendRolled = false;
 
         for (Position spot : spots) {
             if (used.contains(spot)) {
@@ -1533,6 +1550,16 @@ public class Game {
             } else if (!armorPlaced) {
                 addGroundItem(LootTable.armorForTier(tier, spot.x(), spot.y()));
                 armorPlaced = true;
+
+            } else if (!legendRolled) {
+                // Efsanevi kılıç kendi zarını atıyor; nadir eşyalarla aynı
+                // havuzda olsaydı biri diğerinin şansını yerdi.
+                legendRolled = true;
+                if (random.nextDouble() < LEGEND_CHANCE) {
+                    addGroundItem(new LegendWeapon(spot.x(), spot.y()));
+                } else {
+                    continue;
+                }
 
             } else if (rareItems < RARE_ITEM_ROLLS) {
                 // Nadir eşyalar için tek tek zar atılıyor; tutmayan zar kareyi

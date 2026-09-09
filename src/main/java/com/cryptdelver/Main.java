@@ -1,5 +1,6 @@
 package com.cryptdelver;
 
+import com.cryptdelver.entity.LegendWeapon;
 import com.cryptdelver.entity.Player;
 import com.cryptdelver.game.Game;
 import com.cryptdelver.ui.GameScreen;
@@ -32,6 +33,8 @@ public class Main extends Application {
         Player player = new Player(0, 0);
         Game game = new Game(generators, DUNGEON_WIDTH, DUNGEON_HEIGHT, player);
 
+        grantLegendaryIfRequested(game);
+
         GameScreen screen = new GameScreen(game);
         Scene scene = new Scene(screen.getRoot(), screen.getWidth(), screen.getHeight());
         screen.attachInput(scene);
@@ -44,6 +47,29 @@ public class Main extends Application {
 
         screen.enableSound();
         screen.start();
+    }
+
+    /**
+     * İstenirse oyuncuyu Yıldızkıran'la başlatır.
+     *
+     * <p>Efsanevi kılıcın çıkma şansı binde bir, yani onu <em>görmek</em> bile
+     * başlı başına bir olay. Denemek ya da göstermek için her seferinde şansa
+     * bakmak yerine açık bir kapı bırakıldı.</p>
+     *
+     * <p>Kapı ortam değişkeni, oyun içi bir seçenek değil: menüye "efsanevi
+     * kılıçla başla" satırı koymak ödülü ödül olmaktan çıkarırdı. Kullanımı:
+     * {@code CRYPTDELVER_LEGENDARY=1} ile çalıştır.</p>
+     */
+    private static void grantLegendaryIfRequested(Game game) {
+        if (!"1".equals(System.getenv("CRYPTDELVER_LEGENDARY"))
+                && !Boolean.getBoolean("cryptdelver.legendary")) {
+            return;
+        }
+
+        LegendWeapon legend = new LegendWeapon(0, 0);
+        game.getInventory().add(legend);
+        game.getPlayer().equip(legend);
+        game.getMessageLog().add("Yıldızkıran elinde. İki büyü yuvası var.");
     }
 
     public static void main(String[] args) {
