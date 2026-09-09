@@ -83,6 +83,11 @@ public abstract class Item extends Entity {
         return 0;
     }
 
+    /** Kayıtta saklanan büyünün etiketi; büyü yoksa boş dizge. */
+    public String getSaveEnchantment() {
+        return "";
+    }
+
     /**
      * Aynı türden eşyalar çantada tek slotu paylaşabilir mi.
      *

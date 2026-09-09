@@ -1,5 +1,6 @@
 package com.cryptdelver.ui;
 
+import com.cryptdelver.entity.Enchantment;
 import com.cryptdelver.game.Game;
 import com.cryptdelver.game.Settings;
 import com.cryptdelver.persistence.SaveData;
@@ -19,7 +20,6 @@ import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.StackPane;
 import javafx.scene.transform.Scale;
 import javafx.stage.Screen;
 
@@ -58,7 +58,7 @@ public class GameScreen {
     private final Game game;
     private final Canvas canvas;
     private final GameRenderer renderer = new GameRenderer();
-    private final StackPane root;
+    private final Group root;
     private final double scale;
     private final Set<KeyCode> pressedKeys = EnumSet.noneOf(KeyCode.class);
     private final Deque<KeyCode> heldDirections = new ArrayDeque<>();
@@ -81,7 +81,13 @@ public class GameScreen {
         // Tuval sabit boyutta kalıyor, onu saran düğüm küçülüyor.
         Group scaledCanvas = new Group(canvas);
         scaledCanvas.getTransforms().add(new Scale(scale, scale));
-        this.root = new StackPane(scaledCanvas);
+
+        // Kök düğüm Group: hiçbir yerleşim yapmıyor, tuvali (0, 0)'da bırakıyor.
+        // Önce StackPane vardı ve ortalıyordu; ölçeklenmiş düğümün yerleşim
+        // boyutu ölçeklenmemiş hâli olduğu için tuvali eksi koordinata itip
+        // sol ve üst kenarı ekranın dışında bırakıyordu — bilgi şeridinin sol
+        // sütunu kırpılıyor, boss can çubuğu da hiç görünmüyordu.
+        this.root = new Group(scaledCanvas);
     }
 
     /**
@@ -314,6 +320,10 @@ public class GameScreen {
             case DIGIT2 -> game.repairArmor();
             case DIGIT3 -> game.upgradeWeapon();
             case DIGIT4 -> game.upgradeArmor();
+            case DIGIT5 -> game.enchantWeapon(Enchantment.VAMPIRLIK);
+            case DIGIT6 -> game.enchantWeapon(Enchantment.SAGLAMLIK);
+            case DIGIT7 -> game.enchantArmor(Enchantment.DIKEN);
+            case DIGIT8 -> game.enchantArmor(Enchantment.SAGLAMLIK);
             default -> {
                 // Diğer tuşlar tezgâhta bir şey yapmıyor.
             }

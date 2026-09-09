@@ -61,13 +61,14 @@ public record SaveData(
      * @param value        altın miktarı ya da <em>taban</em> vuruş/savunma bonusu
      * @param durability   kalan dayanıklılık
      * @param upgradeLevel demircide kaç kademe yükseltildiği
+     * @param enchantment  basılı büyünün etiketi; büyü yoksa boş dizge
      */
     public record ItemData(String kind, int x, int y, String name, int value, String spriteName,
-                           int durability, int upgradeLevel) {
+                           int durability, int upgradeLevel, String enchantment) {
 
         /** Yıpranma bilinmeyen eski kayıtlar için: parça sağlam sayılıyor. */
         public ItemData(String kind, int x, int y, String name, int value, String spriteName) {
-            this(kind, x, y, name, value, spriteName, UNKNOWN_DURABILITY, 0);
+            this(kind, x, y, name, value, spriteName, UNKNOWN_DURABILITY, 0, "");
         }
     }
 

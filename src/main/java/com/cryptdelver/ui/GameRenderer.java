@@ -1,5 +1,7 @@
 package com.cryptdelver.ui;
 
+import com.cryptdelver.entity.Armor;
+import com.cryptdelver.entity.Enchantment;
 import com.cryptdelver.entity.Enemy;
 import com.cryptdelver.entity.Entity;
 import com.cryptdelver.entity.Equipment;
@@ -513,7 +515,7 @@ public class GameRenderer {
         gc.setFont(hudFont);
         gc.setTextAlign(TextAlignment.LEFT);
         gc.setFill(item.isBroken() ? HP_TEXT : SLOT_EQUIPPED);
-        gc.fillText(item.getDisplayName(), INVENTORY_PANEL_X, centerY);
+        gc.fillText(item.getFullName(), INVENTORY_PANEL_X, centerY);
 
         double barX = INVENTORY_PANEL_X + 170;
         double barWidth = 140;
@@ -725,23 +727,73 @@ public class GameRenderer {
         gc.fillText("Kesende " + game.getGold() + " altin var.", mapWidth / 2, mapHeight / 2 - 148);
 
         Player player = game.getPlayer();
-        double y = mapHeight / 2 - 100;
+        Weapon weapon = player.getEquippedWeapon();
+        Armor armor = player.getEquippedArmor();
+        double y = mapHeight / 2 - 112;
 
-        y = drawForgeRow(gc, game, mapWidth, y, "1", "Silahi tamir et",
-                player.getEquippedWeapon(), false);
-        y = drawForgeRow(gc, game, mapWidth, y, "2", "Zirhi tamir et",
-                player.getEquippedArmor(), false);
-        y = drawForgeRow(gc, game, mapWidth, y, "3", "Silahi yukselt",
-                player.getEquippedWeapon(), true);
-        y = drawForgeRow(gc, game, mapWidth, y, "4", "Zirhi yukselt",
-                player.getEquippedArmor(), true);
+        y = drawForgeRow(gc, game, mapWidth, y, "1", "Silahi tamir et", weapon, false);
+        y = drawForgeRow(gc, game, mapWidth, y, "2", "Zirhi tamir et", armor, false);
+        y = drawForgeRow(gc, game, mapWidth, y, "3", "Silahi yukselt", weapon, true);
+        y = drawForgeRow(gc, game, mapWidth, y, "4", "Zirhi yukselt", armor, true);
+
+        y += 10;
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setFill(HUD_ACCENT);
+        gc.fillText("— BUYULER (her parcada bir tane durur) —", mapWidth / 2, y);
+        y += 26;
+
+        y = drawEnchantRows(gc, game, mapWidth, y, "Kilica", weapon, 5);
+        y = drawEnchantRows(gc, game, mapWidth, y, "Zirha", armor, 7);
 
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setFill(HUD_TEXT);
         gc.fillText("Yukseltme tavani, bu katta bossun birakacagi parca kadar.",
-                mapWidth / 2, y + 24);
+                mapWidth / 2, y + 18);
         gc.setFill(HUD_ACCENT);
-        gc.fillText("F ya da ESC: tezgahtan ayril", mapWidth / 2, y + 48);
+        gc.fillText("F ya da ESC: tezgahtan ayril", mapWidth / 2, y + 40);
+    }
+
+    /**
+     * Bir parçanın büyü satırları.
+     *
+     * <p>Her büyünün kendi rakamı var, alt menü yok: dört büyü zaten ekrana
+     * sığıyor ve oyuncunun "hangi menüdeydim" diye düşünmesi gerekmiyor. Şu an
+     * takılı olan büyü işaretli, çünkü yeni büyü onun yerine geçiyor.</p>
+     *
+     * @param firstKey bu parçanın ilk büyüsüne düşen rakam
+     * @return bir sonraki satırın y'si
+     */
+    private double drawEnchantRows(GraphicsContext gc, Game game, double mapWidth, double y,
+                                   String owner, Equipment item, int firstKey) {
+        List<Enchantment> options = item == null
+                ? List.of(Enchantment.VAMPIRLIK, Enchantment.SAGLAMLIK)
+                : item.availableEnchantments();
+
+        for (int i = 0; i < options.size(); i++) {
+            Enchantment option = options.get(i);
+            boolean active = item != null && item.getEnchantment() == option;
+            boolean available = item != null && !active;
+            boolean affordable = available && game.getGold() >= option.getCost();
+
+            gc.setTextAlign(TextAlignment.RIGHT);
+            gc.setFill(available ? GOLD_TEXT : SLOT_NUMBER);
+            gc.fillText(String.valueOf(firstKey + i), mapWidth / 2 - 300, y);
+
+            gc.setTextAlign(TextAlignment.LEFT);
+            gc.setFill(available ? MESSAGE_TEXT : MESSAGE_FADED);
+            gc.fillText(owner + ": " + option.getLabel(), mapWidth / 2 - 285, y);
+
+            gc.setFill(active ? GOLD_TEXT : MESSAGE_FADED);
+            gc.fillText(active ? "takili — " + option.getDescription() : option.getDescription(),
+                    mapWidth / 2 - 60, y);
+
+            gc.setTextAlign(TextAlignment.RIGHT);
+            gc.setFill(affordable ? GOLD_TEXT : MESSAGE_FADED);
+            gc.fillText(item == null ? "—" : option.getCost() + " altin", mapWidth / 2 + 300, y);
+
+            y += 26;
+        }
+        return y;
     }
 
     /**
@@ -762,12 +814,12 @@ public class GameRenderer {
             available = false;
         } else if (upgrade) {
             available = item.canUpgrade(game.getDepth());
-            detail = item.getDisplayName() + "  +" + item.getBonus()
+            detail = item.getFullName() + "  +" + item.getBonus()
                     + (available ? "" : "  (tavan)");
             cost = available ? Forge.upgradeCost(item) + " altin" : "—";
         } else {
             available = item.needsRepair();
-            detail = item.getDisplayName() + "  " + item.getDurability() + "/"
+            detail = item.getFullName() + "  " + item.getDurability() + "/"
                     + item.getMaxDurability() + (item.isBroken() ? "  KIRIK" : "");
             cost = available ? Forge.repairCost(item) + " altin" : "saglam";
         }
@@ -777,17 +829,17 @@ public class GameRenderer {
 
         gc.setTextAlign(TextAlignment.RIGHT);
         gc.setFill(available ? GOLD_TEXT : SLOT_NUMBER);
-        gc.fillText(key, mapWidth / 2 - 250, y);
+        gc.fillText(key, mapWidth / 2 - 300, y);
 
         gc.setTextAlign(TextAlignment.LEFT);
         gc.setFill(available ? MESSAGE_TEXT : MESSAGE_FADED);
-        gc.fillText(label, mapWidth / 2 - 235, y);
+        gc.fillText(label, mapWidth / 2 - 285, y);
         gc.setFill(MESSAGE_FADED);
         gc.fillText(detail, mapWidth / 2 - 60, y);
 
         gc.setTextAlign(TextAlignment.RIGHT);
         gc.setFill(affordable ? GOLD_TEXT : MESSAGE_FADED);
-        gc.fillText(cost, mapWidth / 2 + 250, y);
+        gc.fillText(cost, mapWidth / 2 + 300, y);
 
         return y + 30;
     }

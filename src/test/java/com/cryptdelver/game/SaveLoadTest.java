@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.cryptdelver.entity.Enchantment;
 import com.cryptdelver.entity.Enemy;
 import com.cryptdelver.entity.Player;
 import com.cryptdelver.entity.Weapon;
@@ -209,6 +210,19 @@ class SaveLoadTest {
         assertEquals(17, restored.getDurability(), "Kalan dayaniklilik korunmali");
         assertEquals(2, restored.getUpgradeLevel(), "Yukseltme kademesi korunmali");
         assertEquals(6, restored.getBonus(), "Taban bonus artı yukseltmeler");
+    }
+
+    @Test
+    @DisplayName("Basili buyu kayitta korunur")
+    void enchantmentSurvivesTheSave() {
+        Weapon weapon = new Weapon(0, 0, "Test Kilici", 4, "sword", 40);
+        weapon.enchant(Enchantment.VAMPIRLIK);
+        game.getInventory().add(weapon);
+        player.equip(weapon);
+
+        Weapon restored = reload().getPlayer().getEquippedWeapon();
+
+        assertEquals(Enchantment.VAMPIRLIK, restored.getEnchantment());
     }
 
     @Test

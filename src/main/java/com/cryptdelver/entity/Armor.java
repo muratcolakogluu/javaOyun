@@ -2,6 +2,7 @@ package com.cryptdelver.entity;
 
 import com.cryptdelver.game.Game;
 import com.cryptdelver.game.LootTable;
+import java.util.List;
 
 /**
  * Kuşanılabilir zırh: gelen hasarı azaltır.
@@ -29,6 +30,16 @@ public class Armor extends Equipment {
     @Override
     public int upgradeCeiling(int depth) {
         return LootTable.armorBonusForTier(LootTable.bossTierForDepth(depth));
+    }
+
+    /**
+     * Zırha basılabilen büyüler.
+     *
+     * <p>Diken zırha özel: yansıtmak için önce darbe yemen gerekiyor.</p>
+     */
+    @Override
+    public List<Enchantment> availableEnchantments() {
+        return List.of(Enchantment.DIKEN, Enchantment.SAGLAMLIK);
     }
 
     @Override

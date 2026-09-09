@@ -2,6 +2,7 @@ package com.cryptdelver.entity;
 
 import com.cryptdelver.game.Game;
 import com.cryptdelver.game.LootTable;
+import java.util.List;
 
 /**
  * Kuşanılabilir silah: vuruş gücüne bonus ekler.
@@ -32,6 +33,17 @@ public class Weapon extends Equipment {
     @Override
     public int upgradeCeiling(int depth) {
         return LootTable.weaponBonusForTier(LootTable.bossTierForDepth(depth));
+    }
+
+    /**
+     * Kılıca basılabilen büyüler.
+     *
+     * <p>Vampirlik silaha özel: can emmek vurmakla oluyor. Sağlamlık her iki
+     * parçada da işe yarıyor, o yüzden iki listede de var.</p>
+     */
+    @Override
+    public List<Enchantment> availableEnchantments() {
+        return List.of(Enchantment.VAMPIRLIK, Enchantment.SAGLAMLIK);
     }
 
     @Override

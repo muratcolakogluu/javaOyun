@@ -4,6 +4,7 @@ import com.cryptdelver.entity.Armor;
 import com.cryptdelver.entity.Blacksmith;
 import com.cryptdelver.entity.Boss;
 import com.cryptdelver.entity.Combatant;
+import com.cryptdelver.entity.Enchantment;
 import com.cryptdelver.entity.Enemy;
 import com.cryptdelver.entity.Entity;
 import com.cryptdelver.entity.Equipment;
@@ -71,6 +72,12 @@ public class Game {
 
     /** Demirci doğulan yerden en az bu kadar uzağa konur. */
     private static final int BLACKSMITH_MIN_DISTANCE = 3;
+
+    /** Vampirlik büyüsünün öldürme başına verdiği can. */
+    private static final int VAMPIRISM_HEAL = 2;
+
+    /** Diken büyüsünün vurana yansıttığı hasar. */
+    private static final int THORNS_DAMAGE = 1;
 
     private static final int POTIONS_PER_FLOOR = 4;
     private static final int GOLD_PILES_PER_FLOOR = 5;
@@ -407,6 +414,54 @@ public class Game {
         sounds.play(SoundEffect.EQUIP);
     }
 
+    public void enchantWeapon(Enchantment enchantment) {
+        enchant(player.getEquippedWeapon(), enchantment, "Silah");
+    }
+
+    public void enchantArmor(Enchantment enchantment) {
+        enchant(player.getEquippedArmor(), enchantment, "Zırh");
+    }
+
+    /**
+     * Parçaya büyü basar.
+     *
+     * <p>Bir parçada bir büyü duruyor: yenisi eskisinin yerine geçiyor ve tam
+     * fiyat ödeniyor. Yani fikir değiştirmek serbest ama bedava değil.</p>
+     */
+    private void enchant(Equipment item, Enchantment enchantment, String label) {
+        if (!requireForge() || item == null) {
+            messageLog.add(label + " kuşanmadın.");
+            return;
+        }
+
+        if (!item.accepts(enchantment)) {
+            messageLog.add(label.toLowerCase() + " bu büyüyü taşımaz.");
+            return;
+        }
+
+        if (item.getEnchantment() == enchantment) {
+            messageLog.add(item.getDisplayName() + " zaten " + enchantment.getLabel()
+                    + " taşıyor.");
+            return;
+        }
+
+        if (!spendGold(enchantment.getCost())) {
+            return;
+        }
+
+        Enchantment previous = item.getEnchantment();
+        item.enchant(enchantment);
+        sounds.play(SoundEffect.EQUIP);
+
+        if (previous == null) {
+            messageLog.add(item.getDisplayName() + " artık " + enchantment.getLabel()
+                    + " taşıyor (-" + enchantment.getCost() + " altın).");
+        } else {
+            messageLog.add(previous.getLabel() + " silindi, yerine " + enchantment.getLabel()
+                    + " basıldı (-" + enchantment.getCost() + " altın).");
+        }
+    }
+
     private boolean requireForge() {
         if (forgeOpen) {
             return true;
@@ -647,17 +702,40 @@ public class Game {
             messageLog.add(enemy.getName() + " " + damage + " hasar aldı.");
 
             if (!enemy.isAlive()) {
-                removeEnemy(enemy);
-                messageLog.add(enemy.getName() + " yere serildi.");
-                sounds.play(SoundEffect.KILL);
-
-                // Ganimeti düşman kendi bırakıyor; burada tür kontrolü yok.
-                enemy.onDeath(this);
-                if (enemy == boss) {
-                    boss = null;
-                }
+                buryEnemy(enemy);
+                drainLife();
             }
         }
+    }
+
+    /**
+     * Ölen düşmanı listeden çıkarır, ganimetini bıraktırır ve duyurur.
+     *
+     * <p>Ölüm iki yerden geliyor: oyuncunun vuruşu ve Diken büyüsünün
+     * yansıttığı hasar. İkisinin de aynı işleri yapması gerekiyordu, o yüzden
+     * tek yerde toplandı.</p>
+     */
+    private void buryEnemy(Enemy enemy) {
+        removeEnemy(enemy);
+        messageLog.add(enemy.getName() + " yere serildi.");
+        sounds.play(SoundEffect.KILL);
+
+        // Ganimeti düşman kendi bırakıyor; burada tür kontrolü yok.
+        enemy.onDeath(this);
+        if (enemy == boss) {
+            boss = null;
+        }
+    }
+
+    /** Vampirlik büyüsü: öldürülen her düşman biraz can veriyor. */
+    private void drainLife() {
+        Weapon weapon = player.getEquippedWeapon();
+        if (weapon == null || weapon.getEnchantment() != Enchantment.VAMPIRLIK) {
+            return;
+        }
+
+        player.heal(VAMPIRISM_HEAL);
+        messageLog.add("Vampirlik " + VAMPIRISM_HEAL + " can emdi.");
     }
 
     /**
@@ -670,10 +748,31 @@ public class Game {
         messageLog.add(enemy.getName() + " sana " + damage + " hasar vurdu.");
         sounds.play(SoundEffect.HURT);
         wearGear(player.getEquippedArmor(), "Zırhın");
+        reflectThorns(enemy);
 
         if (!player.isAlive()) {
             messageLog.add("Zindanda öldün.");
             sounds.play(SoundEffect.DEATH);
+        }
+    }
+
+    /**
+     * Diken büyüsü: sana vurana hasar yansıtır.
+     *
+     * <p>Yansıyan hasar düşmanı öldürebiliyor — kalabalığın ortasında hiç
+     * vurmadan da kayıp verdirmenin yolu bu.</p>
+     */
+    private void reflectThorns(Enemy enemy) {
+        Armor armor = player.getEquippedArmor();
+        if (armor == null || armor.getEnchantment() != Enchantment.DIKEN || !enemy.isAlive()) {
+            return;
+        }
+
+        enemy.takeDamage(THORNS_DAMAGE);
+        messageLog.add("Diken " + enemy.getName() + " üstünde " + THORNS_DAMAGE + " hasar açtı.");
+
+        if (!enemy.isAlive()) {
+            buryEnemy(enemy);
         }
     }
 
@@ -855,7 +954,7 @@ public class Game {
     private SaveData.ItemData describe(Item item) {
         return new SaveData.ItemData(item.getSaveKind(), item.getTileX(), item.getTileY(),
                 item.getName(), item.getSaveValue(), item.getSpriteName(),
-                item.getSaveDurability(), item.getSaveUpgradeLevel());
+                item.getSaveDurability(), item.getSaveUpgradeLevel(), item.getSaveEnchantment());
     }
 
     /**
@@ -889,7 +988,29 @@ public class Game {
         } else if (data.upgradeLevel() > 0) {
             gear.restoreState(gear.getMaxDurability(), data.upgradeLevel());
         }
+
+        gear.enchant(parseEnchantment(data.enchantment(), gear));
         return gear;
+    }
+
+    /**
+     * Kayıttaki büyü etiketini çözer.
+     *
+     * <p>Tanımadığımız bir etiket kaydı bozmuyor, o parça büyüsüz açılıyor:
+     * ileride bir büyü oyundan kalkarsa eski kayıtlar hâlâ okunabilsin diye —
+     * kalkan ve kaskta izlediğimiz yolun aynısı.</p>
+     */
+    private Enchantment parseEnchantment(String label, Equipment gear) {
+        if (label == null || label.isBlank()) {
+            return null;
+        }
+
+        for (Enchantment candidate : gear.availableEnchantments()) {
+            if (candidate.name().equals(label)) {
+                return candidate;
+            }
+        }
+        return null;
     }
 
     /**

@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.cryptdelver.entity.Armor;
 import com.cryptdelver.entity.Blacksmith;
+import com.cryptdelver.entity.Enchantment;
 import com.cryptdelver.entity.Player;
 import com.cryptdelver.entity.Weapon;
 import com.cryptdelver.world.BspGenerator;
@@ -272,6 +273,72 @@ class BlacksmithTest {
             game.upgradeArmor();
             game.repairArmor();
 
+            assertEquals(before, game.getGold());
+        }
+
+        @Test
+        @DisplayName("Buyu basmak altin dusurur")
+        void enchantingCostsGold() {
+            openForgeAt(5);
+            Weapon weapon = wornSword();
+            game.addGold(Enchantment.VAMPIRLIK.getCost());
+
+            game.enchantWeapon(Enchantment.VAMPIRLIK);
+
+            assertEquals(Enchantment.VAMPIRLIK, weapon.getEnchantment());
+            assertEquals(0, game.getGold(), "Butun altin gitmis olmali");
+        }
+
+        @Test
+        @DisplayName("Altin yetmezse buyu basilmaz")
+        void enchantingNeedsEnoughGold() {
+            openForgeAt(5);
+            Weapon weapon = wornSword();
+
+            game.enchantWeapon(Enchantment.VAMPIRLIK);
+
+            assertNull(weapon.getEnchantment(), "Bedava buyu yok");
+        }
+
+        /** "1 seye 1 tane buyu": yenisi eskisinin yerine geciyor, ustune degil. */
+        @Test
+        @DisplayName("Ikinci buyu birincinin yerine gecer")
+        void thesecondEnchantmentReplacesTheFirst() {
+            openForgeAt(5);
+            Weapon weapon = wornSword();
+            game.addGold(1000);
+
+            game.enchantWeapon(Enchantment.VAMPIRLIK);
+            game.enchantWeapon(Enchantment.SAGLAMLIK);
+
+            assertEquals(Enchantment.SAGLAMLIK, weapon.getEnchantment());
+        }
+
+        @Test
+        @DisplayName("Ayni buyu ikinci kez basilmaz")
+        void repeatingTheSameEnchantmentIsFree() {
+            openForgeAt(5);
+            Weapon weapon = wornSword();
+            game.addGold(1000);
+            game.enchantWeapon(Enchantment.VAMPIRLIK);
+            int after = game.getGold();
+
+            game.enchantWeapon(Enchantment.VAMPIRLIK);
+
+            assertEquals(after, game.getGold(), "Ayni buyu icin ikinci kez odeme alinmamali");
+        }
+
+        @Test
+        @DisplayName("Silaha zirh buyusu basilmaz")
+        void gearRejectsTheWrongEnchantment() {
+            openForgeAt(5);
+            Weapon weapon = wornSword();
+            game.addGold(1000);
+            int before = game.getGold();
+
+            game.enchantWeapon(Enchantment.DIKEN);
+
+            assertNull(weapon.getEnchantment());
             assertEquals(before, game.getGold());
         }
 

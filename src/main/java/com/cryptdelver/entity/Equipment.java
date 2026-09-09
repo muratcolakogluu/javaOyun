@@ -1,5 +1,7 @@
 package com.cryptdelver.entity;
 
+import java.util.List;
+
 /**
  * Kuşanılan parçaların ortak atası: silah ve zırh.
  *
@@ -31,6 +33,17 @@ public abstract class Equipment extends Item {
 
     private int durability;
     private int upgradeLevel;
+    private Enchantment enchantment;
+
+    /**
+     * Kaç kez aşınma denendiği.
+     *
+     * <p>Yalnızca {@link Enchantment#SAGLAMLIK} için gerekli: o büyü aşınmayı
+     * yarıya indiriyor, bunun için de tek sayılı denemeleri atlamak yetiyor.
+     * Kesirli dayanıklılık tutmaktansa sayacı tutmak hem daha basit hem de
+     * ekranda gösterilen sayıyı tam sayı olarak koruyor.</p>
+     */
+    private int wearAttempts;
 
     protected Equipment(int tileX, int tileY, String name, int baseBonus,
                         String spriteName, int maxDurability) {
@@ -85,8 +98,38 @@ public abstract class Equipment extends Item {
             return false;
         }
 
+        wearAttempts++;
+        if (enchantment == Enchantment.SAGLAMLIK && wearAttempts % 2 != 0) {
+            return false;
+        }
+
         durability--;
         return durability == 0;
+    }
+
+    // ------------------------------------------------------------------ büyü
+
+    /** Parçadaki büyü; yoksa {@code null}. */
+    public Enchantment getEnchantment() {
+        return enchantment;
+    }
+
+    /**
+     * Büyüyü basar; parçada zaten bir büyü varsa onun yerine geçer.
+     *
+     * <p>Bir parçada bir büyü duruyor. Üst üste yığılabilseydi tek bir kılıcı
+     * sonsuza kadar besleyip her şeyi çözerdin; tek yuva olunca "bu kılıçta
+     * hangisi dursun" diye karar vermen gerekiyor.</p>
+     */
+    public void enchant(Enchantment enchantment) {
+        this.enchantment = enchantment;
+    }
+
+    /** Bu parçaya basılabilen büyüler; silah ve zırh farklı listeler veriyor. */
+    public abstract List<Enchantment> availableEnchantments();
+
+    public boolean accepts(Enchantment candidate) {
+        return candidate != null && availableEnchantments().contains(candidate);
     }
 
     /** Dayanıklılığı doldurur. */
@@ -104,6 +147,13 @@ public abstract class Equipment extends Item {
     public void restoreState(int durability, int upgradeLevel) {
         this.upgradeLevel = Math.max(0, upgradeLevel);
         this.durability = Math.clamp(durability, 0, maxDurability);
+    }
+
+    /** Çantada ve tezgâhta görünen tam ad: yükseltme kademesi ve büyüsüyle. */
+    public String getFullName() {
+        return enchantment == null
+                ? getDisplayName()
+                : getDisplayName() + " [" + enchantment.getLabel() + "]";
     }
 
     /**
@@ -137,6 +187,11 @@ public abstract class Equipment extends Item {
     @Override
     public int getSaveUpgradeLevel() {
         return upgradeLevel;
+    }
+
+    @Override
+    public String getSaveEnchantment() {
+        return enchantment == null ? "" : enchantment.name();
     }
 
     @Override

@@ -30,8 +30,8 @@ import java.util.Optional;
  */
 public class SaveFile {
 
-    /** Yazılan dosya sürümü; dayanıklılık ve yükseltme eklenince 6 oldu. */
-    private static final int VERSION = 6;
+    /** Yazılan dosya sürümü; büyüler eklenince 7 oldu. */
+    private static final int VERSION = 7;
 
     private static final String SEPARATOR = "|";
     private static final String SPLIT_PATTERN = "\\|";
@@ -179,8 +179,10 @@ public class SaveFile {
     /**
      * Eşya satırını okur.
      *
-     * <p>Dayanıklılık ve yükseltme sürüm 6 ile geldi; daha eski satırlarda bu
-     * alanlar yok ve parça sağlam sayılıyor.</p>
+     * <p>Dayanıklılık ve yükseltme sürüm 6, büyü sürüm 7 ile geldi; daha eski
+     * satırlarda bu alanlar yok ve parça büyüsüz, sağlam sayılıyor. Alan
+     * eklemeye devam edebilmemizin nedeni satır sonundaki eksik alanları
+     * varsayılanla doldurmamız — eski kayıtlar bu yüzden hâlâ açılıyor.</p>
      */
     private SaveData.ItemData parseItem(String[] parts) {
         return new SaveData.ItemData(
@@ -191,7 +193,8 @@ public class SaveFile {
                 Integer.parseInt(parts[5]),
                 parts[6],
                 parts.length > 7 ? Integer.parseInt(parts[7]) : SaveData.UNKNOWN_DURABILITY,
-                parts.length > 8 ? Integer.parseInt(parts[8]) : 0);
+                parts.length > 8 ? Integer.parseInt(parts[8]) : 0,
+                parts.length > 9 ? parts[9] : "");
     }
 
     private SaveData.EnemyData parseEnemy(String[] parts) {
@@ -208,7 +211,8 @@ public class SaveFile {
     private String itemLine(String tag, SaveData.ItemData item) {
         return line(tag, item.kind(), String.valueOf(item.x()), String.valueOf(item.y()),
                 item.name(), String.valueOf(item.value()), item.spriteName(),
-                String.valueOf(item.durability()), String.valueOf(item.upgradeLevel()));
+                String.valueOf(item.durability()), String.valueOf(item.upgradeLevel()),
+                item.enchantment());
     }
 
     private String line(String tag, String... fields) {
