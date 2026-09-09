@@ -109,8 +109,15 @@ public class GameRenderer {
     /** Menü perdesi oyun perdesinden daha kapalı: menü ön planda.  */
     private static final Color MENU_BACKDROP = Color.web("#0b0b10", 0.92);
 
-    /** Hatırlanan ama görünmeyen karelerin üstündeki perde. */
-    private static final Color FORGOTTEN_VEIL = Color.web("#05050a", 0.66);
+    /**
+     * Hatırlanan ama görünmeyen karelerin üstündeki perde.
+     *
+     * <p>Yüzde kırk: gezdiğin yerin şeklini, merdiveni, koridorun nereye
+     * gittiğini rahatça okuyabiliyorsun. Daha koyusunda harita "açılmış" gibi
+     * durmuyordu, daha açığında ise ışık altında olmakla olmamak arasındaki
+     * fark kayboluyor.</p>
+     */
+    private static final Color FORGOTTEN_VEIL = Color.web("#05050a", 0.40);
 
     /** Menü çerçevesinin ve satırlarının genişliği. */
     private static final double MENU_FRAME_WIDTH = 620;
@@ -440,15 +447,17 @@ public class GameRenderer {
         Vision vision = game.getVision();
         drawDungeon(gc, dungeon, vision, game.isStairsLocked());
         drawThemeWash(gc, game.getTheme(), mapWidth, mapHeight);
-
-        // Varlıklar yalnızca ışık altındayken çiziliyor. Hatırlanan karede
-        // zemini biliyorsun ama üstünde ne olduğunu bilmiyorsun — düşman da
-        // eşya da hareket edebilir, onları "hatırlamak" yanlış bilgi olurdu.
+        // Eşyalar gölgeden önce çiziliyor, çünkü onlar da hatırlanıyor: yerdeki
+        // eşya kıpırdamıyor, dolayısıyla gördüğün zırhın nerede kaldığını
+        // bilmen doğru. Karanlıkta kalan eşya perdenin altında soluk görünüyor
+        // — "orada bir şey vardı" diyecek kadar.
         for (Item item : game.getGroundItems()) {
-            if (isSeen(vision, item)) {
+            if (vision.isRemembered(item.getTileX(), item.getTileY())) {
                 drawEntity(gc, item, GROUND_ITEM_SCALE);
             }
         }
+
+        drawShadows(gc, dungeon, vision);
 
         Player player = game.getPlayer();
 
@@ -672,11 +681,25 @@ public class GameRenderer {
                         drawStairsFrame(gc, cx, cy, stairsLocked);
                     }
                 }
+            }
+        }
+    }
 
-                // Hatırlanan ama şu an görünmeyen kare soluk: yerini
-                // biliyorsun, üstünde ne olduğunu bilmiyorsun.
-                if (!vision.isVisible(x, y)) {
-                    gc.setFill(FORGOTTEN_VEIL);
+    /**
+     * Gezdiğin ama şu an ışık altında olmayan kareleri hafifçe karartır.
+     *
+     * <p>Perde <em>bölge perdesinden sonra</em> çiziliyor. Önce karo başına
+     * çiziliyordu ve bölge perdesi üstüne biniyordu: hatırlanan kareler iki kat
+     * karartma alıp neredeyse siyaha düşüyordu, yani gezdiğin yer açılmış gibi
+     * durmuyordu. Şimdi tek kat ve daha açık — haritayı okuyabiliyorsun, ama
+     * neyin ışık altında olduğu hâlâ belli.</p>
+     */
+    private void drawShadows(GraphicsContext gc, Dungeon dungeon, Vision vision) {
+        gc.setFill(FORGOTTEN_VEIL);
+
+        for (int x = 0; x < dungeon.getWidth(); x++) {
+            for (int y = 0; y < dungeon.getHeight(); y++) {
+                if (vision.isRemembered(x, y) && !vision.isVisible(x, y)) {
                     gc.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
                 }
             }
