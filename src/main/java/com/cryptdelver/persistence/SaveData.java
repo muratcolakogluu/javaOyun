@@ -16,6 +16,13 @@ import java.util.List;
  * gerek yok. Ama harita üstündeki <em>durum</em> — düşmanlar, yerdeki eşyalar —
  * kaydediliyor; yoksa kaydedip yüklemek katı yeniden doldurup altın ve iksir
  * çiftliğine dönüştürürdü.</p>
+ *
+ * <p><b>Gezilmiş katlar da kaydediliyor.</b> Merdivenden geri çıkabilmek
+ * geldiğinden beri kat hafızası oyunun bir kuralı: çıktığın kat düşmanları ve
+ * ganimetiyle olduğu gibi bekliyor. Kayıt yalnızca bulunduğun katı saklarsa bu
+ * kural kaydet-yükle ile deliniyordu — çık, kaydet, yükle, in; kat yepyeni
+ * ganimetle karşına geliyordu. Yani kattaki durumu saklama gerekçesinin bir üst
+ * katmanı.</p>
  */
 public record SaveData(
         int depth,
@@ -29,9 +36,11 @@ public record SaveData(
         int playerMaxHp,
         int equippedWeaponSlot,
         int equippedArmorSlot,
+        String visionMask,
         List<ItemData> inventory,
         List<ItemData> groundItems,
-        List<EnemyData> enemies) {
+        List<EnemyData> enemies,
+        List<FloorData> visitedFloors) {
 
     /** Kuşanılmış parça yoksa slot alanına yazılan değer. */
     public static final int NO_SLOT = -1;
@@ -45,9 +54,50 @@ public record SaveData(
     public static final int UNKNOWN_DURABILITY = -1;
 
     public SaveData {
+        visionMask = visionMask == null ? "" : visionMask;
         inventory = List.copyOf(inventory);
         groundItems = List.copyOf(groundItems);
         enemies = List.copyOf(enemies);
+        visitedFloors = List.copyOf(visitedFloors);
+    }
+
+    /**
+     * Keşfi ve kat hafızası olmayan kayıt: sürüm 8 öncesi dosyalar.
+     *
+     * <p>Boş maske "hiçbir yeri görmedin" demek, yani eski bir kaydı açan
+     * oyuncu katı yeniden keşfediyor. Uydurulmuş bir haritayı doğru sanmasından
+     * iyi — {@link #UNKNOWN_DURABILITY} ile aynı yaklaşım.</p>
+     */
+    public SaveData(int depth, long seed, int generatorIndex, int gold, double elapsedSeconds,
+                    int playerX, int playerY, int playerHp, int playerMaxHp,
+                    int equippedWeaponSlot, int equippedArmorSlot,
+                    List<ItemData> inventory, List<ItemData> groundItems,
+                    List<EnemyData> enemies) {
+        this(depth, seed, generatorIndex, gold, elapsedSeconds, playerX, playerY, playerHp,
+                playerMaxHp, equippedWeaponSlot, equippedArmorSlot, "",
+                inventory, groundItems, enemies, List.of());
+    }
+
+    /**
+     * Bırakıldığı hâliyle saklanan bir kat.
+     *
+     * <p>Bulunduğun kattan tek farkı oyuncunun orada olmaması: harita yine
+     * tohumdan üretiliyor, üstündeki düşmanlar ve eşyalar yine tek tek
+     * yazılıyor. Zindanın sabrı da geliyor, çünkü uyanmış bir kata döndüğünde
+     * takviyelerin kaldığı yerden devam etmesi gerekiyor.</p>
+     *
+     * @param visionMask o katta keşfedilmiş kareler
+     * @param awake      zindan o katta oyuncuyu fark etmiş miydi
+     */
+    public record FloorData(int depth, long seed, int generatorIndex, double floorSeconds,
+                            boolean awake, String visionMask,
+                            List<ItemData> groundItems, List<EnemyData> enemies) {
+
+        public FloorData {
+            visionMask = visionMask == null ? "" : visionMask;
+            groundItems = List.copyOf(groundItems);
+            enemies = List.copyOf(enemies);
+        }
     }
 
     /**

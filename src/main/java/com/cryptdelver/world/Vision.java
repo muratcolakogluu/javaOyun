@@ -94,6 +94,44 @@ public class Vision {
         }
     }
 
+    /**
+     * Keşfedilmiş kareleri tek satırlık bir maskeye çevirir.
+     *
+     * <p>Satır satır, gördüğün kare {@code 1} görmediğin {@code 0}. 40x22'lik
+     * bir kat 880 karakter — kayıt dosyasını gözle okunabilir bırakacak kadar
+     * basit ve yirmi kat için bile birkaç kilobayt.</p>
+     *
+     * <p>Yalnızca <em>hatırlananlar</em> yazılıyor; o an ışık altında olan
+     * kareler oyuncunun konumundan yeniden hesaplanıyor.</p>
+     */
+    public String exportRemembered() {
+        StringBuilder mask = new StringBuilder(width * height);
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                mask.append(remembered[x][y] ? '1' : '0');
+            }
+        }
+        return mask.toString();
+    }
+
+    /**
+     * Maskeyi geri okur.
+     *
+     * <p>Boyu tutmayan maske yok sayılıyor: kat ölçüsü değişmiş bir kayıt
+     * yüzünden oyunun açılmaması saçma olurdu, o kat yeniden keşfedilir.</p>
+     */
+    public void importRemembered(String mask) {
+        if (mask == null || mask.length() != width * height) {
+            return;
+        }
+
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                remembered[x][y] = mask.charAt(y * width + x) == '1';
+            }
+        }
+    }
+
     /** Kat değişince her şey unutuluyor; yeni kat baştan karanlık. */
     public void reset() {
         for (int x = 0; x < width; x++) {

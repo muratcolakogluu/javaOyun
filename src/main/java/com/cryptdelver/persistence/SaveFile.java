@@ -23,15 +23,25 @@ import java.util.Optional;
  * player|12|7|14
  * inv|WEAPON|0|0|Çelik Kılıç|4|sword_steel
  * enemy|SKELETON|20|11|7|10|4|1
+ * seen|0000111100...
+ * floor|2|918273...|1|41.5|true
+ * fseen|0011111000...
+ * fenemy|IMP|9|3|4|5|2|0
  * </pre>
  *
  * <p>Sürüm satırı ilk satırda: biçim ileride değişirse eski kaydı sessizce
  * yanlış okumak yerine reddedebilelim diye.</p>
+ *
+ * <p>{@code floor} satırı bir <em>blok</em> açıyor: ondan sonra gelen
+ * {@code fseen}, {@code fenemy} ve {@code fground} satırları o kata ait. Tek
+ * bir düz metin biçiminde iç içe yapı kurmanın en ucuz yolu bu; alternatifi
+ * her satıra derinliği tekrar yazmaktı, o da dosyayı hem şişirir hem tutarsız
+ * derinlik yazma ihtimali açardı.</p>
  */
 public class SaveFile {
 
-    /** Yazılan dosya sürümü; büyüler eklenince 7 oldu. */
-    private static final int VERSION = 7;
+    /** Yazılan dosya sürümü; gezilmiş katlar eklenince 8 oldu. */
+    private static final int VERSION = 8;
 
     private static final String SEPARATOR = "|";
     private static final String SPLIT_PATTERN = "\\|";
@@ -77,9 +87,22 @@ public class SaveFile {
             lines.add(itemLine("ground", item));
         }
         for (SaveData.EnemyData enemy : data.enemies()) {
-            lines.add(line("enemy", enemy.kind(), String.valueOf(enemy.x()), String.valueOf(enemy.y()),
-                    String.valueOf(enemy.hp()), String.valueOf(enemy.maxHp()),
-                    String.valueOf(enemy.attack()), String.valueOf(enemy.defense())));
+            lines.add(enemyLine("enemy", enemy));
+        }
+        lines.add(line("seen", data.visionMask()));
+
+        for (SaveData.FloorData floor : data.visitedFloors()) {
+            lines.add(line("floor", String.valueOf(floor.depth()), String.valueOf(floor.seed()),
+                    String.valueOf(floor.generatorIndex()), String.valueOf(floor.floorSeconds()),
+                    String.valueOf(floor.awake())));
+            lines.add(line("fseen", floor.visionMask()));
+
+            for (SaveData.ItemData item : floor.groundItems()) {
+                lines.add(itemLine("fground", item));
+            }
+            for (SaveData.EnemyData enemy : floor.enemies()) {
+                lines.add(enemyLine("fenemy", enemy));
+            }
         }
 
         Path parent = path.getParent();
@@ -111,9 +134,11 @@ public class SaveFile {
         int playerMaxHp = 0;
         int weaponSlot = SaveData.NO_SLOT;
         int armorSlot = SaveData.NO_SLOT;
+        String visionMask = "";
         List<SaveData.ItemData> inventory = new ArrayList<>();
         List<SaveData.ItemData> ground = new ArrayList<>();
         List<SaveData.EnemyData> enemies = new ArrayList<>();
+        List<FloorBlock> floors = new ArrayList<>();
 
         try {
             for (String rawLine : Files.readAllLines(path, StandardCharsets.UTF_8)) {
@@ -145,6 +170,16 @@ public class SaveFile {
                     case "inv" -> inventory.add(parseItem(parts));
                     case "ground" -> ground.add(parseItem(parts));
                     case "enemy" -> enemies.add(parseEnemy(parts));
+                    case "seen" -> visionMask = parts[1];
+                    case "floor" -> floors.add(new FloorBlock(
+                            Integer.parseInt(parts[1]),
+                            Long.parseLong(parts[2]),
+                            Integer.parseInt(parts[3]),
+                            Double.parseDouble(parts[4]),
+                            Boolean.parseBoolean(parts[5])));
+                    case "fseen" -> openFloor(floors).visionMask = parts[1];
+                    case "fground" -> openFloor(floors).groundItems.add(parseItem(parts));
+                    case "fenemy" -> openFloor(floors).enemies.add(parseEnemy(parts));
                     default -> throw new IOException("Tanınmayan kayıt satırı: " + parts[0]);
                 }
             }
@@ -152,9 +187,56 @@ public class SaveFile {
             throw new IOException("Kayıt dosyası bozuk: " + path, e);
         }
 
+        List<SaveData.FloorData> visitedFloors = new ArrayList<>();
+        for (FloorBlock block : floors) {
+            visitedFloors.add(block.toData());
+        }
+
         return Optional.of(new SaveData(depth, seed, generatorIndex, gold, elapsed,
-                playerX, playerY, playerHp, playerMaxHp, weaponSlot, armorSlot,
-                inventory, ground, enemies));
+                playerX, playerY, playerHp, playerMaxHp, weaponSlot, armorSlot, visionMask,
+                inventory, ground, enemies, visitedFloors));
+    }
+
+    /**
+     * Açık kat bloğu: {@code fseen}, {@code fground} ve {@code fenemy} satırları
+     * bir üstlerindeki {@code floor} satırına ait.
+     *
+     * <p>Kendi yazdığımız dosyada bu satırlar {@code floor} olmadan gelemez ama
+     * elle düzenlenmiş bir dosya bozuk olabilir; o zaman sessizce yanlış okumak
+     * yerine "bozuk" diyoruz — bütün okuyucunun yaklaşımı bu.</p>
+     */
+    private FloorBlock openFloor(List<FloorBlock> floors) throws IOException {
+        if (floors.isEmpty()) {
+            throw new IOException("Kat satırı olmadan kat içeriği: " + path);
+        }
+        return floors.get(floors.size() - 1);
+    }
+
+    /** Okurken doldurulan kat; okuma bitince {@link SaveData.FloorData} oluyor. */
+    private static final class FloorBlock {
+
+        private final int depth;
+        private final long seed;
+        private final int generatorIndex;
+        private final double floorSeconds;
+        private final boolean awake;
+        private final List<SaveData.ItemData> groundItems = new ArrayList<>();
+        private final List<SaveData.EnemyData> enemies = new ArrayList<>();
+        private String visionMask = "";
+
+        private FloorBlock(int depth, long seed, int generatorIndex, double floorSeconds,
+                           boolean awake) {
+            this.depth = depth;
+            this.seed = seed;
+            this.generatorIndex = generatorIndex;
+            this.floorSeconds = floorSeconds;
+            this.awake = awake;
+        }
+
+        private SaveData.FloorData toData() {
+            return new SaveData.FloorData(depth, seed, generatorIndex, floorSeconds, awake,
+                    visionMask, groundItems, enemies);
+        }
     }
 
     /** Kaydı siler; dosya yoksa sessizce geçer. */
@@ -206,6 +288,12 @@ public class SaveFile {
                 Integer.parseInt(parts[5]),
                 Integer.parseInt(parts[6]),
                 Integer.parseInt(parts[7]));
+    }
+
+    private String enemyLine(String tag, SaveData.EnemyData enemy) {
+        return line(tag, enemy.kind(), String.valueOf(enemy.x()), String.valueOf(enemy.y()),
+                String.valueOf(enemy.hp()), String.valueOf(enemy.maxHp()),
+                String.valueOf(enemy.attack()), String.valueOf(enemy.defense()));
     }
 
     private String itemLine(String tag, SaveData.ItemData item) {

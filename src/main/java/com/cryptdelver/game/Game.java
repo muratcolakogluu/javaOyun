@@ -123,12 +123,17 @@ public class Game {
     private Position upStairs;
 
     /**
-     * Gezilmiş katlar: derinlik -> kat, o katın görüşü ve zindanın sabrı.
+     * Gezilmiş ama şu anda yüklü olmayan katlar: derinlik -> kat, o katın görüşü
+     * ve zindanın sabrı.
      *
-     * <p>Kayıt dosyası tek kat saklıyor, bu ise oyun içi bir hafıza. Kaydedip
-     * yükleyince gezilmiş katlar unutuluyor ve geri dönülen kat yeniden
-     * üretiliyor — bilinçli bir taviz: bütün zindanı kayda yazmak dosyayı
-     * kilolarca büyütürdü.</p>
+     * <p>Bulunduğun kat burada <em>değil</em>, oyunun kendi alanlarında duruyor;
+     * inip çıkarken biri diskten diğerine geçiyor. Böylece "hangisi doğru"
+     * sorusu hiç doğmuyor.</p>
+     *
+     * <p>Bu hafıza kayda da yazılıyor. Bir süre yazmıyorduk — dosyayı büyütmemek
+     * için — ama o zaman kaydedip yükleyen oyuncu geri döndüğü katı yepyeni
+     * ganimetle buluyordu. Harita yerine tohum yazdığımız için kat başına maliyet
+     * birkaç yüz bayt; kuralı delen bir taviz için fazla ucuz bir bedel.</p>
      */
     private final Map<Integer, VisitedFloor> visited = new HashMap<>();
     private SoundListener sounds = SoundListener.SILENT;
@@ -301,7 +306,7 @@ public class Game {
         depth = target;
         sounds.play(SoundEffect.STAIRS);
 
-        VisitedFloor known = visited.get(depth);
+        VisitedFloor known = visited.remove(depth);
         if (known == null) {
             generateFloor(random.nextLong());
             announceBoss();
@@ -1187,18 +1192,52 @@ public class Game {
             savedGround.add(describe(item));
         }
 
-        List<SaveData.EnemyData> savedEnemies = new ArrayList<>();
-        for (Enemy enemy : enemies) {
-            savedEnemies.add(new SaveData.EnemyData(enemy.getSaveKind(),
-                    enemy.getTileX(), enemy.getTileY(),
-                    enemy.getHp(), enemy.getMaxHp(), enemy.getAttackPower(), enemy.getDefense()));
-        }
-
         return new SaveData(depth, currentSeed, generatorIndex, gold, elapsedSeconds,
                 player.getTileX(), player.getTileY(), player.getHp(), player.getMaxHp(),
                 inventory.slotOf(player.getEquippedWeapon()),
                 inventory.slotOf(player.getEquippedArmor()),
-                savedInventory, savedGround, savedEnemies);
+                vision.exportRemembered(),
+                savedInventory, savedGround, describeAll(enemies),
+                captureVisitedFloors());
+    }
+
+    /**
+     * Gezilmiş katları kayıt verisine çevirir.
+     *
+     * <p>Her katın haritası yine yazılmıyor, tohumu yazılıyor: yüklerken
+     * {@link FloorBuilder#layout} aynı döşemeyi, aynı merdiveni ve aynı
+     * büyücüyü veriyor. Üstüne düşmanlar, yerdeki eşyalar, keşfettiğin kareler
+     * ve zindanın o kattaki sabrı ekleniyor — yani geri döndüğünde kat, kaydı
+     * almadan önce bıraktığın hâlde.</p>
+     */
+    private List<SaveData.FloorData> captureVisitedFloors() {
+        List<SaveData.FloorData> saved = new ArrayList<>();
+
+        for (Map.Entry<Integer, VisitedFloor> entry : visited.entrySet()) {
+            int floorDepth = entry.getKey();
+            VisitedFloor known = entry.getValue();
+            Floor floor = known.floor();
+
+            List<SaveData.ItemData> items = new ArrayList<>();
+            for (Item item : floor.groundItems()) {
+                items.add(describe(item));
+            }
+
+            saved.add(new SaveData.FloorData(floorDepth, floor.seed(),
+                    floors.generatorForDepth(floorDepth), known.floorSeconds(), known.awake(),
+                    known.vision().exportRemembered(), items, describeAll(floor.enemies())));
+        }
+        return saved;
+    }
+
+    private List<SaveData.EnemyData> describeAll(List<Enemy> toDescribe) {
+        List<SaveData.EnemyData> described = new ArrayList<>();
+        for (Enemy enemy : toDescribe) {
+            described.add(new SaveData.EnemyData(enemy.getSaveKind(),
+                    enemy.getTileX(), enemy.getTileY(),
+                    enemy.getHp(), enemy.getMaxHp(), enemy.getAttackPower(), enemy.getDefense()));
+        }
+        return described;
     }
 
     /**
@@ -1220,8 +1259,7 @@ public class Game {
         // kayıt dosyasında saklanmak zorunda değil.
         adopt(floors.layout(generatorIndex, depth, data.seed()));
 
-        // Kayıt tek kat saklıyor; gezilmiş kat hafızası onunla gelmiyor.
-        visited.clear();
+        restoreVisited(data);
         inventory.clear();
 
         restorePlayer(data);
@@ -1234,18 +1272,87 @@ public class Game {
         }
         equipFromSlots(data);
 
-        for (SaveData.ItemData item : data.groundItems()) {
-            Item restored = createItem(item);
-            if (restored != null) {
-                addGroundItem(restored);
-            }
+        for (Item item : createItems(data.groundItems())) {
+            addGroundItem(item);
         }
-        for (SaveData.EnemyData enemy : data.enemies()) {
-            addEnemy(createEnemy(enemy));
+
+        List<Enemy> restoredEnemies = createEnemies(data.enemies(), depth);
+        for (Enemy enemy : restoredEnemies) {
+            addEnemy(enemy);
         }
+        boss = bossAmong(restoredEnemies);
+
+        // Keşif de kaydın parçası: yükleyen oyuncu gezdiği koridorları yeniden
+        // bulmak zorunda kalmıyor, ama görmediği yerler hâlâ karanlık.
+        vision.importRemembered(data.visionMask());
 
         lastPickupTile = player.getTile();
         messageLog.add(depth + ". kattaki kayıt yüklendi.");
+    }
+
+    /**
+     * Kayıttaki gezilmiş katları hafızaya kurar.
+     *
+     * <p>Her kat için döşeme tohumdan yeniden üretiliyor, üstüne kayıttaki
+     * düşmanlar ve eşyalar konuyor. Bulunduğun kat atlanıyor: o zaten kaydın
+     * gövdesinden yüklendi ve şu anda oyunun alanlarında duruyor.</p>
+     */
+    private void restoreVisited(SaveData data) {
+        visited.clear();
+
+        for (SaveData.FloorData saved : data.visitedFloors()) {
+            if (saved.depth() == depth) {
+                continue;
+            }
+
+            int index = floors.clampGeneratorIndex(saved.generatorIndex());
+            Floor layout = floors.layout(index, saved.depth(), saved.seed());
+            List<Enemy> floorEnemies = createEnemies(saved.enemies(), saved.depth());
+            Floor restored = layout.filledWith(bossAmong(floorEnemies), floorEnemies,
+                    createItems(saved.groundItems()));
+
+            Vision seen = new Vision(layout.dungeon().getWidth(), layout.dungeon().getHeight());
+            seen.importRemembered(saved.visionMask());
+
+            visited.put(saved.depth(),
+                    new VisitedFloor(restored, seen, saved.floorSeconds(), saved.awake()));
+        }
+    }
+
+    /** Tanınmayan türleri atlayarak eşya listesini kurar. */
+    private List<Item> createItems(List<SaveData.ItemData> saved) {
+        List<Item> restored = new ArrayList<>();
+        for (SaveData.ItemData item : saved) {
+            Item created = createItem(item);
+            if (created != null) {
+                restored.add(created);
+            }
+        }
+        return restored;
+    }
+
+    private List<Enemy> createEnemies(List<SaveData.EnemyData> saved, int floorDepth) {
+        List<Enemy> restored = new ArrayList<>();
+        for (SaveData.EnemyData enemy : saved) {
+            restored.add(createEnemy(enemy, floorDepth));
+        }
+        return restored;
+    }
+
+    /**
+     * Listedeki boss; yoksa {@code null}.
+     *
+     * <p>Boss ayrıca tutuluyor çünkü can barı ve merdiven kilidi onu adıyla
+     * soruyor. Kayıtta ayrı bir alan açmak yerine düşmanların arasından
+     * buluyoruz: iki yerde saklanan bir bilgi er geç çelişir.</p>
+     */
+    private Boss bossAmong(List<Enemy> candidates) {
+        for (Enemy enemy : candidates) {
+            if (enemy instanceof Boss found) {
+                return found;
+            }
+        }
+        return null;
     }
 
     private void restorePlayer(SaveData data) {
@@ -1358,8 +1465,11 @@ public class Game {
      * <p>Bonusları değil toplam değerleri sakladığımız için, taze düşmanla
      * kayıt arasındaki farkı ekliyoruz. Tür değerlerini sonradan dengelemek
      * eski kayıtları bozmuyor.</p>
+     *
+     * @param floorDepth düşmanın <em>hangi kata</em> ait olduğu; bulunduğun kat
+     *        olmak zorunda değil, gezilmiş katlar da buradan kuruluyor
      */
-    private Enemy createEnemy(SaveData.EnemyData data) {
+    private Enemy createEnemy(SaveData.EnemyData data, int floorDepth) {
         Enemy enemy = switch (data.kind()) {
             // "RAT": bu düşman İmp olarak yeniden adlandırılmadan önceki kayıtlar.
             case "IMP", "RAT" -> new Imp(data.x(), data.y());
@@ -1368,13 +1478,9 @@ public class Game {
             case "SAMAN" -> new Saman(data.x(), data.y());
             case "ORC" -> new Orc(data.x(), data.y());
             case "SKELETON" -> new Skeleton(data.x(), data.y());
-            case "BOSS" -> {
-                // Bossun gövdesi ve adı kaçıncı boss olduğuna bağlı; kayıtta
-                // ayrı bir alan tutmak yerine derinlikten çıkarıyoruz.
-                Boss restored = new Boss(data.x(), data.y(), FloorBuilder.bossNumber(depth));
-                boss = restored;
-                yield restored;
-            }
+            // Bossun gövdesi ve adı kaçıncı boss olduğuna bağlı; kayıtta ayrı
+            // bir alan tutmak yerine derinlikten çıkarıyoruz.
+            case "BOSS" -> new Boss(data.x(), data.y(), FloorBuilder.bossNumber(floorDepth));
             default -> throw new IllegalArgumentException("Bilinmeyen düşman türü: " + data.kind());
         };
 
