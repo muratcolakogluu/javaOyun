@@ -836,8 +836,17 @@ public class Game {
      * yerde kalır — ama altın çantaya girmediği için her hâlükârda alınır.</p>
      */
     private void pickUpItems() {
+        pickUpItemsExcept(null);
+    }
+
+    /**
+     * Ayağının altındakileri toplar; verilen parçayı atlar.
+     *
+     * @param skipped az önce yere bırakılan parça; {@code null} olabilir
+     */
+    private void pickUpItemsExcept(Item skipped) {
         for (Item item : List.copyOf(groundItems)) {
-            if (!item.getTile().equals(player.getTile())) {
+            if (item == skipped || !item.getTile().equals(player.getTile())) {
                 continue;
             }
 
@@ -906,6 +915,11 @@ public class Game {
         messageLog.add(item.getName() + " yere bıraktın.");
 
         lastPickupTile = player.getTile();
+
+        // Bıraktığın anda ayağının altındakini alıyorsun: çanta doluyken
+        // takas etmek için kareden çıkıp geri gelmek gerekiyordu. Yeni
+        // bıraktığın parça hariç, yoksa onu geri toplardın.
+        pickUpItemsExcept(item);
         return true;
     }
 

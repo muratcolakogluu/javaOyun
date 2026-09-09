@@ -25,6 +25,12 @@ public class Weapon extends Equipment {
         super(tileX, tileY, name, attackBonus, spriteName, maxDurability);
     }
 
+    @Override
+    public String getDescription() {
+        return "+" + getBonus() + " vurus  ·  " + getDurability() + "/" + getMaxDurability()
+                + (isBroken() ? "  KIRIK" : "");
+    }
+
     /** Dövüşte işleyen bonus: kırık kılıç hiçbir şey vermiyor. */
     public int getAttackBonus() {
         return getEffectiveBonus();

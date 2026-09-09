@@ -36,6 +36,11 @@ public class Bomb extends Item {
     }
 
     @Override
+    public String getDescription() {
+        return BLAST_RADIUS + " kare icindeki herkese " + BLAST_DAMAGE + " hasar";
+    }
+
+    @Override
     public boolean isStackable() {
         return true;
     }

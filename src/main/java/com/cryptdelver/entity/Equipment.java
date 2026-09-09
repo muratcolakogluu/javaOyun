@@ -201,6 +201,11 @@ public abstract class Equipment extends Item {
         this.durability = Math.clamp(durability, 0, maxDurability);
     }
 
+    @Override
+    public String getFullTooltipName() {
+        return getFullName();
+    }
+
     /** Çantada ve tezgâhta görünen tam ad: yükseltme kademesi ve büyüsüyle. */
     public String getFullName() {
         if (enchantments.isEmpty()) {

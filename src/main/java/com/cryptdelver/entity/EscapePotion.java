@@ -25,6 +25,11 @@ public class EscapePotion extends Item {
     }
 
     @Override
+    public String getDescription() {
+        return "Seni merdivenin basina isinlar";
+    }
+
+    @Override
     public boolean isStackable() {
         return true;
     }

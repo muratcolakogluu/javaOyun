@@ -32,6 +32,11 @@ public class FuryPotion extends Item {
     }
 
     @Override
+    public String getDescription() {
+        return (int) DURATION + " saniye +" + ATTACK_BONUS + " vurus";
+    }
+
+    @Override
     public boolean isStackable() {
         return true;
     }

@@ -18,6 +18,11 @@ public class Potion extends Item {
     }
 
     @Override
+    public String getDescription() {
+        return "Icince " + HEAL_AMOUNT + " can";
+    }
+
+    @Override
     public boolean use(Game game) {
         Player player = game.getPlayer();
 

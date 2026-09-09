@@ -83,6 +83,29 @@ public abstract class Item extends Entity {
         return 0;
     }
 
+    /**
+     * Balonda görünen ad; ekipman yükseltmesini ve büyülerini de gösteriyor.
+     *
+     * <p>Varsayılan olarak eşyanın adı. {@link Equipment} bunu geçersiz kılıp
+     * "+2" ve büyü etiketlerini ekliyor, çünkü aynı adı taşıyan iki kılıç
+     * birbirinden ancak böyle ayrılıyor.</p>
+     */
+    public String getFullTooltipName() {
+        return getName();
+    }
+
+    /**
+     * Çantada üstüne gelince görünen tek satırlık açıklama.
+     *
+     * <p>Slotta yalnızca ikon vardı: dört nadir eşyanın üçü aynı şekilde şişe,
+     * yalnızca renkleri farklı. Elinde yeşil ve sarı şişe varken hangisinin
+     * hız hangisinin öfke olduğu tamamen ezberdi. Cevabı eşyanın kendisi
+     * veriyor, çizim katmanı tür kontrolü yapmıyor.</p>
+     */
+    public String getDescription() {
+        return "";
+    }
+
     /** Kayıtta saklanan büyünün etiketi; büyü yoksa boş dizge. */
     public String getSaveEnchantment() {
         return "";

@@ -25,6 +25,12 @@ public class Armor extends Equipment {
         super(tileX, tileY, name, defenseBonus, spriteName, maxDurability);
     }
 
+    @Override
+    public String getDescription() {
+        return "+" + getBonus() + " savunma  ·  " + getDurability() + "/" + getMaxDurability()
+                + (isBroken() ? "  KIRIK" : "");
+    }
+
     /** Dövüşte işleyen bonus: parçalanmış zırh hiç korumuyor. */
     public int getDefenseBonus() {
         return getEffectiveBonus();

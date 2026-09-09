@@ -193,6 +193,11 @@ public class GameRenderer {
     /** Yazı genişliği ölçmek için tutulan görünmez düğüm; {@link #measure} kullanıyor. */
     private final Text textMeasure = new Text();
 
+    /** Farenin üstünde durduğu çanta eşyası; balon bunun için çiziliyor. */
+    private Item tooltipItem;
+    private double tooltipX;
+    private double tooltipY;
+
     /** Büyülü parçaları saran hale; her karede nefesine göre güncelleniyor. */
     private final DropShadow enchantAura = new DropShadow(ENCHANT_AURA_RADIUS, ENCHANT_GLOW);
 
@@ -1050,11 +1055,56 @@ public class GameRenderer {
     /** Orta panel: çanta slotları ve kuşanılan parçaların durumu. */
     private void drawInventoryPanel(GraphicsContext gc, Game game, double mapHeight) {
         drawPanelTitle(gc, "CANTA", INVENTORY_PANEL_X, mapHeight);
+
+        tooltipItem = null;
         drawInventory(gc, game, INVENTORY_PANEL_X, mapHeight + 20);
 
         Player player = game.getPlayer();
         drawGearRow(gc, player.getEquippedWeapon(), mapHeight + 64);
         drawGearRow(gc, player.getEquippedArmor(), mapHeight + 82);
+
+        drawSlotTooltip(gc);
+    }
+
+    /**
+     * Farenin altındaki slotun ne olduğunu söyleyen balon.
+     *
+     * <p>Slotta yalnızca ikon vardı ve dört nadir eşyanın üçü aynı şekilde
+     * şişe: hangisinin hız hangisinin öfke olduğu ezberdi. Balon adı ve ne
+     * yaptığını söylüyor — ekipmanda bonusu ve dayanıklılığı da.</p>
+     *
+     * <p>Şeridin <em>üstüne</em> açılıyor, haritanın içine doğru: aşağı açsa
+     * pencerenin dışına taşardı.</p>
+     */
+    private void drawSlotTooltip(GraphicsContext gc) {
+        if (tooltipItem == null) {
+            return;
+        }
+
+        String name = tooltipItem.getFullTooltipName();
+        String detail = tooltipItem.getDescription();
+
+        gc.setFont(hudFont);
+        double width = Math.max(measure(name, hudFont), measure(detail, hudFont)) + 22;
+        double height = detail.isEmpty() ? 26 : 42;
+        double left = tooltipX - width / 2;
+        double top = tooltipY - height - 8;
+
+        gc.setFill(HINT_BACKGROUND);
+        gc.fillRoundRect(left, top, width, height, 6, 6);
+        gc.setStroke(SLOT_EQUIPPED);
+        gc.setLineWidth(1);
+        gc.strokeRoundRect(left, top, width, height, 6, 6);
+
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setTextBaseline(VPos.CENTER);
+        gc.setFill(SLOT_EQUIPPED);
+        gc.fillText(name, tooltipX, top + (detail.isEmpty() ? height / 2 : 15));
+
+        if (!detail.isEmpty()) {
+            gc.setFill(MESSAGE_TEXT);
+            gc.fillText(detail, tooltipX, top + 31);
+        }
     }
 
     /**
@@ -1180,7 +1230,16 @@ public class GameRenderer {
             gc.setLineWidth(equipped ? 2 : 1);
             gc.strokeRoundRect(x, top, SLOT_SIZE, SLOT_SIZE, 5, 5);
 
-            if (clicks.add(new UiAction.Slot(slot), x, top, SLOT_SIZE, SLOT_SIZE)) {
+            boolean hovered = clicks.add(new UiAction.Slot(slot), x, top, SLOT_SIZE, SLOT_SIZE);
+            if (hovered && item != null) {
+                // Balon bütün slotlar çizildikten sonra çiziliyor, yoksa
+                // sonraki slot onun üstüne binerdi.
+                tooltipItem = item;
+                tooltipX = x + SLOT_SIZE / 2.0;
+                tooltipY = top;
+            }
+
+            if (hovered) {
                 // Fare slotun üstündeyken çerçeve parlıyor: tıklanabilir
                 // olduğu görüntüden anlaşılsın.
                 gc.setStroke(GOLD_TEXT);

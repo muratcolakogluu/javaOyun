@@ -30,6 +30,11 @@ public class HastePotion extends Item {
     }
 
     @Override
+    public String getDescription() {
+        return (int) DURATION + " saniye daha hizli yurursun";
+    }
+
+    @Override
     public boolean isStackable() {
         return true;
     }
