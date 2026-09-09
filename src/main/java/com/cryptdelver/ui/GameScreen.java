@@ -229,7 +229,14 @@ public class GameScreen {
         // serbest; oynanışa dokunan komutlar duraklatmada geçersiz.
         switch (code) {
             case ESCAPE -> game.togglePause();
-            case F -> game.toggleForge();
+            // Tezgâh açıkken F bir büyü tuşu; tezgâhtan ESC ile çıkılıyor.
+            case F -> {
+                if (game.isForgeOpen()) {
+                    handleForgeCommand(code);
+                } else {
+                    game.toggleForge();
+                }
+            }
             case F5 -> saveGame();
             case F9 -> loadGame();
             case MINUS, SUBTRACT -> changeVolume(-Settings.VOLUME_STEP);
@@ -433,10 +440,18 @@ public class GameScreen {
             case DIGIT2 -> game.repairArmor();
             case DIGIT3 -> game.upgradeWeapon();
             case DIGIT4 -> game.upgradeArmor();
-            case DIGIT5 -> game.enchantWeapon(Enchantment.VAMPIRLIK);
-            case DIGIT6 -> game.enchantWeapon(Enchantment.SAGLAMLIK);
-            case DIGIT7 -> game.enchantArmor(Enchantment.DIKEN);
-            case DIGIT8 -> game.enchantArmor(Enchantment.SAGLAMLIK);
+
+            // Üst sıra kılıcın, ana sıra zırhın; ekrandaki düzenle aynı.
+            case Q -> game.enchantWeapon(Enchantment.VAMPIRLIK);
+            case W -> game.enchantWeapon(Enchantment.YILDIRIM);
+            case E -> game.enchantWeapon(Enchantment.ACELE);
+            case R -> game.enchantWeapon(Enchantment.SAGLAMLIK);
+
+            case A -> game.enchantArmor(Enchantment.DIKEN);
+            case S -> game.enchantArmor(Enchantment.YENILENME);
+            case D -> game.enchantArmor(Enchantment.CEVIKLIK);
+            case F -> game.enchantArmor(Enchantment.SAGLAMLIK);
+
             default -> {
                 // Diğer tuşlar tezgâhta bir şey yapmıyor.
             }

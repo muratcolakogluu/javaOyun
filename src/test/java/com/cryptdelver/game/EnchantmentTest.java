@@ -205,6 +205,84 @@ class EnchantmentTest {
     }
 
     @Test
+    @DisplayName("Yildirim vurusun menzilini bir kare artiriyor")
+    void lightningExtendsTheReach() {
+        Weapon weapon = sword(20);
+        player.equip(weapon);
+        assertEquals(1, player.getAttackRange(), "Buyusuz kilic yan yana vuruyor");
+
+        // Iki kare oteki dusman normalde vurulamaz.
+        Skeleton far = new Skeleton(6, 4);
+        game.addEnemy(far);
+        int before = far.getHp();
+        game.playerAttacks();
+        assertEquals(before, far.getHp(), "Menzil disindaki dusman hasar almamali");
+
+        weapon.enchant(Enchantment.YILDIRIM);
+        assertEquals(2, player.getAttackRange());
+
+        game.playerAttacks();
+        assertTrue(far.getHp() < before, "Yildirimla iki kare oteye de erisilmeli");
+    }
+
+    @Test
+    @DisplayName("Acele savuruslar arasini kisaltiyor")
+    void hasteShortensTheCooldown() {
+        Weapon weapon = sword(20);
+        player.equip(weapon);
+        double normal = player.getAttackCooldown();
+
+        weapon.enchant(Enchantment.ACELE);
+
+        assertTrue(player.getAttackCooldown() < normal,
+                "Acele bekleme suresini dusurmeli: " + player.getAttackCooldown() + " < " + normal);
+    }
+
+    @Test
+    @DisplayName("Ceviklik yuruyus hizini artiriyor")
+    void swiftnessRaisesTheSpeed() {
+        Armor armor = mail(20);
+        player.equip(armor);
+        double normal = player.getSpeed();
+
+        armor.enchant(Enchantment.CEVIKLIK);
+
+        assertTrue(player.getSpeed() > normal, "Ceviklik hizlandirmali");
+    }
+
+    @Test
+    @DisplayName("Yenilenme zamanla can dolduruyor")
+    void regenerationHealsOverTime() {
+        Armor armor = mail(20);
+        armor.enchant(Enchantment.YENILENME);
+        player.equip(armor);
+        player.takeDamage(10);
+        int wounded = player.getHp();
+
+        // Alti saniye: bes saniyelik araligin uzerinde.
+        for (int i = 0; i < 60 * 6; i++) {
+            game.update(1.0 / 60);
+        }
+
+        assertTrue(player.getHp() > wounded, "Zirh can doldurmali");
+    }
+
+    /** Buyusuz zirhla ayni sure gecince can artmamali. */
+    @Test
+    @DisplayName("Yenilenmesiz zirh can doldurmuyor")
+    void plainArmourDoesNotHeal() {
+        player.equip(mail(20));
+        player.takeDamage(10);
+        int wounded = player.getHp();
+
+        for (int i = 0; i < 60 * 6; i++) {
+            game.update(1.0 / 60);
+        }
+
+        assertEquals(wounded, player.getHp());
+    }
+
+    @Test
     @DisplayName("Buyulu parcanin adi buyuyu de gosteriyor")
     void nameShowsTheEnchantment() {
         Weapon weapon = sword(20);

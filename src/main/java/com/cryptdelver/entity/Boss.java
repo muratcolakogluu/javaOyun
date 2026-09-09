@@ -97,8 +97,53 @@ public class Boss extends Enemy {
     private final Random random = new Random();
     private double summonTimer = FIRST_SUMMON_DELAY;
 
+    /**
+     * Bölgelerin sahipleri.
+     *
+     * <p>Dört boss, dört ayrı gövde ve ad. Davranışları aynı — hepsi peşine
+     * düşüyor ve yaratık çağırıyor — ama her bölgenin sonunda başka bir şeyle
+     * karşılaşmak yolculuğun ilerlediğini gösteriyor. Ayrı sınıf yazmadım:
+     * fark eden şey görüntü ve ad, davranış değil; dört sınıf yazmak aynı kodu
+     * dört kez kopyalamak olurdu.</p>
+     */
+    private enum Kind {
+        BEKCI("Mahzen Bekcisi", "boss_bekci"),
+        BOGUCU("Sarnic Bogucusu", "boss_bogucu"),
+        SEYTAN("Kor Seytani", "boss_seytan"),
+        LORT("Kript Lordu", "boss");
+
+        private final String label;
+        private final String sprite;
+
+        Kind(String label, String sprite) {
+            this.label = label;
+            this.sprite = sprite;
+        }
+    }
+
+    private final Kind kind;
+
+    /**
+     * @param bossNumber kaçıncı boss: 1 ilk (5. kat), 4 sonuncu (20. kat).
+     *                   Gövdesini ve adını buradan alıyor.
+     */
+    public Boss(int tileX, int tileY, int bossNumber) {
+        this(tileX, tileY, kindFor(bossNumber));
+    }
+
+    private Boss(int tileX, int tileY, Kind kind) {
+        super(tileX, tileY, kind.label, STATS, new AStarPathfinder());
+        this.kind = kind;
+    }
+
+    /** Kayıttan dönen boss; sırası bilinmiyorsa son bölgenin sahibi sayılıyor. */
     public Boss(int tileX, int tileY) {
-        super(tileX, tileY, "Kript Lordu", STATS, new AStarPathfinder());
+        this(tileX, tileY, Kind.LORT);
+    }
+
+    private static Kind kindFor(int bossNumber) {
+        Kind[] kinds = Kind.values();
+        return kinds[Math.clamp(bossNumber, 1, kinds.length) - 1];
     }
 
     /**
@@ -148,7 +193,7 @@ public class Boss extends Enemy {
         }
 
         if (summoned > 0) {
-            game.getMessageLog().add("Kript Lordu " + summoned + " yaratık çağırdı!");
+            game.getMessageLog().add(getName() + " " + summoned + " yaratık çağırdı!");
         }
     }
 
@@ -200,7 +245,7 @@ public class Boss extends Enemy {
 
     @Override
     public String getSpriteName() {
-        return "boss";
+        return kind.sprite;
     }
 
     /**

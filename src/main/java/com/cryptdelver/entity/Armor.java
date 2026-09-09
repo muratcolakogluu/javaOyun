@@ -58,7 +58,8 @@ public class Armor extends Equipment {
      */
     @Override
     public List<Enchantment> availableEnchantments() {
-        return List.of(Enchantment.DIKEN, Enchantment.SAGLAMLIK);
+        return List.of(Enchantment.DIKEN, Enchantment.YENILENME, Enchantment.CEVIKLIK,
+                Enchantment.SAGLAMLIK);
     }
 
     @Override

@@ -80,6 +80,15 @@ Her karakterin duruş ve yürüyüş animasyonu 4'er kare, 0x72 paketinden:
   orc_*                               <- orc_warrior_idle / orc_warrior_run
   boss_*                              <- big_demon_idle / big_demon_run
   wizard_f0..f3                       <- wizzard_m_idle
+  zombi_* / zombi_run_*                <- tiny_zombie_idle / tiny_zombie_run
+  saman_* / saman_run_*                <- orc_shaman_idle / orc_shaman_run
+  boss_bekci_*                         <- ogre_idle / ogre_run
+  boss_bogucu_*                        <- big_zombie_idle / big_zombie_run
+  boss_seytan_*                        <- chort_idle / chort_run
+
+Dort bolgenin dort ayri bossu var; davranislari ayni, goruntuleri ve
+adlari farkli. Bekci ogre, Bogucu buyuk zombi, Seytan chort, Lord ise
+bastan beri kullandigimiz big_demon.
 
 Zırh giymiş gövdeler (player_leather_*, player_chain_*, player_plate_*,
 player_crypt_*) scratchpad'deki ArmorSkins aracıyla üretildi: oyuncu

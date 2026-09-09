@@ -132,6 +132,20 @@ public class GameRenderer {
     /** Çantadaki büyülü eşyanın ikonunu saran halenin yarıçapı. */
     private static final double ENCHANT_SLOT_RADIUS = 12;
 
+    /** Büyülü zırhın gövdeyi saran halesi; kılıcınkinden geniş. */
+    private static final double ENCHANT_BODY_RADIUS = 26;
+
+    /**
+     * Tezgâhta büyülere düşen tuşlar.
+     *
+     * <p>Rakamlar tamir ve yükseltmede tükendi. Harflere geçerken klavyedeki
+     * yerleşim işe koşuldu: üst sıra ({@code Q W E R}) kılıcın, ana sıra
+     * ({@code A S D F}) zırhın. Ekrandaki iki satır grubu da aynı düzende, yani
+     * elin nereye gideceğini görüntü söylüyor.</p>
+     */
+    private static final String[] WEAPON_ENCHANT_KEYS = {"Q", "W", "E", "R"};
+    private static final String[] ARMOR_ENCHANT_KEYS = {"A", "S", "D", "F"};
+
     private final SpriteRegistry sprites = new SpriteRegistry();
     private final ColorAdjust hitEffect = new ColorAdjust(0, -0.6, 0.7, 0);
 
@@ -366,7 +380,7 @@ public class GameRenderer {
             drawEntity(gc, enemy, 1.0);
             drawHealthBar(gc, enemy);
         }
-        drawEntity(gc, player, 1.0);
+        drawPlayer(gc, player);
         drawEquipment(gc, player);
 
         if (game.getBoss() != null && !game.isOver()) {
@@ -563,6 +577,43 @@ public class GameRenderer {
     }
 
     /** Varlığı sprite'ıyla çizer; hasar almışsa beyaza yakın parlatır. */
+    /**
+     * Oyuncunun gövdesi; büyülü zırh varsa gövde de parlıyor.
+     *
+     * <p>Zırh ayrı bir parça olarak çizilmiyor — gövdenin kendisi. Dolayısıyla
+     * zırhın büyüsü de gövdeyi sarmalı: kılıç nasıl parlıyorsa üstündeki zırh
+     * da öyle. Kırık zırh parlamıyor; parlayan bir paçavra yanlış mesaj
+     * verirdi.</p>
+     */
+    private void drawPlayer(GraphicsContext gc, Player player) {
+        Armor armor = player.getEquippedArmor();
+        boolean glowing = armor != null && armor.isEnchanted() && !armor.isBroken();
+
+        if (glowing && !player.isFlashing()) {
+            gc.setEffect(enchantAura(ENCHANT_BODY_RADIUS));
+        }
+
+        sprites.get(player.getSpriteName(), player.isMoving()).draw(
+                gc,
+                player.getRenderX() * TILE_SIZE,
+                player.getRenderY() * TILE_SIZE,
+                TILE_SIZE * player.getDrawScale());
+
+        gc.setEffect(null);
+
+        // Vuruş parlaması ayrı çiziliyor: hale efektiyle aynı anda
+        // uygulanamıyor, ikisi de tek bir efekt yuvasını paylaşıyor.
+        if (player.isFlashing()) {
+            gc.setEffect(hitEffect);
+            sprites.get(player.getSpriteName(), player.isMoving()).draw(
+                    gc,
+                    player.getRenderX() * TILE_SIZE,
+                    player.getRenderY() * TILE_SIZE,
+                    TILE_SIZE * player.getDrawScale());
+            gc.setEffect(null);
+        }
+    }
+
     private void drawEntity(GraphicsContext gc, Entity entity, double scale) {
         if (entity.isFlashing()) {
             gc.setEffect(hitEffect);
@@ -1151,15 +1202,15 @@ public class GameRenderer {
         gc.fillText("— BUYULER (her parcada bir tane durur) —", mapWidth / 2, y);
         y += 26;
 
-        y = drawEnchantRows(gc, game, mapWidth, y, "Kilica", weapon, 5);
-        y = drawEnchantRows(gc, game, mapWidth, y, "Zirha", armor, 7);
+        y = drawEnchantRows(gc, game, mapWidth, y, "Kilica", weapon, WEAPON_ENCHANT_KEYS);
+        y = drawEnchantRows(gc, game, mapWidth, y, "Zirha", armor, ARMOR_ENCHANT_KEYS);
 
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setFill(HUD_TEXT);
         gc.fillText("Yukseltme tavani, bu katta bossun birakacagi parca kadar.",
                 mapWidth / 2, y + 18);
         gc.setFill(HUD_ACCENT);
-        gc.fillText("F ya da ESC: tezgahtan ayril", mapWidth / 2, y + 40);
+        gc.fillText("ESC ile tezgahtan ayril", mapWidth / 2, y + 40);
     }
 
     /**
@@ -1169,16 +1220,16 @@ public class GameRenderer {
      * sığıyor ve oyuncunun "hangi menüdeydim" diye düşünmesi gerekmiyor. Şu an
      * takılı olan büyü işaretli, çünkü yeni büyü onun yerine geçiyor.</p>
      *
-     * @param firstKey bu parçanın ilk büyüsüne düşen rakam
+     * @param keys bu parçanın büyülerine düşen tuşlar, sırasıyla
      * @return bir sonraki satırın y'si
      */
     private double drawEnchantRows(GraphicsContext gc, Game game, double mapWidth, double y,
-                                   String owner, Equipment item, int firstKey) {
+                                   String owner, Equipment item, String[] keys) {
         List<Enchantment> options = item == null
-                ? List.of(Enchantment.VAMPIRLIK, Enchantment.SAGLAMLIK)
+                ? List.of()
                 : item.availableEnchantments();
 
-        for (int i = 0; i < options.size(); i++) {
+        for (int i = 0; i < options.size() && i < keys.length; i++) {
             Enchantment option = options.get(i);
             boolean active = item != null && item.getEnchantment() == option;
             boolean available = item != null && !active;
@@ -1186,7 +1237,7 @@ public class GameRenderer {
 
             gc.setTextAlign(TextAlignment.RIGHT);
             gc.setFill(available ? GOLD_TEXT : SLOT_NUMBER);
-            gc.fillText(String.valueOf(firstKey + i), mapWidth / 2 - 300, y);
+            gc.fillText(keys[i], mapWidth / 2 - 300, y);
 
             gc.setTextAlign(TextAlignment.LEFT);
             gc.setFill(available ? MESSAGE_TEXT : MESSAGE_FADED);

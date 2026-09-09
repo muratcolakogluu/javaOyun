@@ -21,6 +21,13 @@ public class Player extends Combatant implements Actor {
     /** İki saldırı arasında beklenen süre (saniye). */
     private static final double ATTACK_COOLDOWN = 0.35;
 
+    /** Vuruşun normalde eriştiği kare sayısı: yan yana. */
+    private static final int BASE_ATTACK_RANGE = 1;
+
+    /** Çeviklik ve Acele büyülerinin çarpanları. */
+    private static final double SWIFT_SPEED_SCALE = 1.35;
+    private static final double HASTE_COOLDOWN_SCALE = 0.65;
+
     /**
      * Vuruş animasyonunun ekranda kalma süresi.
      *
@@ -187,14 +194,51 @@ public class Player extends Combatant implements Actor {
             return;
         }
 
-        advanceSteps(game, SPEED * delta);
+        advanceSteps(game, getSpeed() * delta);
 
         if (attackRequested && attackCooldown <= 0) {
             game.playerAttacks();
-            attackCooldown = ATTACK_COOLDOWN;
+            attackCooldown = getAttackCooldown();
             swingTimer = SWING_DURATION;
         }
         attackRequested = false;
+    }
+
+    /**
+     * Yürüme hızı; Çeviklik büyüsü varsa artıyor.
+     *
+     * <p>Hız, hasardan bağımsız bir eksen: büyü seni daha güçlü yapmıyor, vur
+     * ve kaç oynamayı kolaylaştırıyor. "Büyülü parça bossunkinden iyi olamaz"
+     * kuralı bu yüzden bozulmuyor.</p>
+     */
+    public double getSpeed() {
+        return hasArmorEnchantment(Enchantment.CEVIKLIK) ? SPEED * SWIFT_SPEED_SCALE : SPEED;
+    }
+
+    /** İki savuruş arası bekleme; Acele büyüsü varsa kısalıyor. */
+    public double getAttackCooldown() {
+        return hasWeaponEnchantment(Enchantment.ACELE)
+                ? ATTACK_COOLDOWN * HASTE_COOLDOWN_SCALE
+                : ATTACK_COOLDOWN;
+    }
+
+    /**
+     * Vuruşun kaç kare uzağa eriştiği; Yıldırım büyüsü bir kare ekliyor.
+     *
+     * <p>Menzili oyuncunun kendisi söylüyor, {@code Game} değil: hangi büyünün
+     * ne yaptığı parçanın bilgisi, oyunun genel kuralı değil.</p>
+     */
+    public int getAttackRange() {
+        return hasWeaponEnchantment(Enchantment.YILDIRIM) ? BASE_ATTACK_RANGE + 1
+                : BASE_ATTACK_RANGE;
+    }
+
+    public boolean hasWeaponEnchantment(Enchantment enchantment) {
+        return equippedWeapon != null && equippedWeapon.getEnchantment() == enchantment;
+    }
+
+    public boolean hasArmorEnchantment(Enchantment enchantment) {
+        return equippedArmor != null && equippedArmor.getEnchantment() == enchantment;
     }
 
     /**

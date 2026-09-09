@@ -43,7 +43,8 @@ public class Weapon extends Equipment {
      */
     @Override
     public List<Enchantment> availableEnchantments() {
-        return List.of(Enchantment.VAMPIRLIK, Enchantment.SAGLAMLIK);
+        return List.of(Enchantment.VAMPIRLIK, Enchantment.YILDIRIM, Enchantment.ACELE,
+                Enchantment.SAGLAMLIK);
     }
 
     @Override

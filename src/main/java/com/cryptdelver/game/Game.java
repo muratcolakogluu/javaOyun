@@ -14,9 +14,11 @@ import com.cryptdelver.entity.Item;
 import com.cryptdelver.entity.Orc;
 import com.cryptdelver.entity.Player;
 import com.cryptdelver.entity.Potion;
+import com.cryptdelver.entity.Saman;
 import com.cryptdelver.entity.Skeleton;
 import com.cryptdelver.entity.Weapon;
 import com.cryptdelver.entity.Wizard;
+import com.cryptdelver.entity.Zombi;
 import com.cryptdelver.persistence.SaveData;
 import com.cryptdelver.world.Dungeon;
 import com.cryptdelver.world.DungeonGenerator;
@@ -57,6 +59,16 @@ public class Game {
     private static final int GOBLIN_MIN_DEPTH = 2;
     private static final int ORC_MIN_DEPTH = 4;
 
+    /**
+     * Yeni türler bölge sınırlarında giriyor: zombi Sarnıçta, şaman Korlukta.
+     *
+     * <p>Bölge değiştiğinde yalnızca renk değil karşına çıkan şey de
+     * değişiyor; yeni bölgeye inmenin ilk dakikası böylece bir şey
+     * öğretiyor.</p>
+     */
+    private static final int ZOMBI_MIN_DEPTH = 6;
+    private static final int SAMAN_MIN_DEPTH = 11;
+
 
     /** Derin katlarda düşmanlar kaç katta bir güçlenir. */
     private static final int DEPTHS_PER_HP_BONUS = 2;
@@ -95,6 +107,10 @@ public class Game {
     /** Diken büyüsünün vurana yansıttığı hasar. */
     private static final int THORNS_DAMAGE = 1;
 
+    /** Yenilenme büyüsü: kaç saniyede bir kaç can. */
+    private static final double REGEN_INTERVAL = 5.0;
+    private static final int REGEN_AMOUNT = 1;
+
     private static final int POTIONS_PER_FLOOR = 4;
     private static final int GOLD_PILES_PER_FLOOR = 5;
     private static final int MIN_GOLD = 5;
@@ -123,6 +139,7 @@ public class Game {
     private boolean paused;
     private boolean forgeOpen;
     private boolean won;
+    private double regenTimer;
     private SoundListener sounds = SoundListener.SILENT;
     private final Settings settings = new Settings();
 
@@ -578,6 +595,31 @@ public class Game {
 
         if (!isOver()) {
             elapsedSeconds += delta;
+            regenerate(delta);
+        }
+    }
+
+    /**
+     * Yenilenme büyüsü: zırh taşıyorsa belli aralıklarla 1 can.
+     *
+     * <p>Sayaç oyunun içinde, zırhın içinde değil: büyü zırhın <em>özelliği</em>
+     * ama akan zaman oyunun işi. Zırhı çıkarınca sayaç sıfırlanıyor, yani
+     * "zırhı tak-çıkar yaparak can biriktirmek" diye bir şey yok.</p>
+     */
+    private void regenerate(double delta) {
+        if (!player.hasArmorEnchantment(Enchantment.YENILENME)) {
+            regenTimer = 0;
+            return;
+        }
+
+        regenTimer += delta;
+        if (regenTimer < REGEN_INTERVAL) {
+            return;
+        }
+
+        regenTimer -= REGEN_INTERVAL;
+        if (player.getHp() < player.getMaxHp()) {
+            player.heal(REGEN_AMOUNT);
         }
     }
 
@@ -742,8 +784,9 @@ public class Game {
      */
     public void playerAttacks() {
         List<Enemy> targets = new ArrayList<>();
+        int reach = player.getAttackRange();
         for (Enemy enemy : enemies) {
-            if (enemy.tileDistanceTo(player) <= 1) {
+            if (enemy.tileDistanceTo(player) <= reach) {
                 targets.add(enemy);
             }
         }
@@ -1103,10 +1146,14 @@ public class Game {
             // "RAT": bu düşman İmp olarak yeniden adlandırılmadan önceki kayıtlar.
             case "IMP", "RAT" -> new Imp(data.x(), data.y());
             case "GOBLIN" -> new Goblin(data.x(), data.y());
+            case "ZOMBI" -> new Zombi(data.x(), data.y());
+            case "SAMAN" -> new Saman(data.x(), data.y());
             case "ORC" -> new Orc(data.x(), data.y());
             case "SKELETON" -> new Skeleton(data.x(), data.y());
             case "BOSS" -> {
-                Boss restored = new Boss(data.x(), data.y());
+                // Bossun gövdesi ve adı kaçıncı boss olduğuna bağlı; kayıtta
+                // ayrı bir alan tutmak yerine derinlikten çıkarıyoruz.
+                Boss restored = new Boss(data.x(), data.y(), depth / FLOORS_PER_BOSS);
                 boss = restored;
                 yield restored;
             }
@@ -1271,9 +1318,10 @@ public class Game {
 
         // Boss merdivenin üstünde doğar: geçmek için onu yenmen gerekiyor.
         if (isBossFloor() && stairs != null) {
-            boss = new Boss(stairs.x(), stairs.y());
+            int bossNumber = depth / FLOORS_PER_BOSS;
+            boss = new Boss(stairs.x(), stairs.y(), bossNumber);
             applyDepthBonus(boss);
-            boss.scaleTo(depth / FLOORS_PER_BOSS);
+            boss.scaleTo(bossNumber);
             addEnemy(boss);
             messageLog.add(boss.getName() + " merdiveni tutuyor. Yavaş — vur ve geri çekil.");
             sounds.play(SoundEffect.BOSS);
@@ -1337,8 +1385,11 @@ public class Game {
         int skeletonWeight = 2 + depth;
         int goblinWeight = depth >= GOBLIN_MIN_DEPTH ? 3 : 0;
         int orcWeight = depth >= ORC_MIN_DEPTH ? depth - 2 : 0;
+        int zombiWeight = depth >= ZOMBI_MIN_DEPTH ? depth - 3 : 0;
+        int samanWeight = depth >= SAMAN_MIN_DEPTH ? depth - 8 : 0;
 
-        int roll = random.nextInt(impWeight + skeletonWeight + goblinWeight + orcWeight);
+        int roll = random.nextInt(impWeight + skeletonWeight + goblinWeight + orcWeight
+                + zombiWeight + samanWeight);
 
         if (roll < impWeight) {
             return new Imp(spot.x(), spot.y());
@@ -1350,7 +1401,17 @@ public class Game {
         }
         roll -= skeletonWeight;
 
-        return roll < goblinWeight ? new Goblin(spot.x(), spot.y()) : new Orc(spot.x(), spot.y());
+        if (roll < goblinWeight) {
+            return new Goblin(spot.x(), spot.y());
+        }
+        roll -= goblinWeight;
+
+        if (roll < orcWeight) {
+            return new Orc(spot.x(), spot.y());
+        }
+        roll -= orcWeight;
+
+        return roll < zombiWeight ? new Zombi(spot.x(), spot.y()) : new Saman(spot.x(), spot.y());
     }
 
     /**
