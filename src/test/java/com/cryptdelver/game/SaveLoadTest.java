@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.cryptdelver.entity.Enemy;
 import com.cryptdelver.entity.Player;
+import com.cryptdelver.entity.Weapon;
 import com.cryptdelver.persistence.SaveData;
 import com.cryptdelver.world.BspGenerator;
 import com.cryptdelver.world.DungeonGenerator;
@@ -187,6 +188,40 @@ class SaveLoadTest {
         assertEquals(5, loaded.getDepth());
         assertNotNull(loaded.getBoss(), "Boss geri gelmeli");
         assertTrue(loaded.isStairsLocked(), "Merdiven yine kilitli olmali");
+    }
+
+    /**
+     * Yipranma kaydedilmeseydi kaydedip yuklemek bedava tamir olurdu; demirci
+     * de anlamsizlasirdi.
+     */
+    @Test
+    @DisplayName("Yipranma ve yukseltme kayitta korunur")
+    void gearConditionSurvivesTheSave() {
+        Weapon weapon = new Weapon(0, 0, "Test Kilici", 4, "sword", 40);
+        weapon.restoreState(17, 2);
+        game.getInventory().add(weapon);
+        player.equip(weapon);
+
+        Game loaded = reload();
+        Weapon restored = loaded.getPlayer().getEquippedWeapon();
+
+        assertNotNull(restored, "Kusanilan silah geri gelmeli");
+        assertEquals(17, restored.getDurability(), "Kalan dayaniklilik korunmali");
+        assertEquals(2, restored.getUpgradeLevel(), "Yukseltme kademesi korunmali");
+        assertEquals(6, restored.getBonus(), "Taban bonus artı yukseltmeler");
+    }
+
+    @Test
+    @DisplayName("Kirik parca kirik olarak geri gelir")
+    void brokenGearStaysBroken() {
+        Weapon weapon = new Weapon(0, 0, "Test Kilici", 4, "sword", 40);
+        weapon.restoreState(0, 0);
+        game.getInventory().add(weapon);
+        player.equip(weapon);
+
+        Weapon restored = reload().getPlayer().getEquippedWeapon();
+
+        assertTrue(restored.isBroken());
     }
 
     @Test

@@ -12,12 +12,16 @@ import java.util.EnumSet;
 import java.util.Optional;
 import java.util.Set;
 import javafx.animation.AnimationTimer;
+import javafx.geometry.Rectangle2D;
+import javafx.scene.Group;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
+import javafx.scene.transform.Scale;
+import javafx.stage.Screen;
 
 /**
  * Oyun ekranı: oyun döngüsünü çevirir, klavye girdisini yön komutuna
@@ -41,10 +45,21 @@ public class GameScreen {
      */
     private static final double MAX_DELTA = 0.05;
 
+    /**
+     * Pencere çerçevesi ve başlık çubuğu için ayrılan pay.
+     *
+     * <p>Tuvalin yanına eklenen bu payı ölçemiyoruz — pencere daha
+     * gösterilmediği için yüksekliği belli değil. Cömert bir tahmin
+     * kullanıyoruz: fazladan bırakılan birkaç piksel görünmüyor, eksik
+     * bırakılan pikseller ise ekranın dışında kalıyor.</p>
+     */
+    private static final double WINDOW_CHROME = 48;
+
     private final Game game;
     private final Canvas canvas;
     private final GameRenderer renderer = new GameRenderer();
     private final StackPane root;
+    private final double scale;
     private final Set<KeyCode> pressedKeys = EnumSet.noneOf(KeyCode.class);
     private final Deque<KeyCode> heldDirections = new ArrayDeque<>();
     private final SaveFile saveFile = new SaveFile();
@@ -61,19 +76,45 @@ public class GameScreen {
                 + GameRenderer.HUD_HEIGHT;
 
         this.canvas = new Canvas(width, height);
-        this.root = new StackPane(canvas);
+        this.scale = fitToScreen(width, height);
+
+        // Tuval sabit boyutta kalıyor, onu saran düğüm küçülüyor.
+        Group scaledCanvas = new Group(canvas);
+        scaledCanvas.getTransforms().add(new Scale(scale, scale));
+        this.root = new StackPane(scaledCanvas);
+    }
+
+    /**
+     * Pencerenin ekrana sığması için gereken küçültme oranı.
+     *
+     * <p>Oyun sabit boyutlu bir tuvale çiziliyor: 40x22 kare, artı bilgi
+     * şeridi. Ekran ölçeklemesi %150 olan bir dizüstünde JavaFX'in mantıksal
+     * alanı 1280x800'e iniyor, pencere çerçevesi de eklenince tuvalin altı
+     * ekranın dışında kalıyordu — bilgi şeridinin son satırı görünmüyordu.</p>
+     *
+     * <p>Çözüm kat boyutunu küçültmek değil: o hem oynanışı değiştirirdi hem
+     * de kayıtları makineye bağlardı. Bunun yerine tüm sahne aynı oranda
+     * ölçekleniyor. Oyun koordinatları değişmiyor, çizim kodu bundan
+     * habersiz. Ekran yeterince büyükse oran 1 kalıyor ve hiçbir şey olmuyor.</p>
+     */
+    private static double fitToScreen(double width, double height) {
+        Rectangle2D visual = Screen.getPrimary().getVisualBounds();
+        double usableHeight = visual.getHeight() - WINDOW_CHROME;
+
+        return Math.min(1, Math.min(visual.getWidth() / width, usableHeight / height));
     }
 
     public Parent getRoot() {
         return root;
     }
 
+    /** Pencerenin isteyeceği genişlik: tuvalin ölçeklenmiş hâli. */
     public double getWidth() {
-        return canvas.getWidth();
+        return canvas.getWidth() * scale;
     }
 
     public double getHeight() {
-        return canvas.getHeight();
+        return canvas.getHeight() * scale;
     }
 
     /** Klavye dinleyicilerini sahneye bağlar. */
@@ -125,6 +166,12 @@ public class GameScreen {
 
     /** Basılı yön tuşunu oyuncunun yönüne, boşluğu saldırı isteğine çevirir. */
     private void applyInput() {
+        // Dünya durmuşken basılı tuşları okumuyoruz; yoksa duraklatma ya da
+        // demirci ekranı kapanır kapanmaz birikmiş bir saldırı boşalıyordu.
+        if (game.isFrozen()) {
+            return;
+        }
+
         KeyCode direction = heldDirections.peekLast();
 
         int dx = 0;
@@ -160,6 +207,7 @@ public class GameScreen {
         // serbest; oynanışa dokunan komutlar duraklatmada geçersiz.
         switch (code) {
             case ESCAPE -> game.togglePause();
+            case F -> game.toggleForge();
             case F5 -> saveGame();
             case F9 -> loadGame();
             case MINUS, SUBTRACT -> changeVolume(-Settings.VOLUME_STEP);
@@ -190,6 +238,12 @@ public class GameScreen {
 
     /** Yalnızca oyun akarken işleyen tek seferlik komutlar. */
     private void handlePlayCommand(KeyCode code, KeyEvent event) {
+        // Demirci ekranı açıkken rakamlar çantayı değil tezgâhı yönetiyor.
+        if (game.isForgeOpen()) {
+            handleForgeCommand(code);
+            return;
+        }
+
         if (game.isPaused()) {
             return;
         }
@@ -243,6 +297,26 @@ public class GameScreen {
             game.applySave(data.get());
         } catch (IOException | RuntimeException e) {
             game.getMessageLog().add("Kayıt yüklenemedi: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Demirci tezgâhının tuşları.
+     *
+     * <p>Çanta ile aynı rakamları kullanıyor ama karışmıyor: tezgâh açıkken
+     * çanta komutları hiç çalışmıyor, kapalıyken de tezgâh komutları. Ekranda
+     * hangi rakamın ne yaptığı yazılı olduğu için ayrı tuş takımı ezberletmeye
+     * gerek yok.</p>
+     */
+    private void handleForgeCommand(KeyCode code) {
+        switch (code) {
+            case DIGIT1 -> game.repairWeapon();
+            case DIGIT2 -> game.repairArmor();
+            case DIGIT3 -> game.upgradeWeapon();
+            case DIGIT4 -> game.upgradeArmor();
+            default -> {
+                // Diğer tuşlar tezgâhta bir şey yapmıyor.
+            }
         }
     }
 

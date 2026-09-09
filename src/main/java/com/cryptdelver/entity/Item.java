@@ -68,6 +68,22 @@ public abstract class Item extends Entity {
     }
 
     /**
+     * Kayıtta saklanan dayanıklılık ve yükseltme kademesi.
+     *
+     * <p>Yalnızca kuşanılan parçalar için anlamlı; iksir ve altın sıfır
+     * döndürüyor. Bunu {@code instanceof Equipment} ile sormak yerine soruyu
+     * eşyanın kendisine bırakmak, kaydetme kodunu tür bilmekten kurtarıyor —
+     * {@link #getSaveValue()} ile aynı gerekçe.</p>
+     */
+    public int getSaveDurability() {
+        return 0;
+    }
+
+    public int getSaveUpgradeLevel() {
+        return 0;
+    }
+
+    /**
      * Aynı türden eşyalar çantada tek slotu paylaşabilir mi.
      *
      * <p>İksir gibi tüketilenler yığılır ("3x"), ekipman yığılmaz: her kılıcın

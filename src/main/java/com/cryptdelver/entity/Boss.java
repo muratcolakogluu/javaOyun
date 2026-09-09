@@ -23,24 +23,37 @@ import java.util.Random;
 public class Boss extends Enemy {
 
     /**
-     * Boss değerleri, ilk karşılaşmanın (5. kat) kazanılabilir olmasına göre
-     * ayarlandı.
+     * Boss değerleri, demirci geldikten sonra yeniden ayarlandı.
      *
-     * <p>5. katta oyuncu 2. kademe takımla geliyor: 8 vuruş, 2 savunma, 20 can.
-     * Bu değerlerle dövüş kabaca "boss 4 saniyede düşer, oyuncu 7 saniyede
-     * ölür" dengesinde — yani ayakta durup vuruşmak <em>yetiyor</em>, ama hata
-     * payı dar. Önceki hâlinde ikisi de 4 saniyeydi, yani yazı tura atıyordun.</p>
+     * <p>Artık oyuncunun 5. kata iki farklı hâlde gelmesi mümkün: altınını
+     * harcamadan (8 vuruş, 2 savunma) ya da demircide takımını tavana
+     * yükselterek (10 vuruş, 4 savunma). Değerler ikincisine göre seçildi —
+     * yükseltilmiş takımla dövüş kabaca 4 saniye, yükseltmesiz 7 saniye
+     * sürüyor. Yani <b>altını harcamamak artık bir seçim, ihmal değil</b>:
+     * boss eskisi gibi ayakta durup vuruşmayı affetmiyor.</p>
      *
-     * <p>Asıl kaçış yolu hız farkı: oyuncu saniyede 6 kare, boss 2.2. Vurup
-     * geri çekilerek dövüşürsen hiç hasar almadan da bitirebilirsin.</p>
+     * <p>Asıl kaçış yolu yine hız farkı: oyuncu saniyede 6 kare, boss 2.4.
+     * Vurup geri çekilerek dövüşürsen hiç hasar almadan da bitirebilirsin.</p>
      */
     private static final EnemyStats STATS = new EnemyStats(
-            40,     // can
-            5,      // vuruş gücü
-            3,      // savunma: kalın zırh, kılıcın kademesi önemli
-            2.2,    // hız (kare/saniye) — yavaş ama durmak bilmez
-            1.4,    // vuruş arası bekleme: tek hatada ölmeyesin
+            55,     // can
+            6,      // vuruş gücü
+            4,      // savunma: kalın zırh, kılıcın kademesi önemli
+            2.4,    // hız (kare/saniye) — yavaş ama durmak bilmez
+            1.3,    // vuruş arası bekleme: tek hatada ölmeyesin
             60);    // fark etme menzili: pratikte tüm harita
+
+    /**
+     * Her yeni bossun bir öncekine göre kazandığı değerler.
+     *
+     * <p>Katın kendi derinlik bonusu ({@code Game.applyDepthBonus}) tüm
+     * düşmanlara ortak ve yavaş artıyor; boss için yeterli değil. Oyuncunun
+     * takımı her kademede sıçradığı için bossun da sıçraması gerekiyordu,
+     * yoksa 15. kattaki boss 5. kattakinden kolay geliyordu.</p>
+     */
+    private static final int HP_PER_BOSS = 16;
+    private static final int ATTACK_PER_BOSS = 2;
+    private static final int DEFENSE_PER_BOSS = 1;
 
     /** İki çağırma arasındaki süre, saniye. */
     private static final double SUMMON_INTERVAL = 6.0;
@@ -59,8 +72,13 @@ public class Boss extends Enemy {
     /** Kattaki düşman sayısı bunu aşarsa çağırmayı bırakır. */
     private static final int ENEMY_LIMIT = 16;
 
-    private static final int BASE_GOLD_DROP = 40;
-    private static final int GOLD_DROP_PER_DEPTH = 15;
+    /**
+     * Ganimet altını demirciyle birlikte yükseltildi: altının harcanacağı bir
+     * yer olduğu için bossu geçmek artık doğrudan bir sonraki yükseltmeyi
+     * ödüyor.
+     */
+    private static final int BASE_GOLD_DROP = 50;
+    private static final int GOLD_DROP_PER_DEPTH = 18;
 
     private static final int[][] SUMMON_SPOTS = {
             {0, -1}, {0, 1}, {-1, 0}, {1, 0}, {-1, -1}, {1, -1}, {-1, 1}, {1, 1}};
@@ -70,6 +88,19 @@ public class Boss extends Enemy {
 
     public Boss(int tileX, int tileY) {
         super(tileX, tileY, "Kript Lordu", STATS, new AStarPathfinder());
+    }
+
+    /**
+     * Kaçıncı boss olduğuna göre güçlenir.
+     *
+     * <p>Sayacı bossun kendisi tutmuyor, katı kuran taraf söylüyor: aynı sınıf
+     * her derinlikte kullanılıyor, "ben kaçıncıyım" bilgisi ona ait değil.</p>
+     *
+     * @param bossNumber 1 ilk boss (5. kat), 2 ikinci (10. kat)...
+     */
+    public void scaleTo(int bossNumber) {
+        int steps = Math.max(0, bossNumber - 1);
+        strengthen(HP_PER_BOSS * steps, ATTACK_PER_BOSS * steps, DEFENSE_PER_BOSS * steps);
     }
 
     /** Sayacı işletir ve zamanı gelince yaratık çağırır. */

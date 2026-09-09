@@ -36,6 +36,14 @@ public record SaveData(
     /** Kuşanılmış parça yoksa slot alanına yazılan değer. */
     public static final int NO_SLOT = -1;
 
+    /**
+     * Sürüm 6 öncesi kayıtlarda dayanıklılık alanı yok.
+     *
+     * <p>Bu değerle karşılaşan taraf parçayı tam dolu kabul ediyor: eski kaydı
+     * yükleyen oyuncuyu kırık kılıçla cezalandırmak yanlış olurdu.</p>
+     */
+    public static final int UNKNOWN_DURABILITY = -1;
+
     public SaveData {
         inventory = List.copyOf(inventory);
         groundItems = List.copyOf(groundItems);
@@ -45,10 +53,22 @@ public record SaveData(
     /**
      * Bir eşyanın kaydı.
      *
-     * @param kind  POTION, GOLD, WEAPON ya da ARMOR
-     * @param value altın miktarı, vuruş bonusu ya da savunma bonusu
+     * <p>Dayanıklılık ve yükseltme yalnızca silah ve zırh için anlamlı; iksir
+     * ve altın bu alanlara sıfır yazıyor. Her eşya türüne ayrı kayıt biçimi
+     * yazmaktansa iki alanı boş geçmek daha ucuz.</p>
+     *
+     * @param kind         POTION, GOLD, WEAPON ya da ARMOR
+     * @param value        altın miktarı ya da <em>taban</em> vuruş/savunma bonusu
+     * @param durability   kalan dayanıklılık
+     * @param upgradeLevel demircide kaç kademe yükseltildiği
      */
-    public record ItemData(String kind, int x, int y, String name, int value, String spriteName) {
+    public record ItemData(String kind, int x, int y, String name, int value, String spriteName,
+                           int durability, int upgradeLevel) {
+
+        /** Yıpranma bilinmeyen eski kayıtlar için: parça sağlam sayılıyor. */
+        public ItemData(String kind, int x, int y, String name, int value, String spriteName) {
+            this(kind, x, y, name, value, spriteName, UNKNOWN_DURABILITY, 0);
+        }
     }
 
     /**

@@ -30,8 +30,8 @@ import java.util.Optional;
  */
 public class SaveFile {
 
-    /** Yazılan dosya sürümü; azami can eklenince 5 oldu. */
-    private static final int VERSION = 5;
+    /** Yazılan dosya sürümü; dayanıklılık ve yükseltme eklenince 6 oldu. */
+    private static final int VERSION = 6;
 
     private static final String SEPARATOR = "|";
     private static final String SPLIT_PATTERN = "\\|";
@@ -176,6 +176,12 @@ public class SaveFile {
         }
     }
 
+    /**
+     * Eşya satırını okur.
+     *
+     * <p>Dayanıklılık ve yükseltme sürüm 6 ile geldi; daha eski satırlarda bu
+     * alanlar yok ve parça sağlam sayılıyor.</p>
+     */
     private SaveData.ItemData parseItem(String[] parts) {
         return new SaveData.ItemData(
                 parts[1],
@@ -183,7 +189,9 @@ public class SaveFile {
                 Integer.parseInt(parts[3]),
                 parts[4],
                 Integer.parseInt(parts[5]),
-                parts[6]);
+                parts[6],
+                parts.length > 7 ? Integer.parseInt(parts[7]) : SaveData.UNKNOWN_DURABILITY,
+                parts.length > 8 ? Integer.parseInt(parts[8]) : 0);
     }
 
     private SaveData.EnemyData parseEnemy(String[] parts) {
@@ -199,7 +207,8 @@ public class SaveFile {
 
     private String itemLine(String tag, SaveData.ItemData item) {
         return line(tag, item.kind(), String.valueOf(item.x()), String.valueOf(item.y()),
-                item.name(), String.valueOf(item.value()), item.spriteName());
+                item.name(), String.valueOf(item.value()), item.spriteName(),
+                String.valueOf(item.durability()), String.valueOf(item.upgradeLevel()));
     }
 
     private String line(String tag, String... fields) {

@@ -2,9 +2,11 @@ package com.cryptdelver.ui;
 
 import com.cryptdelver.entity.Enemy;
 import com.cryptdelver.entity.Entity;
+import com.cryptdelver.entity.Equipment;
 import com.cryptdelver.entity.Item;
 import com.cryptdelver.entity.Player;
 import com.cryptdelver.entity.Weapon;
+import com.cryptdelver.game.Forge;
 import com.cryptdelver.game.Game;
 import com.cryptdelver.game.Inventory;
 import com.cryptdelver.game.Settings;
@@ -96,6 +98,10 @@ public class GameRenderer {
     private static final Color HP_BAR_FILL = Color.web("#b64b45");
     private static final Color OVERLAY = Color.web("#0d0d12", 0.78);
     private static final Color OVERLAY_TITLE = Color.web("#c9564f");
+    private static final Color DURABILITY_FULL = Color.web("#6f9a5a");
+
+    /** Dayanıklılık bunun altına düşünce çubuk sarıya döner. */
+    private static final double DURABILITY_WARNING = 0.35;
 
     private final SpriteRegistry sprites = new SpriteRegistry();
     private final ColorAdjust hitEffect = new ColorAdjust(0, -0.6, 0.7, 0);
@@ -131,6 +137,11 @@ public class GameRenderer {
             drawSwing(gc, player);
         }
 
+        if (game.getBlacksmith() != null) {
+            drawEntity(gc, game.getBlacksmith(), 1.0);
+            drawBlacksmithHint(gc, game);
+        }
+
         for (Enemy enemy : game.getEnemies()) {
             drawEntity(gc, enemy, 1.0);
             drawHealthBar(gc, enemy);
@@ -147,6 +158,10 @@ public class GameRenderer {
         }
 
         drawHud(gc, game, mapWidth, mapHeight);
+
+        if (game.isForgeOpen()) {
+            drawForgeScreen(gc, game, mapWidth, mapHeight);
+        }
 
         if (game.isPaused()) {
             drawPauseScreen(gc, game, mapWidth, mapHeight);
@@ -240,6 +255,7 @@ public class GameRenderer {
                 {"1-8", "cantadaki esyayi kullan / kusan"},
                 {"Shift + 1-8", "esyayi yere birak"},
                 {"E", "merdivende bir alt kata in"},
+                {"F", "demircinin yaninda tezgahi ac"},
                 {"F5 / F9", "kaydet / yukle"},
                 {"R / G", "yeni kat / zindan ureticisini degistir"},
                 {"Enter", "olunce yeniden basla"},
@@ -472,22 +488,51 @@ public class GameRenderer {
         gc.fillText("Dusman " + game.getEnemies().size(), STATUS_PANEL_X + 150, line);
     }
 
-    /** Orta panel: çanta slotları ve kuşanılan parçalar. */
+    /** Orta panel: çanta slotları ve kuşanılan parçaların durumu. */
     private void drawInventoryPanel(GraphicsContext gc, Game game, double mapHeight) {
         drawPanelTitle(gc, "CANTA", INVENTORY_PANEL_X, mapHeight);
-        drawInventory(gc, game, INVENTORY_PANEL_X, mapHeight + 22);
-
-        gc.setTextAlign(TextAlignment.LEFT);
-        gc.setFill(SLOT_EQUIPPED);
-        double line = mapHeight + 74;
+        drawInventory(gc, game, INVENTORY_PANEL_X, mapHeight + 20);
 
         Player player = game.getPlayer();
-        if (player.getEquippedWeapon() != null) {
-            gc.fillText(player.getEquippedWeapon().getName(), INVENTORY_PANEL_X, line);
+        drawGearRow(gc, player.getEquippedWeapon(), mapHeight + 64);
+        drawGearRow(gc, player.getEquippedArmor(), mapHeight + 82);
+    }
+
+    /**
+     * Kuşanılan bir parçanın adı ve dayanıklılık çubuğu.
+     *
+     * <p>Çubuk sayıdan önemli: yıpranmayı fark etmek için "82/120" okumak
+     * gerekmesin, çubuğun kısaldığını görmek yetsin. Renk de üç kademede
+     * uyarıyor — dolu, azalmış, kırık.</p>
+     */
+    private void drawGearRow(GraphicsContext gc, Equipment item, double centerY) {
+        if (item == null) {
+            return;
         }
-        if (player.getEquippedArmor() != null) {
-            gc.fillText(player.getEquippedArmor().getName(), INVENTORY_PANEL_X + 150, line);
+
+        gc.setFont(hudFont);
+        gc.setTextAlign(TextAlignment.LEFT);
+        gc.setFill(item.isBroken() ? HP_TEXT : SLOT_EQUIPPED);
+        gc.fillText(item.getDisplayName(), INVENTORY_PANEL_X, centerY);
+
+        double barX = INVENTORY_PANEL_X + 170;
+        double barWidth = 140;
+        double barHeight = 6;
+        double y = centerY - barHeight / 2;
+        double ratio = item.getDurability() / (double) item.getMaxDurability();
+
+        gc.setFill(HP_BAR_BACKGROUND);
+        gc.fillRect(barX, y, barWidth, barHeight);
+        gc.setFill(durabilityColor(ratio));
+        gc.fillRect(barX, y, barWidth * Math.max(0, ratio), barHeight);
+    }
+
+    /** Dolu yeşilimsi, azalmış sarı, kırık kırmızı. */
+    private Color durabilityColor(double ratio) {
+        if (ratio <= 0) {
+            return HP_TEXT;
         }
+        return ratio < DURABILITY_WARNING ? GOLD_TEXT : DURABILITY_FULL;
     }
 
     /** Sağ panel: son olaylar ve tek satırlık yardım ipucu. */
@@ -631,6 +676,120 @@ public class GameRenderer {
         gc.setTextBaseline(VPos.CENTER);
         gc.setFill(locked ? OVERLAY_TITLE : GOLD_TEXT);
         gc.fillText(hint, mapWidth / 2, y + boxHeight / 2);
+    }
+
+    /**
+     * Demircinin başında "F" ipucu.
+     *
+     * <p>Yalnızca yanına gidince çıkıyor: haritada sürekli duran bir etiket
+     * gözü yorardı, oysa bilgi tam da o an gerekiyor.</p>
+     */
+    private void drawBlacksmithHint(GraphicsContext gc, Game game) {
+        if (!game.isNearBlacksmith() || game.isForgeOpen()) {
+            return;
+        }
+
+        Entity smith = game.getBlacksmith();
+        double x = smith.getRenderX() * TILE_SIZE + TILE_SIZE / 2.0;
+        double y = smith.getRenderY() * TILE_SIZE - 6;
+
+        gc.setFont(hudFont);
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setTextBaseline(VPos.CENTER);
+        gc.setFill(HINT_BACKGROUND);
+        gc.fillRoundRect(x - 55, y - 11, 110, 22, 6, 6);
+        gc.setFill(GOLD_TEXT);
+        gc.fillText("F: demirci", x, y);
+    }
+
+    /**
+     * Demirci tezgâhı.
+     *
+     * <p>Dört satır, dört rakam: her satırda ne olduğu, ne kadar tuttuğu ve
+     * yapılabilir olup olmadığı yazılı. Yapılamayan satırlar soluk ve
+     * gerekçesi yanında — "neden olmuyor" sorusunu ekranın kendisi
+     * yanıtlıyor, oyuncu deneyip mesaj kaydından öğrenmek zorunda değil.</p>
+     */
+    private void drawForgeScreen(GraphicsContext gc, Game game, double mapWidth, double mapHeight) {
+        gc.setFill(OVERLAY);
+        gc.fillRect(0, 0, mapWidth, mapHeight);
+
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setTextBaseline(VPos.CENTER);
+        gc.setFont(titleFont);
+        gc.setFill(GOLD_TEXT);
+        gc.fillText("DEMIRCI", mapWidth / 2, mapHeight / 2 - 190);
+
+        gc.setFont(hudFont);
+        gc.setFill(HUD_TEXT);
+        gc.fillText("Kesende " + game.getGold() + " altin var.", mapWidth / 2, mapHeight / 2 - 148);
+
+        Player player = game.getPlayer();
+        double y = mapHeight / 2 - 100;
+
+        y = drawForgeRow(gc, game, mapWidth, y, "1", "Silahi tamir et",
+                player.getEquippedWeapon(), false);
+        y = drawForgeRow(gc, game, mapWidth, y, "2", "Zirhi tamir et",
+                player.getEquippedArmor(), false);
+        y = drawForgeRow(gc, game, mapWidth, y, "3", "Silahi yukselt",
+                player.getEquippedWeapon(), true);
+        y = drawForgeRow(gc, game, mapWidth, y, "4", "Zirhi yukselt",
+                player.getEquippedArmor(), true);
+
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setFill(HUD_TEXT);
+        gc.fillText("Yukseltme tavani, bu katta bossun birakacagi parca kadar.",
+                mapWidth / 2, y + 24);
+        gc.setFill(HUD_ACCENT);
+        gc.fillText("F ya da ESC: tezgahtan ayril", mapWidth / 2, y + 48);
+    }
+
+    /**
+     * Tezgâhta tek bir satır.
+     *
+     * @param upgrade tamir mi yükseltme mi; fiyat ve engel gerekçesi buna göre
+     * @return bir sonraki satırın y'si
+     */
+    private double drawForgeRow(GraphicsContext gc, Game game, double mapWidth, double y,
+                                String key, String label, Equipment item, boolean upgrade) {
+        String detail;
+        String cost;
+        boolean available;
+
+        if (item == null) {
+            detail = "kusanilmis parca yok";
+            cost = "—";
+            available = false;
+        } else if (upgrade) {
+            available = item.canUpgrade(game.getDepth());
+            detail = item.getDisplayName() + "  +" + item.getBonus()
+                    + (available ? "" : "  (tavan)");
+            cost = available ? Forge.upgradeCost(item) + " altin" : "—";
+        } else {
+            available = item.needsRepair();
+            detail = item.getDisplayName() + "  " + item.getDurability() + "/"
+                    + item.getMaxDurability() + (item.isBroken() ? "  KIRIK" : "");
+            cost = available ? Forge.repairCost(item) + " altin" : "saglam";
+        }
+
+        boolean affordable = available && item != null
+                && game.getGold() >= (upgrade ? Forge.upgradeCost(item) : Forge.repairCost(item));
+
+        gc.setTextAlign(TextAlignment.RIGHT);
+        gc.setFill(available ? GOLD_TEXT : SLOT_NUMBER);
+        gc.fillText(key, mapWidth / 2 - 250, y);
+
+        gc.setTextAlign(TextAlignment.LEFT);
+        gc.setFill(available ? MESSAGE_TEXT : MESSAGE_FADED);
+        gc.fillText(label, mapWidth / 2 - 235, y);
+        gc.setFill(MESSAGE_FADED);
+        gc.fillText(detail, mapWidth / 2 - 60, y);
+
+        gc.setTextAlign(TextAlignment.RIGHT);
+        gc.setFill(affordable ? GOLD_TEXT : MESSAGE_FADED);
+        gc.fillText(cost, mapWidth / 2 + 250, y);
+
+        return y + 30;
     }
 
     private void drawGameOver(GraphicsContext gc, Game game, double mapWidth, double mapHeight) {

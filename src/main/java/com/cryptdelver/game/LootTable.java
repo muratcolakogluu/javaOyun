@@ -14,6 +14,10 @@ import com.cryptdelver.entity.Weapon;
  * <p>Boss ganimeti bunun bir istisnası: bulunduğun katın <em>bir üst</em>
  * kademesinden silah bırakır. Yani bossu geçmek, sıradan katları soymaktan
  * daha hızlı güçlendiriyor.</p>
+ *
+ * <p>Bu tablo aynı zamanda <b>yükseltmenin tavanını</b> belirliyor: demircide
+ * bir parçayı en fazla, o katta bossun bırakacağı parçanın seviyesine kadar
+ * çıkarabiliyorsun. Altınla bossu atlamak yok.</p>
  */
 public final class LootTable {
 
@@ -23,22 +27,27 @@ public final class LootTable {
     /** En yüksek kademe (1 tabanlı). */
     public static final int MAX_TIER = 4;
 
-    /** Bir ekipman kademesinin verisi. */
-    private record Gear(String name, int bonus, String spriteName) {
+    /**
+     * Bir ekipman kademesinin verisi.
+     *
+     * @param durability kaç kullanım dayanır; üst kademeler hem daha güçlü hem
+     *                   daha uzun ömürlü, yoksa iyi parça bulmak yükü artırırdı
+     */
+    private record Gear(String name, int bonus, String spriteName, int durability) {
     }
 
     private static final Gear[] WEAPONS = {
-            new Gear("Paslı Kılıç", 2, "sword"),
-            new Gear("Çelik Kılıç", 4, "sword_steel"),
-            new Gear("Savaş Baltası", 6, "axe"),
-            new Gear("Kript Kılıcı", 9, "sword_crypt"),
+            new Gear("Paslı Kılıç", 2, "sword", 90),
+            new Gear("Çelik Kılıç", 4, "sword_steel", 120),
+            new Gear("Savaş Baltası", 6, "axe", 150),
+            new Gear("Kript Kılıcı", 9, "sword_crypt", 180),
     };
 
     private static final Gear[] ARMORS = {
-            new Gear("Deri Zırh", 1, "armor_leather"),
-            new Gear("Zincir Zırh", 2, "armor_chain"),
-            new Gear("Plaka Zırh", 4, "armor_plate"),
-            new Gear("Kript Plakası", 6, "armor_crypt"),
+            new Gear("Deri Zırh", 1, "armor_leather", 60),
+            new Gear("Zincir Zırh", 2, "armor_chain", 80),
+            new Gear("Plaka Zırh", 4, "armor_plate", 100),
+            new Gear("Kript Plakası", 6, "armor_crypt", 120),
     };
 
     private LootTable() {
@@ -57,12 +66,49 @@ public final class LootTable {
 
     public static Weapon weaponForTier(int tier, int tileX, int tileY) {
         Gear gear = WEAPONS[clampIndex(tier)];
-        return new Weapon(tileX, tileY, gear.name(), gear.bonus(), gear.spriteName());
+        return new Weapon(tileX, tileY, gear.name(), gear.bonus(), gear.spriteName(),
+                gear.durability());
     }
 
     public static Armor armorForTier(int tier, int tileX, int tileY) {
         Gear gear = ARMORS[clampIndex(tier)];
-        return new Armor(tileX, tileY, gear.name(), gear.bonus(), gear.spriteName());
+        return new Armor(tileX, tileY, gear.name(), gear.bonus(), gear.spriteName(),
+                gear.durability());
+    }
+
+    /** Kademenin silah bonusu; yükseltme tavanı buradan okunuyor. */
+    public static int weaponBonusForTier(int tier) {
+        return WEAPONS[clampIndex(tier)].bonus();
+    }
+
+    /** Kademenin zırh bonusu; yükseltme tavanı buradan okunuyor. */
+    public static int armorBonusForTier(int tier) {
+        return ARMORS[clampIndex(tier)].bonus();
+    }
+
+    /**
+     * Tabloda olmayan bir bonusa dayanıklılık uydurur.
+     *
+     * <p>Eski kayıtlardan ya da testlerden elle üretilmiş parçalar için gerekli:
+     * bonusu aşmayan en yüksek kademenin dayanıklılığını veriyoruz. Tabloya yeni
+     * kademe eklendiğinde burası kendiliğinden doğru kalıyor.</p>
+     */
+    public static int weaponDurabilityFor(int bonus) {
+        return durabilityFor(WEAPONS, bonus);
+    }
+
+    public static int armorDurabilityFor(int bonus) {
+        return durabilityFor(ARMORS, bonus);
+    }
+
+    private static int durabilityFor(Gear[] table, int bonus) {
+        int durability = table[0].durability();
+        for (Gear gear : table) {
+            if (gear.bonus() <= bonus) {
+                durability = gear.durability();
+            }
+        }
+        return durability;
     }
 
     /** Kademeyi dizi indisine çevirir ve sınırların içinde tutar. */

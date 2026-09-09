@@ -1,10 +1,12 @@
 package com.cryptdelver.game;
 
 import com.cryptdelver.entity.Armor;
+import com.cryptdelver.entity.Blacksmith;
 import com.cryptdelver.entity.Boss;
 import com.cryptdelver.entity.Combatant;
 import com.cryptdelver.entity.Enemy;
 import com.cryptdelver.entity.Entity;
+import com.cryptdelver.entity.Equipment;
 import com.cryptdelver.entity.Goblin;
 import com.cryptdelver.entity.Gold;
 import com.cryptdelver.entity.Imp;
@@ -67,6 +69,9 @@ public class Game {
     /** Boss katlarında sıradan düşman sayısı bu oranda azalır. */
     private static final double BOSS_FLOOR_ENEMY_RATIO = 0.6;
 
+    /** Demirci doğulan yerden en az bu kadar uzağa konur. */
+    private static final int BLACKSMITH_MIN_DISTANCE = 3;
+
     private static final int POTIONS_PER_FLOOR = 4;
     private static final int GOLD_PILES_PER_FLOOR = 5;
     private static final int MIN_GOLD = 5;
@@ -90,8 +95,10 @@ public class Game {
     private int depth = 1;
     private Position stairs;
     private Boss boss;
+    private Blacksmith blacksmith;
     private Position lastPickupTile;
     private boolean paused;
+    private boolean forgeOpen;
     private SoundListener sounds = SoundListener.SILENT;
     private final Settings settings = new Settings();
 
@@ -261,9 +268,162 @@ public class Game {
      * ilerletmeden dönüyor. Oyun bittiyse duraklatmanın anlamı yok.</p>
      */
     public void togglePause() {
+        // Demirci ekranı açıksa ESC önce onu kapatıyor: tek "geri" tuşu.
+        if (forgeOpen) {
+            forgeOpen = false;
+            return;
+        }
+
         if (!isOver()) {
             paused = !paused;
         }
+    }
+
+    /**
+     * Zaman akıyor mu.
+     *
+     * <p>Duraklatma ve demirci ekranı aynı şeyi istiyor: dünya dursun. İkisini
+     * tek soruda topladım, yoksa {@link #update(double)} her yeni ekranla
+     * birlikte bir koşul daha biriktirirdi.</p>
+     */
+    public boolean isFrozen() {
+        return paused || forgeOpen;
+    }
+
+    // -------------------------------------------------------------- demirci
+
+    /** Bu kattaki demirci; yoksa {@code null}. */
+    public Blacksmith getBlacksmith() {
+        return blacksmith;
+    }
+
+    /** Demirci ekranı açık mı. */
+    public boolean isForgeOpen() {
+        return forgeOpen;
+    }
+
+    /**
+     * Oyuncu demirciyle konuşacak kadar yakın mı.
+     *
+     * <p>Komşu kare yetiyor, üstüne basmak gerekmiyor — demirci kendi karesini
+     * tuttuğu için zaten üstüne basılamaz.</p>
+     */
+    public boolean isNearBlacksmith() {
+        return blacksmith != null && blacksmith.tileDistanceTo(player) <= 1;
+    }
+
+    /**
+     * Demirci ekranını açıp kapatır.
+     *
+     * <p>Uzaktan açılmıyor: demirci boss katlarının tek sabit noktası, oraya
+     * gitmek işin bir parçası.</p>
+     */
+    public void toggleForge() {
+        if (forgeOpen) {
+            forgeOpen = false;
+            return;
+        }
+
+        if (isOver() || paused) {
+            return;
+        }
+
+        if (!isNearBlacksmith()) {
+            messageLog.add("Yakında demirci yok. Demirciler boss katlarında.");
+            return;
+        }
+
+        forgeOpen = true;
+    }
+
+    public void repairWeapon() {
+        repair(player.getEquippedWeapon(), "Silah");
+    }
+
+    public void repairArmor() {
+        repair(player.getEquippedArmor(), "Zırh");
+    }
+
+    public void upgradeWeapon() {
+        upgrade(player.getEquippedWeapon(), "Silah");
+    }
+
+    public void upgradeArmor() {
+        upgrade(player.getEquippedArmor(), "Zırh");
+    }
+
+    /**
+     * Parçayı tam dayanıklılığa getirir.
+     *
+     * <p>Kısmi tamir yok: "40 altınlık tamir" gibi bir seçenek hem ekranı hem
+     * kararı gereksiz karmaşıklaştırırdı. Fiyat zaten eksik kadar.</p>
+     */
+    private void repair(Equipment item, String label) {
+        if (!requireForge() || item == null) {
+            messageLog.add(label + " kuşanmadın.");
+            return;
+        }
+
+        if (!item.needsRepair()) {
+            messageLog.add(item.getDisplayName() + " zaten sapasağlam.");
+            return;
+        }
+
+        int cost = Forge.repairCost(item);
+        if (!spendGold(cost)) {
+            return;
+        }
+
+        item.repair();
+        messageLog.add(item.getDisplayName() + " tamir edildi (-" + cost + " altın).");
+        sounds.play(SoundEffect.EQUIP);
+    }
+
+    /**
+     * Parçayı bir kademe yükseltir.
+     *
+     * <p>Tavan {@link Equipment#upgradeCeiling(int)}: bu katta bossun bırakacağı
+     * parçanın seviyesi. Yükseltme seni ayakta tutuyor ama sıçramayı hâlâ boss
+     * yaptırıyor — altın biriktirerek katları atlamak yok.</p>
+     */
+    private void upgrade(Equipment item, String label) {
+        if (!requireForge() || item == null) {
+            messageLog.add(label + " kuşanmadın.");
+            return;
+        }
+
+        if (!item.canUpgrade(depth)) {
+            messageLog.add(item.getDisplayName() + " bu katta daha ileri gitmiyor; bossu geç.");
+            return;
+        }
+
+        int cost = Forge.upgradeCost(item);
+        if (!spendGold(cost)) {
+            return;
+        }
+
+        item.upgrade();
+        messageLog.add(item.getDisplayName() + " dövüldü (-" + cost + " altın).");
+        sounds.play(SoundEffect.EQUIP);
+    }
+
+    private boolean requireForge() {
+        if (forgeOpen) {
+            return true;
+        }
+        messageLog.add("Önce demirciye git.");
+        return false;
+    }
+
+    /** Yetiyorsa keseden düşer; yetmiyorsa uyarır ve hiçbir şey yapmaz. */
+    private boolean spendGold(int cost) {
+        if (gold < cost) {
+            messageLog.add("Altın yetmiyor: " + cost + " gerekiyor, " + gold + " var.");
+            return false;
+        }
+
+        gold -= cost;
+        return true;
     }
 
     /** Oyuncu öldüyse oyun biter. */
@@ -302,7 +462,7 @@ public class Game {
      * @param delta son kareden bu yana geçen süre, saniye
      */
     public void update(double delta) {
-        if (paused) {
+        if (isFrozen()) {
             return;
         }
 
@@ -357,6 +517,10 @@ public class Game {
             return false;
         }
         if (player != ignored && player.occupies(x, y)) {
+            return false;
+        }
+        // Demirci dövüşmez ama karesini tutar; üstünden geçilmiyor.
+        if (blacksmith != null && blacksmith != ignored && blacksmith.occupies(x, y)) {
             return false;
         }
 
@@ -475,6 +639,7 @@ public class Game {
         }
 
         sounds.play(SoundEffect.HIT);
+        wearGear(player.getEquippedWeapon(), "Kılıcın");
 
         for (Enemy enemy : targets) {
             int damage = resolveDamage(player, enemy);
@@ -504,10 +669,32 @@ public class Game {
         player.takeDamage(damage);
         messageLog.add(enemy.getName() + " sana " + damage + " hasar vurdu.");
         sounds.play(SoundEffect.HURT);
+        wearGear(player.getEquippedArmor(), "Zırhın");
 
         if (!player.isAlive()) {
             messageLog.add("Zindanda öldün.");
             sounds.play(SoundEffect.DEATH);
+        }
+    }
+
+    /**
+     * Kuşanılan parçayı bir puan aşındırır.
+     *
+     * <p>Silah isabet ettikçe, zırh darbe yedikçe yıpranıyor: ikisi de
+     * <em>kullanıma</em> bağlı, geçen süreye değil. Böylece kaçarak oynayan
+     * oyuncu zırhını, uzaktan bekleyen oyuncu kılıcını yormuyor — yıpranma
+     * yaptığın şeyin bedeli oluyor.</p>
+     *
+     * <p>Kırılma anını mesajla duyuruyoruz; sessizce yarı güce düşmek oyuncuya
+     * "bir şeyler ters gidiyor ama neden bilmiyorum" hissi verirdi.</p>
+     */
+    private void wearGear(Equipment item, String label) {
+        if (item == null) {
+            return;
+        }
+
+        if (item.wear()) {
+            messageLog.add(label + " kırıldı! Demirciye uğrayana kadar yarım iş görür.");
         }
     }
 
@@ -667,7 +854,8 @@ public class Game {
 
     private SaveData.ItemData describe(Item item) {
         return new SaveData.ItemData(item.getSaveKind(), item.getTileX(), item.getTileY(),
-                item.getName(), item.getSaveValue(), item.getSpriteName());
+                item.getName(), item.getSaveValue(), item.getSpriteName(),
+                item.getSaveDurability(), item.getSaveUpgradeLevel());
     }
 
     /**
@@ -681,10 +869,27 @@ public class Game {
         return switch (data.kind()) {
             case "POTION" -> new Potion(data.x(), data.y());
             case "GOLD" -> new Gold(data.x(), data.y(), data.value());
-            case "WEAPON" -> new Weapon(data.x(), data.y(), data.name(), data.value(), data.spriteName());
-            case "ARMOR" -> new Armor(data.x(), data.y(), data.name(), data.value(), data.spriteName());
+            case "WEAPON" -> restoreGear(
+                    new Weapon(data.x(), data.y(), data.name(), data.value(), data.spriteName()), data);
+            case "ARMOR" -> restoreGear(
+                    new Armor(data.x(), data.y(), data.name(), data.value(), data.spriteName()), data);
             default -> null;
         };
+    }
+
+    /**
+     * Taze üretilmiş parçayı kayıttaki yıpranma ve yükseltme durumuna getirir.
+     *
+     * <p>Dayanıklılık bilinmiyorsa (sürüm 6 öncesi kayıt) parçaya
+     * dokunmuyoruz: yeni üretildiği için zaten dolu.</p>
+     */
+    private Equipment restoreGear(Equipment gear, SaveData.ItemData data) {
+        if (data.durability() != SaveData.UNKNOWN_DURABILITY) {
+            gear.restoreState(data.durability(), data.upgradeLevel());
+        } else if (data.upgradeLevel() > 0) {
+            gear.restoreState(gear.getMaxDurability(), data.upgradeLevel());
+        }
+        return gear;
     }
 
     /**
@@ -765,7 +970,43 @@ public class Game {
         stairs = dungeon.findFarthestWalkableFrom(spawn);
         dungeon.setTile(stairs.x(), stairs.y(), Tile.STAIRS_DOWN);
 
+        blacksmith = isBossFloor() ? placeBlacksmith(spawn) : null;
+
         return spawn;
+    }
+
+    /**
+     * Demirciyi doğulan yerin yakınına koyar.
+     *
+     * <p>Merdivenin yanına koymak cazipti ama orada boss duruyor: demirciyi
+     * dövüşün ortasına yerleştirmiş olurduk. Girişin yanında olması daha doğru
+     * — kata inip önce hazırlanıyor, sonra bossa yürüyorsun.</p>
+     *
+     * <p>Yerleştirme <em>rastgele değil</em>: karelerin sabit sırasında,
+     * doğulan yere en yakın uygun kare seçiliyor. Merdiven gibi bu da katın
+     * sabit döşemesi, yani aynı tohum aynı yeri veriyor ve kayıt yüklerken
+     * demirciyi ayrıca saklamaya gerek kalmıyor.</p>
+     */
+    private Blacksmith placeBlacksmith(Position spawn) {
+        Position best = null;
+        int bestDistance = Integer.MAX_VALUE;
+
+        for (Position spot : dungeon.walkablePositions()) {
+            if (spot.equals(spawn) || spot.equals(stairs)) {
+                continue;
+            }
+
+            // Tam dibine koymuyoruz; oyuncunun üstünde belirmiş gibi durmasın.
+            int distance = spot.manhattanDistance(spawn);
+            if (distance < BLACKSMITH_MIN_DISTANCE || distance >= bestDistance) {
+                continue;
+            }
+
+            best = spot;
+            bestDistance = distance;
+        }
+
+        return best == null ? null : new Blacksmith(best.x(), best.y());
     }
 
     /**
@@ -785,11 +1026,15 @@ public class Game {
             // Merdivenin üstü boş kalsın; eşya ya da düşmanla kapanmasın.
             used.add(stairs);
         }
+        if (blacksmith != null) {
+            used.add(blacksmith.getTile());
+        }
 
         // Boss merdivenin üstünde doğar: geçmek için onu yenmen gerekiyor.
         if (isBossFloor() && stairs != null) {
             boss = new Boss(stairs.x(), stairs.y());
             applyDepthBonus(boss);
+            boss.scaleTo(depth / FLOORS_PER_BOSS);
             addEnemy(boss);
             messageLog.add(boss.getName() + " merdiveni tutuyor. Yavaş — vur ve geri çekil.");
             sounds.play(SoundEffect.BOSS);

@@ -79,6 +79,11 @@ Her karakterin duruş ve yürüyüş animasyonu 4'er kare, 0x72 paketinden:
   goblin_*                            <- goblin_idle / goblin_run
   orc_*                               <- orc_warrior_idle / orc_warrior_run
   boss_*                              <- big_demon_idle / big_demon_run
+  blacksmith_f0..f3                   <- dwarf_m_idle
+
+Demircinin yürüyüş karesi yok, çünkü yerinden kıpırdamıyor: boss katlarında
+sabit duran bir NPC. Cüce gövdesi seçildi, dövüşen türlerden hiçbirine
+benzemiyor — haritada onu düşmanla karıştırmamak önemliydi.
 
 SpriteRegistry önce <ad>_f0.png arıyor (animasyon), yoksa <ad>.png, o da
 yoksa şekil çizimi. Yürüyüş için <ad>_run aynı yolla aranıyor.
