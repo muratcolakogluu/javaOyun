@@ -17,7 +17,6 @@ import com.cryptdelver.world.Dungeon;
 import com.cryptdelver.world.DungeonGenerator;
 import com.cryptdelver.world.Tile;
 import java.util.List;
-import java.util.Map;
 import javafx.geometry.VPos;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.effect.ColorAdjust;
@@ -113,6 +112,11 @@ public class GameRenderer {
     private static final int FORGE_GLOW_RINGS = 3;
     private static final long FORGE_PULSE_MILLIS = 1600;
 
+    /** Büyülü parçaların çevresindeki parıltı. */
+    private static final Color ENCHANT_GLOW = Color.web("#b06cf0");
+    private static final int ENCHANT_GLOW_RINGS = 3;
+    private static final long ENCHANT_PULSE_MILLIS = 1400;
+
     private final SpriteRegistry sprites = new SpriteRegistry();
     private final ColorAdjust hitEffect = new ColorAdjust(0, -0.6, 0.7, 0);
     private final Font hudFont = Font.font("Consolas", 13);
@@ -121,18 +125,6 @@ public class GameRenderer {
 
     /** Yazı genişliği ölçmek için tutulan görünmez düğüm; {@link #measure} kullanıyor. */
     private final Text textMeasure = new Text();
-
-    /**
-     * Zırh kademesine göre gövde rengi; anahtar zırhın sprite adı.
-     *
-     * <p>Değerler {@code ColorAdjust}: ton kayması, doygunluk, parlaklık.
-     * Taban gövde yeşil tunikli; her kademe onu başka bir yöne çekiyor.</p>
-     */
-    private static final Map<String, ColorAdjust> ARMOR_TINTS = Map.of(
-            "armor_leather", tint(0.06, -0.30, -0.08),
-            "armor_chain", tint(-0.42, -0.55, 0.06),
-            "armor_plate", tint(-0.34, -0.80, 0.20),
-            "armor_crypt", tint(0.72, -0.05, -0.10));
 
     /** Haritayı, varlıkları, bilgi şeridini ve gerekiyorsa ölüm ekranını çizer. */
     public void render(GraphicsContext gc, Game game) {
@@ -172,7 +164,7 @@ public class GameRenderer {
             drawEntity(gc, enemy, 1.0);
             drawHealthBar(gc, enemy);
         }
-        drawEntity(gc, player, 1.0, armorTint(player));
+        drawEntity(gc, player, 1.0);
         drawEquipment(gc, player);
 
         if (game.getBoss() != null && !game.isOver()) {
@@ -347,21 +339,8 @@ public class GameRenderer {
 
     /** Varlığı sprite'ıyla çizer; hasar almışsa beyaza yakın parlatır. */
     private void drawEntity(GraphicsContext gc, Entity entity, double scale) {
-        drawEntity(gc, entity, scale, null);
-    }
-
-    /**
-     * Varlığı çizer; {@code tint} verilmişse gövde o renge boyanır.
-     *
-     * <p>Vuruş parlaması boyamayı eziyor: o an önemli olan "darbe yedim"
-     * bilgisi, hangi zırhı giydiğin değil. Parlama zaten çeyrek saniye
-     * sürüyor, sonrasında renk geri geliyor.</p>
-     */
-    private void drawEntity(GraphicsContext gc, Entity entity, double scale, ColorAdjust tint) {
         if (entity.isFlashing()) {
             gc.setEffect(hitEffect);
-        } else if (tint != null) {
-            gc.setEffect(tint);
         }
 
         // Adım halindeki varlık yürüyüş animasyonuyla çiziliyor.
@@ -375,36 +354,13 @@ public class GameRenderer {
     }
 
     /**
-     * Kuşanılan zırhın gövdeye verdiği renk.
-     *
-     * <p>Zırhı gövdenin üstüne <em>çizmenin</em> yolu yok: pakette giyilmiş
-     * zırh çizimi yok, envanter ikonunu gövdeye bindirmeyi de denedik ve
-     * berbat duruyordu. Bunun yerine gövdenin kendisi boyanıyor — deri sıcak
-     * kahve, zincir soğuk çelik, plaka parlak beyaz, kript plakası mor. Aynı
-     * karakter, farklı renk: "başka birine dönüşmek" hissi olmuyor ama üstünde
-     * ne olduğu haritadan bakınca anlaşılıyor.</p>
-     *
-     * <p>Eşleme zırhın sprite adı üzerinden: model sınıfları renk bilmiyor,
-     * bilmesi de gerekmiyor — hangi varlığın nasıl görüneceği bu sınıfın
-     * işi.</p>
-     */
-    private ColorAdjust armorTint(Player player) {
-        Armor armor = player.getEquippedArmor();
-        return armor == null ? null : ARMOR_TINTS.get(armor.getSpriteName());
-    }
-
-    private static ColorAdjust tint(double hue, double saturation, double brightness) {
-        return new ColorAdjust(hue, saturation, brightness, 0);
-    }
-
-    /**
      * Kuşanılan silahı oyuncunun eline çizer.
      *
      * <p>Yalnızca silah çiziliyor, çünkü paketin silah çizimleri zaten "elde
      * tutulan silah" olarak hazırlanmış ve gövdeyle aynı üslupta. Zırh için
-     * gövdeye bindirilecek çizim yok (paketlerde yalnızca envanter ikonu var);
-     * o yüzden zırh ayrı bir parça olarak değil, gövdenin <em>rengi</em> olarak
-     * görünüyor — bkz. {@link #armorTint(Player)}.</p>
+     * gövdeye bindirilecek çizim yok; o yüzden zırh ayrı bir katman değil,
+     * gövdenin kendisi — {@link Player#getSpriteName()} kuşanılan zırha göre
+     * tuniği boyanmış kareyi seçiyor.</p>
      */
     private void drawEquipment(GraphicsContext gc, Player player) {
         Weapon weapon = player.getEquippedWeapon();
@@ -439,6 +395,12 @@ public class GameRenderer {
         double pivotY = player.getRenderY() * TILE_SIZE + TILE_SIZE * HAND_DROP
                 + facingY * TILE_SIZE * HAND_REACH;
 
+        // Büyülü silah haritada da parlıyor; parıltı bıçağın arkasında kalsın
+        // diye döndürmeden önce, sabit bir daire olarak çiziliyor.
+        if (weapon.isEnchanted()) {
+            drawEnchantHalo(gc, pivotX, pivotY, size * 0.5);
+        }
+
         gc.save();
         gc.translate(pivotX, pivotY);
         gc.rotate(angle);
@@ -446,6 +408,28 @@ public class GameRenderer {
         // sapı tam dönme merkezine oturtuyor.
         sprites.get(weapon.getSpriteName()).draw(gc, 0, -size / 2, size);
         gc.restore();
+    }
+
+    /** Büyülü silahın çevresindeki mor hale. */
+    private void drawEnchantHalo(GraphicsContext gc, double centerX, double centerY,
+                                 double radius) {
+        double breath = enchantBreath();
+
+        for (int ring = ENCHANT_GLOW_RINGS; ring >= 1; ring--) {
+            double r = radius * (0.5 + 0.35 * ring) * (0.88 + 0.12 * breath);
+            double alpha = 0.16 / ring * (0.6 + 0.4 * breath);
+
+            gc.setFill(Color.color(ENCHANT_GLOW.getRed(), ENCHANT_GLOW.getGreen(),
+                    ENCHANT_GLOW.getBlue(), alpha));
+            gc.fillOval(centerX - r, centerY - r, r * 2, r * 2);
+        }
+    }
+
+    /** Büyü parıltısının nefesi: 0 ile 1 arasında gidip geliyor. */
+    private double enchantBreath() {
+        double phase = (System.currentTimeMillis() % ENCHANT_PULSE_MILLIS)
+                / (double) ENCHANT_PULSE_MILLIS;
+        return 0.5 + 0.5 * Math.sin(phase * 2 * Math.PI);
     }
 
     /** Sprite yukarı baktığı için: yukarı 0, sağ 90, aşağı 180, sol -90 derece. */
@@ -667,6 +651,10 @@ public class GameRenderer {
             gc.setFill(SLOT_BACKGROUND);
             gc.fillRoundRect(x, top, SLOT_SIZE, SLOT_SIZE, 5, 5);
 
+            if (item != null && item.isEnchanted()) {
+                drawEnchantGlow(gc, x, top, SLOT_SIZE, SLOT_SIZE);
+            }
+
             gc.setStroke(equipped ? SLOT_EQUIPPED : SLOT_BORDER);
             gc.setLineWidth(equipped ? 2 : 1);
             gc.strokeRoundRect(x, top, SLOT_SIZE, SLOT_SIZE, 5, 5);
@@ -832,6 +820,29 @@ public class GameRenderer {
 
         gc.setFill(MESSAGE_TEXT);
         gc.fillText(text, centerX, top + height / 2);
+    }
+
+    /**
+     * Büyülü parçanın altındaki nefes alan parıltı.
+     *
+     * <p>Büyü sayılara dokunmuyor, sadece davranışa; o yüzden hangi parçanın
+     * büyülü olduğunu ada bakmadan da görebilmek gerekiyordu. Parıltı içten
+     * dışa üç katman, hepsi mor: çantadaki altın çerçeve "kuşanılmış",
+     * mor parıltı "büyülü" demek — iki bilgi birbirine karışmıyor.</p>
+     */
+    private void drawEnchantGlow(GraphicsContext gc, double x, double y,
+                                 double width, double height) {
+        double breath = enchantBreath();
+
+        for (int ring = ENCHANT_GLOW_RINGS; ring >= 1; ring--) {
+            double spread = ring * 2.5 * (0.85 + 0.15 * breath);
+            double alpha = 0.22 / ring * (0.6 + 0.4 * breath);
+
+            gc.setFill(Color.color(ENCHANT_GLOW.getRed(), ENCHANT_GLOW.getGreen(),
+                    ENCHANT_GLOW.getBlue(), alpha));
+            gc.fillRoundRect(x - spread, y - spread,
+                    width + spread * 2, height + spread * 2, 8, 8);
+        }
     }
 
     /**

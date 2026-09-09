@@ -81,6 +81,14 @@ Her karakterin duruş ve yürüyüş animasyonu 4'er kare, 0x72 paketinden:
   boss_*                              <- big_demon_idle / big_demon_run
   blacksmith_f0..f3                   <- wizzard_m_idle
 
+Zırh giymiş gövdeler (player_leather_*, player_chain_*, player_plate_*,
+player_crypt_*) scratchpad'deki ArmorSkins aracıyla üretildi: oyuncu
+karelerinde yalnızca tunik pikselleri (#4BA747, #3D734F, #314152) zırhın
+renkleriyle değiştiriliyor, ten ve saç olduğu gibi kalıyor. Çalışma
+zamanında ton kaydırmak da denendi ama teni ve saçı da kaydırıp karakteri
+mor bir lekeye çeviriyordu; önceden boyamak hem doğru sonucu veriyor hem
+pikselleri keskin bırakıyor.
+
 Demircinin yürüyüş karesi yok, çünkü yerinden kıpırdamıyor: boss katlarında
 sabit duran bir NPC.
 

@@ -89,6 +89,18 @@ public abstract class Item extends Entity {
     }
 
     /**
+     * Üstünde büyü var mı.
+     *
+     * <p>Çizim katmanı büyülü parçaları parlatmak için soruyor. Cevabı eşyanın
+     * kendisi veriyor: iksirin ya da altının büyüsü olamaz, o yüzden onlar için
+     * soru {@code false} ile bitiyor ve çizim tarafında tür kontrolü
+     * gerekmiyor.</p>
+     */
+    public boolean isEnchanted() {
+        return false;
+    }
+
+    /**
      * Aynı türden eşyalar çantada tek slotu paylaşabilir mi.
      *
      * <p>İksir gibi tüketilenler yığılır ("3x"), ekipman yığılmaz: her kılıcın

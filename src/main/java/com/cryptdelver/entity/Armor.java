@@ -13,6 +13,9 @@ import java.util.List;
  */
 public class Armor extends Equipment {
 
+    /** Zırh sprite adlarının ortak başı; kademe etiketi bunun devamı. */
+    private static final String SPRITE_PREFIX = "armor_";
+
     public Armor(int tileX, int tileY, String name, int defenseBonus, String spriteName) {
         this(tileX, tileY, name, defenseBonus, spriteName, LootTable.armorDurabilityFor(defenseBonus));
     }
@@ -25,6 +28,22 @@ public class Armor extends Equipment {
     /** Dövüşte işleyen bonus: parçalanmış zırh yarım korur. */
     public int getDefenseBonus() {
         return getEffectiveBonus();
+    }
+
+    /**
+     * Bu zırhın kademe etiketi: {@code "leather"}, {@code "chain"}...
+     *
+     * <p>Giyen taraf gövde sprite'ının adını bununla kuruyor. Zırh "beni giyen
+     * hangi resmi kullansın" sorusunu yanıtlamıyor — kendi kademesini söylüyor,
+     * gerisi {@link Player#getSpriteName()} işi.</p>
+     *
+     * <p>Tanımadığımız bir sprite adı gelirse (elle düzenlenmiş eski bir kayıt)
+     * boş dönüyor ve giyen taban gövdesinde kalıyor; olmayan bir dosyaya
+     * gidip şekil çizimine düşmektense zırhsız görünmek daha az yanlış.</p>
+     */
+    public String getBodyTag() {
+        String sprite = getSpriteName();
+        return sprite.startsWith(SPRITE_PREFIX) ? sprite.substring(SPRITE_PREFIX.length()) : "";
     }
 
     @Override

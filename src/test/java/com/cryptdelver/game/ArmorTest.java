@@ -2,6 +2,7 @@ package com.cryptdelver.game;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -191,22 +192,40 @@ class ArmorTest {
     }
 
     /**
-     * Govde her zaman ayni sprite: kusanilan parcalar ustune ayri katman
-     * olarak ciziliyor. Onceden zirh kademesine gore karakterin kendisi
-     * degisiyordu ve oyuncu her zirh degisiminde baska birine donusuyordu.
+     * Zirh govdenin rengini degistiriyor ama kimligini degil.
+     *
+     * <p>Once her kademede bambaska bir karakter sprite'i vardi ve oyuncu zirh
+     * degistirdikce baska birine donusuyordu. Simdi butun kareler ayni
+     * karakterin tunigi boyanmis hali: ad hep {@code player} ile basliyor, yani
+     * "ustunde ne var" degisiyor, "kim oldugun" degismiyor.</p>
      */
     @Test
-    @DisplayName("Zirh kusanmak karakteri baska birine cevirmez")
-    void bodySpriteStaysTheSame() {
-        assertEquals("player", player.getSpriteName(), "Zirhsizken ciplak govde");
+    @DisplayName("Zirh govdeyi boyar ama baska birine cevirmez")
+    void armourRecoloursTheBodyWithoutChangingWhoYouAre() {
+        assertEquals("player", player.getSpriteName(), "Zirhsizken taban govde");
 
         game.getInventory().add(LootTable.armorForTier(1, 0, 0));
         game.useItem(0);
-        assertEquals("player", player.getSpriteName(), "Zirh govdeyi degistirmemeli");
+        String light = player.getSpriteName();
 
         game.getInventory().add(LootTable.armorForTier(LootTable.MAX_TIER, 0, 0));
         game.useItem(1);
-        assertEquals("player", player.getSpriteName(), "Agir zirhta da ayni govde");
+        String heavy = player.getSpriteName();
+
+        assertTrue(light.startsWith("player_"), "Zirhli govde de oyuncunun govdesi: " + light);
+        assertTrue(heavy.startsWith("player_"), "Agir zirhta da oyle: " + heavy);
+        assertNotEquals(light, heavy, "Iki kademe farkli gorunmeli");
+    }
+
+    /** Tanimadigimiz bir zirh sprite'i govdeyi bozmuyor, taban govde kaliyor. */
+    @Test
+    @DisplayName("Bilinmeyen zirh sprite'i tabana duser")
+    void unknownArmourFallsBackToThePlainBody() {
+        Armor odd = new Armor(0, 0, "Tuhaf Zirh", 1, "bilinmeyen");
+        player.equip(odd);
+
+        assertEquals("", odd.getBodyTag());
+        assertEquals("player", player.getSpriteName());
     }
 
     /**

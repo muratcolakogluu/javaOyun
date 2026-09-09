@@ -195,6 +195,11 @@ public abstract class Equipment extends Item {
     }
 
     @Override
+    public boolean isEnchanted() {
+        return enchantment != null;
+    }
+
+    @Override
     public String getSpriteName() {
         return spriteName;
     }

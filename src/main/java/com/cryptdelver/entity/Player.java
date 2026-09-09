@@ -219,15 +219,28 @@ public class Player extends Combatant implements Actor {
     }
 
     /**
-     * Gövde her zaman aynı: kuşandıkça <em>başka birine dönüşmüyorsun</em>.
+     * Kuşanılan zırha göre gövde: <em>aynı kişi, üstünde başka bir zırh</em>.
      *
-     * <p>Önce zırh kademesine göre farklı karakter sprite'ları deniyordum
-     * (elf → cüce → şövalye) ama oyuncu her zırh değişiminde başka bir insana
-     * dönüşüyordu. Şimdi kuşanılan parçalar gövdenin üstüne ayrı katman olarak
-     * çiziliyor.</p>
+     * <p>Buraya üç denemede gelindi. Önce zırh kademesine göre bambaşka
+     * karakter sprite'ları vardı (elf → cüce → şövalye) ama her zırh
+     * değişiminde başka bir insana dönüşüyordun. Sonra envanter ikonu gövdenin
+     * üstüne bindirildi; 16 piksellik gövdede bir leke gibi durdu. Sonra
+     * gövdeye çalışma zamanında ton kaydırma uygulandı; bu sefer ten ve saç da
+     * kaydı, karakter mor bir lekeye döndü.</p>
+     *
+     * <p>Şimdi gövdenin <b>yalnızca tunik pikselleri</b> zırh renkleriyle
+     * yeniden boyanmış ayrı kareler var ({@code player_leather_f0} gibi). Ten,
+     * saç ve göz olduğu gibi duruyor. Boyama çalışma zamanında değil, önceden
+     * yapıldı: piksel sanatı keskin kalıyor ve çizim katmanı hiçbir efekt
+     * uygulamıyor.</p>
      */
     @Override
     public String getSpriteName() {
-        return "player";
+        if (equippedArmor == null) {
+            return "player";
+        }
+
+        String tag = equippedArmor.getBodyTag();
+        return tag.isEmpty() ? "player" : "player_" + tag;
     }
 }
