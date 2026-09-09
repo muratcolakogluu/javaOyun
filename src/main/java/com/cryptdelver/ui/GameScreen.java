@@ -21,6 +21,7 @@ import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.transform.Scale;
 import javafx.stage.Screen;
 
@@ -128,10 +129,121 @@ public class GameScreen {
         return canvas.getHeight() * scale;
     }
 
-    /** Klavye dinleyicilerini sahneye bağlar. */
+    /**
+     * Klavye ve fare dinleyicilerini bağlar.
+     *
+     * <p>Klavye sahneye, fare <em>tuvale</em> bağlanıyor. Sebebi koordinatlar:
+     * pencere ekrana sığsın diye ölçeklenmiş olabiliyor ve tuvale gelen fare
+     * olayları tuvalin kendi koordinatlarında geliyor — dönüşümü JavaFX
+     * yapıyor, bizim ölçek çarpanıyla uğraşmamız gerekmiyor.</p>
+     */
     public void attachInput(Scene scene) {
         scene.setOnKeyPressed(this::onKeyPressed);
         scene.setOnKeyReleased(this::onKeyReleased);
+
+        canvas.setOnMouseMoved(this::onMouseMoved);
+        canvas.setOnMouseExited(event -> renderer.getClicks().clearMouse());
+        canvas.setOnMousePressed(this::onMousePressed);
+    }
+
+    /**
+     * Fare hareketi: imleç nerede, menüde seçili satır da orada.
+     *
+     * <p>Menüde imleci taşımak, klavye ve fareyi tek bir seçim üstünde
+     * buluşturuyor. İkisi ayrı olsaydı ekranda iki vurgulu satır dururdu ve
+     * Enter'ın hangisini seçeceği belirsiz olurdu.</p>
+     */
+    private void onMouseMoved(MouseEvent event) {
+        renderer.getClicks().setMouse(event.getX(), event.getY());
+
+        if (!menu.isOpen()) {
+            return;
+        }
+
+        UiAction hovered = renderer.getClicks().hovered();
+        if (hovered instanceof UiAction.Menu(StartMenu.Option option)) {
+            menu.select(option);
+        } else if (hovered instanceof UiAction.Setting(StartMenu.SettingRow row)) {
+            menu.selectSetting(row);
+        }
+    }
+
+    /** Tıklama: farenin altındaki eylemi çalıştırır. */
+    private void onMousePressed(MouseEvent event) {
+        renderer.getClicks().setMouse(event.getX(), event.getY());
+
+        UiAction action = renderer.getClicks().hit(event.getX(), event.getY());
+        if (action != null && isReachable(action)) {
+            perform(action, event.isShiftDown());
+        }
+    }
+
+    /**
+     * O an açık olan ekranın gerçekten sahip olduğu bir eylem mi.
+     *
+     * <p>Çanta slotları haritayla birlikte her karede çiziliyor, dolayısıyla
+     * menü ya da tezgâh perdesinin <em>altında</em> kalıyorlar. Bu kontrol
+     * olmasaydı menüdeyken perdenin ardındaki bir slota tıklamak eşya
+     * kullanırdı — görünmeyen bir şeye basmış olurdun.</p>
+     */
+    private boolean isReachable(UiAction action) {
+        if (menu.isOpen()) {
+            return action instanceof UiAction.Menu || action instanceof UiAction.Setting;
+        }
+        if (game.isForgeOpen()) {
+            return action instanceof UiAction.Forge || action instanceof UiAction.Enchant;
+        }
+        return action instanceof UiAction.Slot && !game.isFrozen();
+    }
+
+    /**
+     * Bir arayüz eylemini oyuna uygular.
+     *
+     * <p>Mühürlü arayüz sayesinde bu {@code switch} bütün durumları kapsamak
+     * zorunda: yeni bir tıklanabilir öğe eklendiğinde derleyici burayı
+     * gösteriyor.</p>
+     */
+    private void perform(UiAction action, boolean shiftDown) {
+        switch (action) {
+            case UiAction.Menu(StartMenu.Option option) -> {
+                menu.select(option);
+                chooseFromMenu();
+            }
+            case UiAction.Setting(StartMenu.SettingRow row) -> {
+                menu.selectSetting(row);
+                if (row == StartMenu.SettingRow.BACK) {
+                    menu.back();
+                } else {
+                    adjustSetting(1);
+                }
+            }
+            case UiAction.Forge(UiAction.Bench bench) -> performBench(bench);
+            case UiAction.Enchant(boolean onWeapon, var enchantment) -> {
+                if (onWeapon) {
+                    game.enchantWeapon(enchantment);
+                } else {
+                    game.enchantArmor(enchantment);
+                }
+            }
+            case UiAction.Slot(int index) -> {
+                // Çantada tıklama kullanıyor, Shift ile yere bırakıyor; tuş
+                // takımındaki 1-8 ve Shift+1-8 ile aynı kural.
+                if (shiftDown) {
+                    game.dropItem(index);
+                } else {
+                    game.useItem(index);
+                }
+            }
+        }
+    }
+
+    private void performBench(UiAction.Bench bench) {
+        switch (bench) {
+            case REPAIR_WEAPON -> game.repairWeapon();
+            case REPAIR_ARMOR -> game.repairArmor();
+            case UPGRADE_WEAPON -> game.upgradeWeapon();
+            case UPGRADE_ARMOR -> game.upgradeArmor();
+        }
     }
 
     /**

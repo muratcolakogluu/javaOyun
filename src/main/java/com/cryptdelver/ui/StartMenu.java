@@ -136,6 +136,24 @@ public class StartMenu {
         pane = Pane.MAIN;
     }
 
+    /**
+     * Verilen satırı seçili yapar; fare imlecin altındaki satıra geldiğinde
+     * çağrılıyor.
+     *
+     * <p>Listede olmayan bir satır sessizce yok sayılıyor: kayıt yokken
+     * "devam et" listede olmadığı için böyle bir istek gelebilir.</p>
+     */
+    public void select(Option option) {
+        int index = options.indexOf(option);
+        if (index >= 0) {
+            mainIndex = index;
+        }
+    }
+
+    public void selectSetting(SettingRow row) {
+        settingIndex = row.ordinal();
+    }
+
     /** Seçim listenin başına ve sonuna sarıyor: son satırdan aşağı ilki. */
     public void moveDown() {
         move(1);

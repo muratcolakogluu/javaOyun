@@ -110,6 +110,11 @@ public class GameRenderer {
     /** Menü çerçevesinin ve satırlarının genişliği. */
     private static final double MENU_FRAME_WIDTH = 620;
     private static final double MENU_ROW_WIDTH = 460;
+    private static final double MENU_ROW_HEIGHT = 34;
+
+    /** Tezgâh satırının tıklanabilir alanı; satırın tamamını kaplıyor. */
+    private static final double FORGE_ROW_WIDTH = 620;
+    private static final double FORGE_ROW_HEIGHT = 26;
     private static final Color OVERLAY_TITLE = Color.web("#c9564f");
     private static final Color DURABILITY_FULL = Color.web("#6f9a5a");
 
@@ -162,12 +167,19 @@ public class GameRenderer {
     /** Büyülü parçaları saran hale; her karede nefesine göre güncelleniyor. */
     private final DropShadow enchantAura = new DropShadow(ENCHANT_AURA_RADIUS, ENCHANT_GLOW);
 
+    /** O karede ekranda duran tıklanabilir bölgeler. */
+    private final ClickMap clicks = new ClickMap();
+
     /**
      * Her şeyi çizer; menü açıksa onu da oyunun üstüne koyar.
      *
      * @param menu başlangıç menüsü; {@code null} verilebilir (menüsüz çizim)
      */
     public void render(GraphicsContext gc, Game game, StartMenu menu) {
+        // Tıklanabilir bölgeler her karede sıfırdan kuruluyor: ekranda ne
+        // varsa tıklanabilir olan da odur.
+        clicks.clear();
+
         render(gc, game);
 
         if (menu != null && menu.isOpen()) {
@@ -175,6 +187,11 @@ public class GameRenderer {
             drawStartMenu(gc, menu, game, dungeon.getWidth() * (double) TILE_SIZE,
                     dungeon.getHeight() * (double) TILE_SIZE);
         }
+    }
+
+    /** Fareyle tıklanabilir bölgeler; {@link GameScreen} buradan soruyor. */
+    public ClickMap getClicks() {
+        return clicks;
     }
 
     /**
@@ -238,8 +255,25 @@ public class GameRenderer {
         double y = 240;
 
         for (int i = 0; i < options.size(); i++) {
-            drawMenuRow(gc, options.get(i).getLabel(), centerX, y + i * 44, i == menu.getIndex());
+            StartMenu.Option option = options.get(i);
+            boolean hovered = register(new UiAction.Menu(option), centerX, y + i * 44);
+
+            drawMenuRow(gc, option.getLabel(), centerX, y + i * 44,
+                    hovered || i == menu.getIndex());
         }
+    }
+
+    /**
+     * Menü satırı boyutundaki bir bölgeyi tıklanabilir yapar.
+     *
+     * <p>Çizimle aynı koordinatlar kullanıldığı için kayıt ve görüntü asla
+     * ayrı düşmüyor.</p>
+     *
+     * @return fare o an bu satırın üstündeyse {@code true}
+     */
+    private boolean register(UiAction action, double centerX, double centerY) {
+        return clicks.add(action, centerX - MENU_ROW_WIDTH / 2, centerY - MENU_ROW_HEIGHT / 2,
+                MENU_ROW_WIDTH, MENU_ROW_HEIGHT);
     }
 
     /**
@@ -255,11 +289,12 @@ public class GameRenderer {
 
         for (int i = 0; i < rows.size(); i++) {
             StartMenu.SettingRow row = rows.get(i);
-            boolean selected = i == menu.getIndex();
-            double rowY = y + i * 44;
+            double rowY = y + i * 44 + (row == StartMenu.SettingRow.BACK ? 12 : 0);
+            boolean hovered = register(new UiAction.Setting(row), centerX, rowY);
+            boolean selected = hovered || i == menu.getIndex();
 
             if (row == StartMenu.SettingRow.BACK) {
-                drawMenuRow(gc, row.getLabel(), centerX, rowY + 12, selected);
+                drawMenuRow(gc, row.getLabel(), centerX, rowY, selected);
                 continue;
             }
 
@@ -296,7 +331,7 @@ public class GameRenderer {
     private void drawSettingRow(GraphicsContext gc, String label, String value,
                                 double centerX, double centerY, boolean selected) {
         double width = MENU_ROW_WIDTH;
-        double height = 34;
+        double height = MENU_ROW_HEIGHT;
 
         if (selected) {
             gc.setFill(HINT_BACKGROUND);
@@ -325,7 +360,7 @@ public class GameRenderer {
     private void drawMenuRow(GraphicsContext gc, String label, double centerX, double centerY,
                              boolean selected) {
         double width = MENU_ROW_WIDTH;
-        double height = 34;
+        double height = MENU_ROW_HEIGHT;
 
         if (selected) {
             gc.setFill(HINT_BACKGROUND);
@@ -509,8 +544,8 @@ public class GameRenderer {
         String[][] keys = {
                 {"WASD / oklar", "hareket"},
                 {"Bosluk", "vur"},
-                {"1-8", "cantadaki esyayi kullan / kusan"},
-                {"Shift + 1-8", "esyayi yere birak"},
+                {"1-8 / tik", "cantadaki esyayi kullan / kusan"},
+                {"Shift + 1-8 / tik", "esyayi yere birak"},
                 {"E", "merdivende bir alt kata in"},
                 {"F", "büyücünün yaninda tezgahi ac"},
                 {"F5 / F9", "kaydet / yukle"},
@@ -952,6 +987,14 @@ public class GameRenderer {
             gc.setLineWidth(equipped ? 2 : 1);
             gc.strokeRoundRect(x, top, SLOT_SIZE, SLOT_SIZE, 5, 5);
 
+            if (clicks.add(new UiAction.Slot(slot), x, top, SLOT_SIZE, SLOT_SIZE)) {
+                // Fare slotun üstündeyken çerçeve parlıyor: tıklanabilir
+                // olduğu görüntüden anlaşılsın.
+                gc.setStroke(GOLD_TEXT);
+                gc.setLineWidth(2);
+                gc.strokeRoundRect(x, top, SLOT_SIZE, SLOT_SIZE, 5, 5);
+            }
+
             if (item != null) {
                 if (item.isEnchanted()) {
                     gc.setEffect(enchantAura(ENCHANT_SLOT_RADIUS));
@@ -1191,10 +1234,14 @@ public class GameRenderer {
         Armor armor = player.getEquippedArmor();
         double y = mapHeight / 2 - 112;
 
-        y = drawForgeRow(gc, game, mapWidth, y, "1", "Silahi tamir et", weapon, false);
-        y = drawForgeRow(gc, game, mapWidth, y, "2", "Zirhi tamir et", armor, false);
-        y = drawForgeRow(gc, game, mapWidth, y, "3", "Silahi yukselt", weapon, true);
-        y = drawForgeRow(gc, game, mapWidth, y, "4", "Zirhi yukselt", armor, true);
+        y = drawForgeRow(gc, game, mapWidth, y, "1", "Silahi tamir et", weapon, false,
+                UiAction.Bench.REPAIR_WEAPON);
+        y = drawForgeRow(gc, game, mapWidth, y, "2", "Zirhi tamir et", armor, false,
+                UiAction.Bench.REPAIR_ARMOR);
+        y = drawForgeRow(gc, game, mapWidth, y, "3", "Silahi yukselt", weapon, true,
+                UiAction.Bench.UPGRADE_WEAPON);
+        y = drawForgeRow(gc, game, mapWidth, y, "4", "Zirhi yukselt", armor, true,
+                UiAction.Bench.UPGRADE_ARMOR);
 
         y += 10;
         gc.setTextAlign(TextAlignment.CENTER);
@@ -1235,6 +1282,11 @@ public class GameRenderer {
             boolean available = item != null && !active;
             boolean affordable = available && game.getGold() >= option.getCost();
 
+            boolean onWeapon = item instanceof Weapon;
+            if (registerForgeRow(new UiAction.Enchant(onWeapon, option), mapWidth, y)) {
+                drawForgeHighlight(gc, mapWidth, y);
+            }
+
             gc.setTextAlign(TextAlignment.RIGHT);
             gc.setFill(available ? GOLD_TEXT : SLOT_NUMBER);
             gc.fillText(keys[i], mapWidth / 2 - 300, y);
@@ -1263,7 +1315,9 @@ public class GameRenderer {
      * @return bir sonraki satırın y'si
      */
     private double drawForgeRow(GraphicsContext gc, Game game, double mapWidth, double y,
-                                String key, String label, Equipment item, boolean upgrade) {
+                                String key, String label, Equipment item, boolean upgrade,
+                                UiAction.Bench bench) {
+        boolean hovered = registerForgeRow(new UiAction.Forge(bench), mapWidth, y);
         String detail;
         String cost;
         boolean available;
@@ -1287,6 +1341,10 @@ public class GameRenderer {
         boolean affordable = available && item != null
                 && game.getGold() >= (upgrade ? Forge.upgradeCost(item) : Forge.repairCost(item));
 
+        if (hovered) {
+            drawForgeHighlight(gc, mapWidth, y);
+        }
+
         gc.setTextAlign(TextAlignment.RIGHT);
         gc.setFill(available ? GOLD_TEXT : SLOT_NUMBER);
         gc.fillText(key, mapWidth / 2 - 300, y);
@@ -1302,6 +1360,25 @@ public class GameRenderer {
         gc.fillText(cost, mapWidth / 2 + 300, y);
 
         return y + 30;
+    }
+
+    /**
+     * Tezgâh satırını tıklanabilir yapar.
+     *
+     * <p>Bölge satırın tamamını kaplıyor: rakamın da yazının da fiyatın da
+     * üstüne tıklamak aynı işi yapıyor, "nereye basmam gerekiyor" diye
+     * düşünmek gerekmiyor.</p>
+     */
+    private boolean registerForgeRow(UiAction action, double mapWidth, double y) {
+        return clicks.add(action, mapWidth / 2 - FORGE_ROW_WIDTH / 2, y - FORGE_ROW_HEIGHT / 2,
+                FORGE_ROW_WIDTH, FORGE_ROW_HEIGHT);
+    }
+
+    /** Üstüne gelinen tezgâh satırının arkasındaki soluk şerit. */
+    private void drawForgeHighlight(GraphicsContext gc, double mapWidth, double y) {
+        gc.setFill(HINT_BACKGROUND);
+        gc.fillRoundRect(mapWidth / 2 - FORGE_ROW_WIDTH / 2, y - FORGE_ROW_HEIGHT / 2,
+                FORGE_ROW_WIDTH, FORGE_ROW_HEIGHT, 6, 6);
     }
 
     /**
