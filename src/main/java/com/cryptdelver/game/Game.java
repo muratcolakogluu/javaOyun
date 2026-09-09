@@ -30,8 +30,10 @@ import com.cryptdelver.world.DungeonGenerator;
 import com.cryptdelver.world.Position;
 import com.cryptdelver.world.Vision;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 /**
  * Oyunun durumu ve kuralları: harita, oyuncu, düşmanlar, eşyalar, hareket ve
@@ -56,6 +58,26 @@ public class Game {
     /** Yenilenme büyüsü: kaç saniyede bir kaç can. */
     private static final double REGEN_INTERVAL = 5.0;
     private static final int REGEN_AMOUNT = 1;
+
+    /**
+     * Zindanın sabrı: katta bu kadar saniye kaldıktan sonra takviye gelmeye
+     * başlıyor.
+     *
+     * <p>Bu olmadan <b>katı tamamen temizlemek her zaman en doğru hamleydi</b>:
+     * düşmanlar yeniden doğmuyor, ganimet sınırlı, yani kalmanın hiçbir riski
+     * yoktu. Bu da kurduğumuz bütün ekonomiyi zayıflatıyordu — yıpranma, altın,
+     * iksir saklamak, hepsi "zaten hepsini alırım" diye çözülüyordu.</p>
+     *
+     * <p>Doksan saniye, katı gezip toplamaya yeten ama köşede bekleyip iksir
+     * doldurmaya yetmeyen bir süre. Sonrasında her yirmi saniyede bir düşman
+     * ekleniyor: baskı yavaş ama artan, yani "yeter, merdivene gidiyorum"
+     * gerçek bir karar oluyor.</p>
+     */
+    private static final double FLOOR_PATIENCE = 90.0;
+    private static final double REINFORCE_INTERVAL = 20.0;
+
+    /** Takviyeler kattaki düşman sayısını bu sınırın üstüne çıkarmıyor. */
+    private static final int REINFORCE_LIMIT = 24;
 
     private final Player player;
     private final Inventory inventory = new Inventory();
@@ -89,6 +111,9 @@ public class Game {
     private boolean won;
     private double regenTimer;
     private Vision vision;
+    private double floorSeconds;
+    private double reinforceTimer;
+    private boolean dungeonAwake;
     private SoundListener sounds = SoundListener.SILENT;
     private final Settings settings = new Settings();
 
@@ -553,7 +578,72 @@ public class Game {
         if (!isOver()) {
             elapsedSeconds += delta;
             regenerate(delta);
+            stirTheDungeon(delta);
         }
+    }
+
+    /**
+     * Katta oyalanınca zindan takviye göndermeye başlar.
+     *
+     * <p>Sayaç kat başına sıfırlanıyor, yani baskı "bu katta ne kadar
+     * kaldın"la ilgili — toplam oyun süresiyle değil. Aşağı inmek sayacı
+     * sıfırlıyor, yani ilerlemek gerçekten rahatlatıyor.</p>
+     */
+    private void stirTheDungeon(double delta) {
+        if (floors == null || won) {
+            return;
+        }
+
+        floorSeconds += delta;
+        if (floorSeconds < FLOOR_PATIENCE) {
+            return;
+        }
+
+        // İlk uyarı bir kez: sonrası zaten karşına çıkacak.
+        if (!dungeonAwake) {
+            dungeonAwake = true;
+            messageLog.add("Zindan seni fark etti. Oyalanma.");
+        }
+
+        reinforceTimer += delta;
+        if (reinforceTimer < REINFORCE_INTERVAL) {
+            return;
+        }
+        reinforceTimer = 0;
+        sendReinforcement();
+    }
+
+    /** Oyuncudan uzakta yeni bir düşman doğurur. */
+    private void sendReinforcement() {
+        if (enemies.size() >= REINFORCE_LIMIT) {
+            return;
+        }
+
+        Set<Position> taken = new HashSet<>();
+        taken.add(player.getTile());
+        for (Enemy enemy : enemies) {
+            taken.add(enemy.getTile());
+        }
+        if (wizard != null) {
+            taken.add(wizard.getTile());
+        }
+
+        Position spot = floors.findSpawnAwayFrom(dungeon, player.getTile(), taken);
+        if (spot == null) {
+            return;
+        }
+
+        enemies.add(floors.createEnemyForDepth(spot, depth, settings.getDifficulty()));
+    }
+
+    /** Zindan uyandı mı; ekran bunu uyarı olarak gösteriyor. */
+    public boolean isDungeonAwake() {
+        return dungeonAwake;
+    }
+
+    /** Bu katta geçen süre, saniye. */
+    public double getFloorSeconds() {
+        return floorSeconds;
     }
 
     /**
@@ -1226,6 +1316,11 @@ public class Game {
         // taşınmamalı.
         vision = new Vision(dungeon.getWidth(), dungeon.getHeight());
         refreshVision();
+
+        // Zindanın sabrı kat başına yeniliyor: inmek gerçekten rahatlatıyor.
+        floorSeconds = 0;
+        reinforceTimer = 0;
+        dungeonAwake = false;
     }
 
     /**

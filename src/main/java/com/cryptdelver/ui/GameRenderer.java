@@ -894,6 +894,14 @@ public class GameRenderer {
         gc.fillText("Dusman " + game.getEnemies().size(), STATUS_PANEL_X + 150, line);
 
         drawActiveEffects(gc, game.getPlayer(), mapHeight);
+
+        // Zindan uyandıysa kalıcı bir uyarı: takviyeler gelirken oyuncu
+        // "neden birden kalabalıklaştı" diye düşünmesin.
+        if (game.isDungeonAwake()) {
+            gc.setTextAlign(TextAlignment.LEFT);
+            gc.setFill(HP_TEXT);
+            gc.fillText("ZINDAN UYANDI", STATUS_PANEL_X, mapHeight + 14);
+        }
     }
 
     /**

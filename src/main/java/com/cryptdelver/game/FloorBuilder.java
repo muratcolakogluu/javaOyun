@@ -131,6 +131,29 @@ public class FloorBuilder {
         this.height = height;
     }
 
+    /**
+     * Katta oyuncudan uzak, boş bir kare bulur.
+     *
+     * <p>Takviye düşmanları buraya doğuyor: oyuncunun tepesinde belirmeleri
+     * hem haksız olurdu hem de "zindan seni kuşatıyor" hissini bozardı — tehdit
+     * uzaktan gelip yaklaşmalı.</p>
+     *
+     * @param blocked dolu olduğu bilinen kareler
+     * @return uygun kare; bulunamazsa {@code null}
+     */
+    public Position findSpawnAwayFrom(Dungeon dungeon, Position player, Set<Position> blocked) {
+        List<Position> spots = new ArrayList<>(dungeon.walkablePositions());
+        Collections.shuffle(spots, random);
+
+        for (Position spot : spots) {
+            if (!blocked.contains(spot)
+                    && spot.manhattanDistance(player) >= MIN_SPAWN_DISTANCE) {
+                return spot;
+            }
+        }
+        return null;
+    }
+
     /** Bu derinlikte boss var mı. */
     public static boolean isBossFloor(int depth) {
         return depth % FLOORS_PER_BOSS == 0;
