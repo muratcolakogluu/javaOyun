@@ -78,9 +78,20 @@ public class SpriteRegistry {
         register("armor_crypt", ShapeSprites.armor(Color.web("#5f5090"), Color.web("#e8c46a")));
     }
 
-    /** Ada karşılık gelen sprite; tanınmayan ad için göze batan yer tutucu. */
+    /**
+     * Ada karşılık gelen sprite.
+     *
+     * <p>Kurucudaki kayıtlar yalnızca <em>şekil çizimi yedeği olan</em> adlar
+     * için: resim paketi yoksa oyun yine de oynanabilsin diye. Listede olmayan
+     * bir ad ilk istendiğinde dosyadan yükleniyor ve sonuç saklanıyor.</p>
+     *
+     * <p>Önce liste sabitti ve her yeni ad elle eklenmek zorundaydı; demirci ve
+     * zırhlı gövdeler eklenince bu unutuldu ve ekranda magenta yer tutucular
+     * belirdi. Tembel yükleme bu sınıfı yeni adlardan haberdar olmak zorunda
+     * bırakmıyor — dosyayı koymak yetiyor.</p>
+     */
     public Sprite get(String name) {
-        return sprites.getOrDefault(name, unknown);
+        return sprites.computeIfAbsent(name, this::resolve);
     }
 
     /**
@@ -91,12 +102,23 @@ public class SpriteRegistry {
      */
     public Sprite get(String name, boolean moving) {
         if (moving) {
-            Sprite running = sprites.get(name + RUN_SUFFIX);
-            if (running != null) {
+            Sprite running = get(name + RUN_SUFFIX);
+            if (running != unknown) {
                 return running;
             }
         }
         return get(name);
+    }
+
+    /** Dosyadan yüklemeyi dener; bulunamazsa göze batan yer tutucu. */
+    private Sprite resolve(String name) {
+        Sprite animation = loadAnimation(name, IDLE_FRAME_DURATION);
+        if (animation != null) {
+            return animation;
+        }
+
+        Sprite single = loadImage(name);
+        return single != null ? single : unknown;
     }
 
     /** Karakter: hem duruş hem yürüyüş animasyonu aranır. */
