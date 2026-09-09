@@ -55,13 +55,17 @@ class ReinforcementTest {
         assertFalse(game.isDungeonAwake(), "Bes saniyede uyanmamali");
     }
 
+    /**
+     * Uyari mesajina genis bir pencereden bakiliyor: uyandiktan sonraki
+     * saniyelerde dovus mesajlari akiyor ve son birkac satiri dolduruyor.
+     */
     @Test
     @DisplayName("Uzun sure kalinca zindan uyaniyor")
     void lingeringWakesTheDungeon() {
         simulate(95);
 
         assertTrue(game.isDungeonAwake());
-        assertTrue(game.getMessageLog().latest(10).stream()
+        assertTrue(game.getMessageLog().latest(50).stream()
                         .anyMatch(line -> line.contains("fark etti")),
                 "Oyuncu uyarilmali");
     }

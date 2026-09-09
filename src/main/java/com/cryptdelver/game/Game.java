@@ -30,8 +30,10 @@ import com.cryptdelver.world.DungeonGenerator;
 import com.cryptdelver.world.Position;
 import com.cryptdelver.world.Vision;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -48,6 +50,10 @@ import java.util.Set;
  * edilebiliyor.</p>
  */
 public class Game {
+
+    /** Bırakıldığı hâliyle saklanan bir kat. */
+    private record VisitedFloor(Floor floor, Vision vision, double floorSeconds, boolean awake) {
+    }
 
     /** Vampirlik büyüsünün öldürme başına verdiği can. */
     private static final int VAMPIRISM_HEAL = 2;
@@ -114,6 +120,17 @@ public class Game {
     private double floorSeconds;
     private double reinforceTimer;
     private boolean dungeonAwake;
+    private Position upStairs;
+
+    /**
+     * Gezilmiş katlar: derinlik -> kat, o katın görüşü ve zindanın sabrı.
+     *
+     * <p>Kayıt dosyası tek kat saklıyor, bu ise oyun içi bir hafıza. Kaydedip
+     * yükleyince gezilmiş katlar unutuluyor ve geri dönülen kat yeniden
+     * üretiliyor — bilinçli bir taviz: bütün zindanı kayda yazmak dosyayı
+     * kilolarca büyütürdü.</p>
+     */
+    private final Map<Integer, VisitedFloor> visited = new HashMap<>();
     private SoundListener sounds = SoundListener.SILENT;
     private final Settings settings = new Settings();
 
@@ -235,12 +252,96 @@ public class Game {
             return true;
         }
 
-        depth++;
-        sounds.play(SoundEffect.STAIRS);
-        generateFloor(random.nextLong());
-
+        travelTo(depth + 1);
         messageLog.add(depth + ". kata indin (" + getTheme().getLabel() + ").");
         return true;
+    }
+
+    /** Oyuncu yukarı çıkan merdivenin üstünde mi. */
+    public boolean isPlayerOnUpStairs() {
+        return upStairs != null && upStairs.equals(player.getTile());
+    }
+
+    /**
+     * Bir üst kata çıkar.
+     *
+     * <p>Geri dönebilmek altına bir anlam kazandırdı: kesende para birikince
+     * yukarıdaki büyücüye dönüp takımına büyü bastırabiliyorsun. Öncesinde
+     * altın yalnızca bulunduğun katta büyücü varsa işe yarıyordu, yani çoğu
+     * kat boyunca ölü bir kaynaktı.</p>
+     *
+     * <p>Bedava değil: geri dönmek zaman alıyor ve zindanın sabrı kat başına
+     * <em>hatırlanıyor</em> — uyanmış bir kata geri dönersen takviyeler
+     * kaldığı yerden devam ediyor.</p>
+     *
+     * @return çıkıldıysa {@code true}
+     */
+    public boolean ascend() {
+        if (isOver() || won || !isPlayerOnUpStairs() || floors == null || depth <= 1) {
+            return false;
+        }
+
+        travelTo(depth - 1);
+        messageLog.add(depth + ". kata çıktın (" + getTheme().getLabel() + ").");
+        return true;
+    }
+
+    /**
+     * Verilen kata gider.
+     *
+     * <p>Ayrıldığın kat <em>hatırlanıyor</em>: düşmanları, eşyaları, keşfettiğin
+     * yerler ve zindanın sabrı olduğu gibi duruyor. Katı her seferinde yeniden
+     * üretmek çok daha kolay olurdu ama sonsuz altın demek olurdu — çık, in,
+     * kat yepyeni ganimetle karşına gelsin.</p>
+     */
+    private void travelTo(int target) {
+        visited.put(depth, new VisitedFloor(snapshot(), vision, floorSeconds, dungeonAwake));
+
+        boolean goingDown = target > depth;
+        depth = target;
+        sounds.play(SoundEffect.STAIRS);
+
+        VisitedFloor known = visited.get(depth);
+        if (known == null) {
+            generateFloor(random.nextLong());
+            announceBoss();
+        } else {
+            resume(known);
+        }
+
+        // İnerken geldiğin yere, çıkarken indiğin merdivene varıyorsun.
+        player.setTile(goingDown ? upStairs : stairs);
+        lastPickupTile = player.getTile();
+        refreshVision();
+    }
+
+    /** O anki katı, bırakıldığı hâliyle bir değere çevirir. */
+    private Floor snapshot() {
+        return new Floor(currentSeed, dungeon, upStairs, stairs, wizard, boss,
+                enemies, groundItems);
+    }
+
+    /** Daha önce gezilmiş bir katı bırakıldığı hâliyle geri yükler. */
+    private void resume(VisitedFloor known) {
+        Floor floor = known.floor();
+
+        currentSeed = floor.seed();
+        generatorIndex = floors.generatorForDepth(depth);
+        dungeon = floor.dungeon();
+        upStairs = floor.spawn();
+        stairs = floor.stairs();
+        wizard = floor.wizard();
+        boss = floor.boss();
+
+        enemies.clear();
+        enemies.addAll(floor.enemies());
+        groundItems.clear();
+        groundItems.addAll(floor.groundItems());
+
+        vision = known.vision();
+        floorSeconds = known.floorSeconds();
+        dungeonAwake = known.awake();
+        reinforceTimer = 0;
     }
 
     /**
@@ -256,6 +357,16 @@ public class Game {
     /** Bu katın bölgesi; görüntüsünü ve adını buradan alıyor. */
     public FloorTheme getTheme() {
         return FloorTheme.forDepth(depth);
+    }
+
+    /**
+     * Bu kat mağara mı: oyulmuş, dar ve dolambaçlı.
+     *
+     * <p>Hangi üreticinin kullanıldığını sormak yerine burada tek bir soru
+     * var; çizim katmanının üretici listesini tanıması gerekmiyor.</p>
+     */
+    public boolean isCaveFloor() {
+        return generatorIndex == 1;
     }
 
     /** Oyun kazanıldı mı: son katın bossu geçilip dışarı çıkıldı mı. */
@@ -1094,6 +1205,9 @@ public class Game {
         // Aynı tohum aynı haritayı, merdiveni ve büyücüyü verdiği için bunlar
         // kayıt dosyasında saklanmak zorunda değil.
         adopt(floors.layout(generatorIndex, depth, data.seed()));
+
+        // Kayıt tek kat saklıyor; gezilmiş kat hafızası onunla gelmiyor.
+        visited.clear();
         inventory.clear();
 
         restorePlayer(data);
@@ -1269,6 +1383,7 @@ public class Game {
         gold = 0;
         depth = 1;
         won = false;
+        visited.clear();
         elapsedSeconds = 0;
         enemies.clear();
         groundItems.clear();
@@ -1309,6 +1424,7 @@ public class Game {
         groundItems.clear();
         groundItems.addAll(floor.groundItems());
 
+        upStairs = floor.spawn();
         player.setTile(floor.spawn());
         lastPickupTile = player.getTile();
 

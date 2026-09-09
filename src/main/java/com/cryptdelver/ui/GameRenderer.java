@@ -91,6 +91,7 @@ public class GameRenderer {
 
     private static final Color BACKGROUND = Color.web("#0d0d12");
     private static final Color STAIRS_EDGE = Color.web("#9a8fc0");
+    private static final Color UP_STAIRS_EDGE = Color.web("#7fb08a");
     private static final Color HINT_BACKGROUND = Color.web("#15151d", 0.9);
     private static final Color HUD_BACKGROUND = Color.web("#15151d");
     private static final Color HUD_TEXT = Color.web("#7c7c92");
@@ -459,7 +460,7 @@ public class GameRenderer {
         Player player = game.getPlayer();
         Vision vision = game.getVision();
         drawDungeon(gc, dungeon, vision, game.isStairsLocked());
-        drawThemeWash(gc, game.getTheme(), mapWidth, mapHeight);
+        drawThemeWash(gc, game.getTheme(), game.isCaveFloor(), mapWidth, mapHeight);
         // Eşyalar gölgeden önce çiziliyor, çünkü onlar da hatırlanıyor: yerdeki
         // eşya kıpırdamıyor, dolayısıyla gördüğün zırhın nerede kaldığını
         // bilmen doğru. Karanlıkta kalan eşya perdenin altında soluk görünüyor
@@ -498,7 +499,7 @@ public class GameRenderer {
             drawBossBar(gc, game, mapWidth);
         }
 
-        if (game.isPlayerOnStairs() && !game.isOver()) {
+        if ((game.isPlayerOnStairs() || game.isPlayerOnUpStairs()) && !game.isOver()) {
             drawStairsHint(gc, game, mapWidth, mapHeight);
         }
 
@@ -622,7 +623,7 @@ public class GameRenderer {
                 {"Bosluk", "vur"},
                 {"1-8 / tik", "cantadaki esyayi kullan / kusan"},
                 {"Shift + 1-8 / tik", "esyayi yere birak"},
-                {"E", "merdivende bir alt kata in"},
+                {"E", "merdivende in ya da cik"},
                 {"F", "büyücünün yaninda tezgahi ac"},
                 {"F5 / F9", "kaydet / yukle"},
                 {"- / + / M", "ses azalt / artir / sustur"},
@@ -690,6 +691,12 @@ public class GameRenderer {
                     if (tile == Tile.STAIRS_DOWN) {
                         stairs.draw(gc, cx, cy, TILE_SIZE);
                         drawStairsFrame(gc, cx, cy, stairsLocked);
+                    } else if (tile == Tile.STAIRS_UP) {
+                        // Aynı çizim, farklı çerçeve: yukarı çıkan merdiven
+                        // soluk yeşil, aşağı inen mor. Renk tek başına
+                        // hangisi olduğunu söylüyor.
+                        stairs.draw(gc, cx, cy, TILE_SIZE);
+                        drawUpStairsFrame(gc, cx, cy);
                     }
                 }
             }
@@ -735,6 +742,14 @@ public class GameRenderer {
                 }
             }
         }
+    }
+
+    /** Yukarı çıkan merdivenin çerçevesi; aşağı inenden ayrılsın diye yeşil. */
+    private void drawUpStairsFrame(GraphicsContext gc, double cx, double cy) {
+        gc.setStroke(UP_STAIRS_EDGE);
+        gc.setLineWidth(1);
+        gc.strokeRect(cx - TILE_SIZE / 2.0 + 2, cy - TILE_SIZE / 2.0 + 2,
+                TILE_SIZE - 4, TILE_SIZE - 4);
     }
 
     /** Merdivenin çerçevesi: boss tutuyorsa kızıl ve kalın. */
@@ -1227,10 +1242,14 @@ public class GameRenderer {
 
     /** Merdivenin üstündeyken haritanın altında beliren ipucu. */
     private void drawStairsHint(GraphicsContext gc, Game game, double mapWidth, double mapHeight) {
-        boolean locked = game.isStairsLocked();
+        boolean onDown = game.isPlayerOnStairs();
+        boolean locked = onDown && game.isStairsLocked();
         String hint;
         if (locked) {
             hint = "Merdiveni tutan seyi once yen";
+        } else if (!onDown) {
+            // Yukarı çıkan merdiven: geldiğin yer.
+            hint = "E ile bir ust kata cik";
         } else if (game.isFinalFloor()) {
             // Yirminci katın merdiveni aşağı değil dışarı çıkıyor.
             hint = "E ile kriptten cik";
@@ -1238,7 +1257,7 @@ public class GameRenderer {
             hint = "E ile bir alt kata in";
         }
 
-        double boxWidth = locked ? 230 : 190;
+        double boxWidth = locked ? 230 : 200;
         double boxHeight = 26;
         double x = (mapWidth - boxWidth) / 2;
         double y = mapHeight - boxHeight - 12;
@@ -1570,9 +1589,9 @@ public class GameRenderer {
      * eşyalar üstünde kalıyor, yani zemin renk değiştirirken okunaklılık
      * bozulmuyor.</p>
      */
-    private void drawThemeWash(GraphicsContext gc, FloorTheme theme,
+    private void drawThemeWash(GraphicsContext gc, FloorTheme theme, boolean cave,
                                double mapWidth, double mapHeight) {
-        gc.setFill(Color.web(theme.getTint(), theme.getTintAlpha()));
+        gc.setFill(Color.web(theme.getTint(cave), theme.getTintAlpha(cave)));
         gc.fillRect(0, 0, mapWidth, mapHeight);
     }
 

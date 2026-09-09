@@ -533,6 +533,13 @@ public class GameScreen {
      * saniye kaydetmek diski yorar, ölümde kaydetmek de anlamsız olurdu.</p>
      */
     private void descend() {
+        // Tek tuş iki merdiveni de kullanıyor: hangisinin üstünde durduğun
+        // zaten belli, ayrıca bir "yukarı çık" tuşu ezberletmek gereksiz.
+        if (game.isPlayerOnUpStairs() && !game.isPlayerOnStairs()) {
+            game.ascend();
+            return;
+        }
+
         if (game.descend() && game.getSettings().isAutoSave()) {
             saveGame();
         }

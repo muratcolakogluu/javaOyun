@@ -19,7 +19,16 @@ public enum Tile {
     WALL(false, '#'),
 
     /** Bir alt kata inen merdiven; üzerinde durulabilir. */
-    STAIRS_DOWN(true, '>');
+    STAIRS_DOWN(true, '>'),
+
+    /**
+     * Bir üst kata çıkan merdiven; kata indiğin nokta.
+     *
+     * <p>Geri dönebilmek altına bir anlam kazandırdı: kesende para birikince
+     * yukarıdaki büyücüye dönüp takımına büyü bastırabiliyorsun. Öncesinde
+     * altın yalnızca bulunduğun katta büyücü varsa işe yarıyordu.</p>
+     */
+    STAIRS_UP(true, '<');
 
     private final boolean walkable;
     private final char glyph;

@@ -213,6 +213,11 @@ public class FloorBuilder {
         Position stairs = dungeon.findFarthestWalkableFrom(spawn);
         dungeon.setTile(stairs.x(), stairs.y(), Tile.STAIRS_DOWN);
 
+        // Kata indiğin nokta aynı zamanda yukarı çıkan merdiven: geldiğin yer.
+        // İlk katta da işaretleniyor, oradan yukarı çıkmayı reddetmek katı
+        // kuran tarafın değil oyunun kararı.
+        dungeon.setTile(spawn.x(), spawn.y(), Tile.STAIRS_UP);
+
         Wizard wizard = hasWizard(depth, seed) ? placeWizard(dungeon, spawn, stairs) : null;
 
         return new Floor(seed, dungeon, spawn, stairs, wizard, null, List.of(), List.of());
