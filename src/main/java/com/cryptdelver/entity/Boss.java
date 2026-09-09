@@ -235,7 +235,7 @@ public class Boss extends Enemy {
         game.getPlayer().gainMaxHp(MAX_HP_REWARD);
 
         game.getMessageLog().add(getName() + " düştü! " + reward.getName() + " bıraktı.");
-        game.getMessageLog().add("Gücü sana geçti: +" + MAX_HP_REWARD + " azami can.");
+        game.getMessageLog().addImportant("Gücü sana geçti: +" + MAX_HP_REWARD + " azami can.");
     }
 
     @Override

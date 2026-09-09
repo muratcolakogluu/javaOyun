@@ -248,7 +248,7 @@ public class Game {
         if (depth >= FloorTheme.MAX_DEPTH) {
             won = true;
             sounds.play(SoundEffect.STAIRS);
-            messageLog.add("Kriptten çıktın. Zindan arkanda kaldı.");
+            messageLog.addImportant("Kriptten çıktın. Zindan arkanda kaldı.");
             return true;
         }
 
@@ -713,7 +713,7 @@ public class Game {
         // İlk uyarı bir kez: sonrası zaten karşına çıkacak.
         if (!dungeonAwake) {
             dungeonAwake = true;
-            messageLog.add("Zindan seni fark etti. Oyalanma.");
+            messageLog.addImportant("Zindan seni fark etti. Oyalanma.");
         }
 
         reinforceTimer += delta;
@@ -1081,7 +1081,7 @@ public class Game {
         reflectThorns(enemy);
 
         if (!player.isAlive()) {
-            messageLog.add("Zindanda öldün.");
+            messageLog.addImportant("Zindanda öldün.");
             sounds.play(SoundEffect.DEATH);
         }
     }
@@ -1123,7 +1123,7 @@ public class Game {
         }
 
         if (item.wear()) {
-            messageLog.add(label + " kırıldı! Büyücüye uğrayana kadar hiçbir işe yaramaz.");
+            messageLog.addImportant(label + " kırıldı! Büyücüye uğrayana kadar hiçbir işe yaramaz.");
         }
     }
 
@@ -1469,7 +1469,7 @@ public class Game {
             return;
         }
 
-        messageLog.add(boss.getName() + " merdiveni tutuyor. Yavaş — vur ve geri çekil.");
+        messageLog.addImportant(boss.getName() + " merdiveni tutuyor. Yavaş — vur ve geri çekil.");
         sounds.play(SoundEffect.BOSS);
     }
 }

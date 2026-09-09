@@ -13,6 +13,7 @@ import com.cryptdelver.game.FloorTheme;
 import com.cryptdelver.game.Forge;
 import com.cryptdelver.game.Game;
 import com.cryptdelver.game.Inventory;
+import com.cryptdelver.game.MessageLog;
 import com.cryptdelver.game.Records;
 import com.cryptdelver.game.Settings;
 import com.cryptdelver.world.Dungeon;
@@ -92,6 +93,14 @@ public class GameRenderer {
     private static final Color BACKGROUND = Color.web("#0d0d12");
     private static final Color STAIRS_EDGE = Color.web("#9a8fc0");
     private static final Color UP_STAIRS_EDGE = Color.web("#7fb08a");
+
+    /** Küçük haritanın ölçeği ve renkleri. */
+    private static final double MINIMAP_SCALE = 3;
+    private static final double MINIMAP_MARGIN = 12;
+    private static final Color MINIMAP_BACKDROP = Color.web("#0b0b10", 0.82);
+    private static final Color MINIMAP_WALL = Color.web("#3a3a4c");
+    private static final Color MINIMAP_FLOOR = Color.web("#7c7c92");
+    private static final Color MINIMAP_PLAYER = Color.web("#e8c46a");
     private static final Color HINT_BACKGROUND = Color.web("#15151d", 0.9);
     private static final Color HUD_BACKGROUND = Color.web("#15151d");
     private static final Color HUD_TEXT = Color.web("#7c7c92");
@@ -499,6 +508,8 @@ public class GameRenderer {
         }
         drawPlayer(gc, player);
         drawEquipment(gc, player);
+
+        drawMinimap(gc, game, vision, mapWidth);
 
         if (game.getBoss() != null && !game.isOver()) {
             drawBossBar(gc, game, mapWidth);
@@ -1156,13 +1167,20 @@ public class GameRenderer {
         drawPanelTitle(gc, "OLAYLAR", EVENT_PANEL_X, mapHeight);
 
         gc.setTextAlign(TextAlignment.LEFT);
-        List<String> recent = game.getMessageLog().latest(MESSAGE_LINES);
+        List<MessageLog.Entry> recent = game.getMessageLog().latestEntries(MESSAGE_LINES);
         double line = mapHeight + 36;
 
         for (int i = 0; i < recent.size(); i++) {
-            // En yeni olay parlak, eskiler soluk: sıralama renkten okunuyor.
-            gc.setFill(i == 0 ? MESSAGE_TEXT : MESSAGE_FADED);
-            gc.fillText(recent.get(i), EVENT_PANEL_X, line + i * 17);
+            MessageLog.Entry entry = recent.get(i);
+
+            // Önemli olaylar dövüş gürültüsünün arasında renkle ayrılıyor;
+            // sıradan satırlarda en yenisi parlak, eskiler soluk.
+            if (entry.isImportant()) {
+                gc.setFill(i == 0 ? GOLD_TEXT : SLOT_EQUIPPED.deriveColor(0, 1, 0.7, 1));
+            } else {
+                gc.setFill(i == 0 ? MESSAGE_TEXT : MESSAGE_FADED);
+            }
+            gc.fillText(entry.getDisplay(), EVENT_PANEL_X, line + i * 17);
         }
 
         gc.setTextAlign(TextAlignment.RIGHT);
@@ -1271,6 +1289,63 @@ public class GameRenderer {
         }
 
         gc.setFont(hudFont);
+    }
+
+    /**
+     * Sağ üst köşede keşfedilmiş katın küçük haritası.
+     *
+     * <p>Görüş alanı ve geri dönüş geldikten sonra <b>yön bulmak gerçek bir iş
+     * hâline geldi</b>: karanlıkta 40x22'lik bir katta "yukarı merdiven
+     * neredeydi" diye dolaşmak, ikisinin birlikte yarattığı bir sürtünmeydi.
+     * Küçük harita onu tasarlanmış bir şeye çeviriyor.</p>
+     *
+     * <p>Yalnızca gezdiğin yer çiziliyor — yani harita hile değil, hafıza.
+     * Bilmediğin koridoru göstermiyor.</p>
+     *
+     * <p>Bilgi şeridine değil haritanın köşesine kondu: şerit zaten üç panelle
+     * dolu ve küçük harita bakarken gözün oyunda kalmalı.</p>
+     */
+    private void drawMinimap(GraphicsContext gc, Game game, Vision vision, double mapWidth) {
+        Dungeon dungeon = game.getDungeon();
+        double width = dungeon.getWidth() * MINIMAP_SCALE;
+        double height = dungeon.getHeight() * MINIMAP_SCALE;
+        double left = mapWidth - width - MINIMAP_MARGIN;
+        double top = MINIMAP_MARGIN;
+
+        gc.setFill(MINIMAP_BACKDROP);
+        gc.fillRoundRect(left - 4, top - 4, width + 8, height + 8, 5, 5);
+        gc.setStroke(SLOT_BORDER);
+        gc.setLineWidth(1);
+        gc.strokeRoundRect(left - 4, top - 4, width + 8, height + 8, 5, 5);
+
+        for (int x = 0; x < dungeon.getWidth(); x++) {
+            for (int y = 0; y < dungeon.getHeight(); y++) {
+                if (!vision.isRemembered(x, y)) {
+                    continue;
+                }
+
+                gc.setFill(minimapColor(dungeon.getTile(x, y)));
+                gc.fillRect(left + x * MINIMAP_SCALE, top + y * MINIMAP_SCALE,
+                        MINIMAP_SCALE, MINIMAP_SCALE);
+            }
+        }
+
+        // Oyuncu en son çiziliyor ki merdivenin üstündeyken de görünsün.
+        Player player = game.getPlayer();
+        gc.setFill(MINIMAP_PLAYER);
+        gc.fillRect(left + player.getTileX() * MINIMAP_SCALE - 1,
+                top + player.getTileY() * MINIMAP_SCALE - 1,
+                MINIMAP_SCALE + 2, MINIMAP_SCALE + 2);
+    }
+
+    /** Küçük haritada karenin rengi; merdivenler zeminden ayrılıyor. */
+    private Color minimapColor(Tile tile) {
+        return switch (tile) {
+            case WALL -> MINIMAP_WALL;
+            case STAIRS_DOWN -> STAIRS_EDGE;
+            case STAIRS_UP -> UP_STAIRS_EDGE;
+            case FLOOR -> MINIMAP_FLOOR;
+        };
     }
 
     /** Boss yaşarken haritanın üstünde duran can çubuğu. */
