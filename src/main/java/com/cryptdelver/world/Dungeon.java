@@ -3,8 +3,9 @@ package com.cryptdelver.world;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -111,31 +112,61 @@ public class Dungeon {
      * @return en uzak yürünebilir kare; başlangıç yürünebilir değilse kendisi
      */
     public Position findFarthestWalkableFrom(Position start) {
-        if (!isWalkable(start.x(), start.y())) {
-            return start;
+        Position farthest = start;
+
+        // Haritalama BFS sırasını koruduğu için son giren kare en uzaktakidir.
+        for (Position spot : walkableDistancesFrom(start).keySet()) {
+            farthest = spot;
+        }
+        return farthest;
+    }
+
+    /**
+     * Başlangıçtan yürüyerek ulaşılan her karenin kaç adım uzakta olduğu.
+     *
+     * <p>Kuş uçuşu mesafe burada işe yaramıyor: duvarın öbür yanındaki kare
+     * iki kare ötede görünür ama oraya varmak koridoru dolaşmayı gerektirebilir.
+     * Demirciyi doğulan yerin <em>yürüme</em> mesafesine göre koyabilmemiz için
+     * bu ayrım gerekiyordu.</p>
+     *
+     * <p>Dönen eşleme BFS sırasında: ilk giren en yakın, son giren en uzak
+     * kare. Sıra korunduğu için üstünde gezinmek de belirlenimci — aynı harita
+     * hep aynı yanıtı veriyor.</p>
+     *
+     * @param blocked geçilmez sayılacak fazladan kareler; boş küme verilebilir
+     */
+    public Map<Position, Integer> walkableDistancesFrom(Position start, Set<Position> blocked) {
+        Map<Position, Integer> distances = new LinkedHashMap<>();
+        if (!isWalkable(start.x(), start.y()) || blocked.contains(start)) {
+            return distances;
         }
 
         int[][] directions = {{0, -1}, {0, 1}, {-1, 0}, {1, 0}};
-        Set<Position> visited = new HashSet<>();
         Deque<Position> queue = new ArrayDeque<>();
 
-        visited.add(start);
+        distances.put(start, 0);
         queue.add(start);
-        Position farthest = start;
 
         while (!queue.isEmpty()) {
             Position current = queue.poll();
-            farthest = current;
+            int next = distances.get(current) + 1;
 
             for (int[] direction : directions) {
-                Position next = current.offset(direction[0], direction[1]);
-                if (isWalkable(next.x(), next.y()) && visited.add(next)) {
-                    queue.add(next);
+                Position neighbour = current.offset(direction[0], direction[1]);
+                if (!isWalkable(neighbour.x(), neighbour.y()) || blocked.contains(neighbour)) {
+                    continue;
+                }
+                if (distances.putIfAbsent(neighbour, next) == null) {
+                    queue.add(neighbour);
                 }
             }
         }
 
-        return farthest;
+        return distances;
+    }
+
+    public Map<Position, Integer> walkableDistancesFrom(Position start) {
+        return walkableDistancesFrom(start, Set.of());
     }
 
     /**

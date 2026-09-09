@@ -13,6 +13,7 @@ import com.cryptdelver.entity.Player;
 import com.cryptdelver.entity.Weapon;
 import com.cryptdelver.world.BspGenerator;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -75,6 +76,54 @@ class BlacksmithTest {
             assertFalse(smith.getTile().equals(game.getStairs()), "Merdiveni kapatmamali");
             assertTrue(game.getDungeon().isWalkable(smith.getTileX(), smith.getTileY()),
                     "Duvarin icinde olmamali");
+        }
+
+        /**
+         * Asil sinav bu: kus ucusu yakin olmasi yetmiyor, <em>yuruyerek</em>
+         * yakin olmali. Onceki hali Manhattan mesafesine bakiyordu ve duvarin
+         * obur yanindaki kareyi "3 kare otede" sanip demirciyi katin ta oteki
+         * ucuna koyabiliyordu.
+         */
+        @Test
+        @DisplayName("Demirci dogulan yere birkac adim uzakta")
+        void blacksmithStandsNextToTheSpawn() {
+            for (int i = 0; i < 4; i++) {
+                goDownOneFloor();
+            }
+
+            Blacksmith smith = game.getBlacksmith();
+            Integer steps = game.getDungeon()
+                    .walkableDistancesFrom(player.getTile())
+                    .get(smith.getTile());
+
+            assertNotNull(steps, "Demirciye yuruyerek gidilebilmeli");
+            assertTrue(steps <= 4, "Birkac adimda varilmali, bulundu: " + steps);
+            assertTrue(steps >= 2, "Oyuncunun tepesinde belirmemeli");
+        }
+
+        /**
+         * Demircinin karesinden gecilemedigi icin tek karelik bir koridora
+         * denk gelirse merdiveni kapatabilirdi. En yakin kareyi sectigimiz
+         * icin risk kucuk degil: dogulan odanin cikisi tam orada olabilir.
+         */
+        @Test
+        @DisplayName("Demirci merdivenin yolunu kesmiyor")
+        void blacksmithNeverSealsTheFloor() {
+            for (int floor = 0; floor < 4; floor++) {
+                goDownOneFloor();
+            }
+
+            for (int attempt = 0; attempt < 10; attempt++) {
+                Blacksmith smith = game.getBlacksmith();
+                assertNotNull(smith);
+
+                assertTrue(game.getDungeon()
+                                .walkableDistancesFrom(player.getTile(), Set.of(smith.getTile()))
+                                .containsKey(game.getStairs()),
+                        "Demirci kapaliyken de merdivene ulasilabilmeli");
+
+                game.regenerateFloor();
+            }
         }
 
         @Test

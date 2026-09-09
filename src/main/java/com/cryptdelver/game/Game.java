@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -70,8 +71,14 @@ public class Game {
     /** Boss katlarında sıradan düşman sayısı bu oranda azalır. */
     private static final double BOSS_FLOOR_ENEMY_RATIO = 0.6;
 
-    /** Demirci doğulan yerden en az bu kadar uzağa konur. */
-    private static final int BLACKSMITH_MIN_DISTANCE = 3;
+    /**
+     * Demirci doğulan yerden en az bu kadar <em>adım</em> uzağa konur.
+     *
+     * <p>Kuş uçuşu değil yürüme mesafesi: duvarın öbür yanındaki kare yakın
+     * görünüp uzak olabiliyordu. İki adım, "indiğin anda görüyorsun ama
+     * üstünde belirmiş gibi durmuyor" dengesi.</p>
+     */
+    private static final int BLACKSMITH_MIN_DISTANCE = 2;
 
     /** Vampirlik büyüsünün öldürme başına verdiği can. */
     private static final int VAMPIRISM_HEAL = 2;
@@ -1100,34 +1107,48 @@ public class Game {
      * Demirciyi doğulan yerin yakınına koyar.
      *
      * <p>Merdivenin yanına koymak cazipti ama orada boss duruyor: demirciyi
-     * dövüşün ortasına yerleştirmiş olurduk. Girişin yanında olması daha doğru
+     * dövüşün ortasına yerleştirmiş olurduk. Girişin dibinde olması daha doğru
      * — kata inip önce hazırlanıyor, sonra bossa yürüyorsun.</p>
      *
-     * <p>Yerleştirme <em>rastgele değil</em>: karelerin sabit sırasında,
-     * doğulan yere en yakın uygun kare seçiliyor. Merdiven gibi bu da katın
-     * sabit döşemesi, yani aynı tohum aynı yeri veriyor ve kayıt yüklerken
+     * <p>Yerleştirme <em>rastgele değil</em>: doğulan yerden yayılan BFS'in
+     * sırasında ilk uygun kare seçiliyor, yani en yakını. Merdiven gibi bu da
+     * katın sabit döşemesi — aynı tohum aynı yeri veriyor ve kayıt yüklerken
      * demirciyi ayrıca saklamaya gerek kalmıyor.</p>
      */
     private Blacksmith placeBlacksmith(Position spawn) {
-        Position best = null;
-        int bestDistance = Integer.MAX_VALUE;
+        Map<Position, Integer> distances = dungeon.walkableDistancesFrom(spawn);
 
-        for (Position spot : dungeon.walkablePositions()) {
-            if (spot.equals(spawn) || spot.equals(stairs)) {
+        // BFS sırası yakından uzağa; ilk uyan kare en yakın uygun kare oluyor.
+        for (Map.Entry<Position, Integer> candidate : distances.entrySet()) {
+            Position spot = candidate.getKey();
+
+            if (candidate.getValue() < BLACKSMITH_MIN_DISTANCE || spot.equals(stairs)) {
+                continue;
+            }
+            if (wouldSealTheFloor(spot, spawn)) {
                 continue;
             }
 
-            // Tam dibine koymuyoruz; oyuncunun üstünde belirmiş gibi durmasın.
-            int distance = spot.manhattanDistance(spawn);
-            if (distance < BLACKSMITH_MIN_DISTANCE || distance >= bestDistance) {
-                continue;
-            }
-
-            best = spot;
-            bestDistance = distance;
+            return new Blacksmith(spot.x(), spot.y());
         }
 
-        return best == null ? null : new Blacksmith(best.x(), best.y());
+        return null;
+    }
+
+    /**
+     * Demirci bu kareye konursa merdiven ulaşılmaz kalır mı.
+     *
+     * <p>Demircinin karesinden geçilemiyor. Tek karelik bir koridora denk
+     * gelirse katı ikiye bölüp merdiveni kapatabilirdi — üstelik en yakın kareyi
+     * seçtiğimiz için tam da doğulan odanın çıkışına oturma ihtimali yüksek.
+     * Tahmin yürütmek yerine doğrudan soruyoruz: o kare kapalıyken merdivene
+     * hâlâ yürünebiliyor mu.</p>
+     */
+    private boolean wouldSealTheFloor(Position spot, Position spawn) {
+        if (stairs == null) {
+            return false;
+        }
+        return !dungeon.walkableDistancesFrom(spawn, Set.of(spot)).containsKey(stairs);
     }
 
     /**
