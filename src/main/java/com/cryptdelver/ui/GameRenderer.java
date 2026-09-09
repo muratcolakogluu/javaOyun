@@ -25,6 +25,9 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.effect.ColorAdjust;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.RadialGradient;
+import javafx.scene.paint.Stop;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
@@ -118,6 +121,15 @@ public class GameRenderer {
      * fark kayboluyor.</p>
      */
     private static final Color FORGOTTEN_VEIL = Color.web("#05050a", 0.40);
+
+    /**
+     * Işığın hiç sönmediği çekirdek: yarıçapın bu oranına kadar tam aydınlık.
+     *
+     * <p>Sıfırdan başlatınca oyuncunun hemen dibi bile hafif karanlık
+     * oluyordu; yürüdüğün karenin net görünmesi gerekiyor. Kalan yüzde otuz
+     * beşlik dilimde ışık yumuşakça sönüyor.</p>
+     */
+    private static final double LIGHT_CORE = 0.65;
 
     /** Menü çerçevesinin ve satırlarının genişliği. */
     private static final double MENU_FRAME_WIDTH = 620;
@@ -444,6 +456,7 @@ public class GameRenderer {
         gc.setFill(BACKGROUND);
         gc.fillRect(0, 0, mapWidth, mapHeight + HUD_HEIGHT);
 
+        Player player = game.getPlayer();
         Vision vision = game.getVision();
         drawDungeon(gc, dungeon, vision, game.isStairsLocked());
         drawThemeWash(gc, game.getTheme(), mapWidth, mapHeight);
@@ -457,9 +470,7 @@ public class GameRenderer {
             }
         }
 
-        drawShadows(gc, dungeon, vision);
-
-        Player player = game.getPlayer();
+        drawShadows(gc, dungeon, vision, player, mapWidth, mapHeight);
 
         // Silah varsa savuruşu kılıcın kendisi gösteriyor; çıplak elle
         // vururken de bir şey görünsün diye halka o durumda çiziliyor.
@@ -694,9 +705,29 @@ public class GameRenderer {
      * durmuyordu. Şimdi tek kat ve daha açık — haritayı okuyabiliyorsun, ama
      * neyin ışık altında olduğu hâlâ belli.</p>
      */
-    private void drawShadows(GraphicsContext gc, Dungeon dungeon, Vision vision) {
-        gc.setFill(FORGOTTEN_VEIL);
+    private void drawShadows(GraphicsContext gc, Dungeon dungeon, Vision vision, Player player,
+                             double mapWidth, double mapHeight) {
+        // Işık, oyuncunun çizim konumunun etrafında yumuşak bir daire. Kare
+        // başına tek bir karartma kullanınca görüş alanı basamak basamak
+        // açılıyor ve fener değil ızgara gibi duruyordu; renk geçişi bunu
+        // ortadan kaldırıyor ve oyuncu yürüdükçe daire onunla birlikte
+        // kayıyor.
+        double centerX = player.getRenderX() * TILE_SIZE + TILE_SIZE / 2.0;
+        double centerY = player.getRenderY() * TILE_SIZE + TILE_SIZE / 2.0;
+        double radius = Vision.RADIUS * (double) TILE_SIZE;
 
+        // Yarıçapın dışında son durak rengi geçerli, yani uzak her yer eşit
+        // koyulukta: karanlığın nerede bittiğini gösteren bir halka olmuyor.
+        gc.setFill(new RadialGradient(0, 0, centerX, centerY, radius, false, CycleMethod.NO_CYCLE,
+                new Stop(0.0, Color.TRANSPARENT),
+                new Stop(LIGHT_CORE, Color.TRANSPARENT),
+                new Stop(1.0, FORGOTTEN_VEIL)));
+        gc.fillRect(0, 0, mapWidth, mapHeight);
+
+        // Yarıçapın içinde ama duvarın arkasında kalan kareler ayrıca
+        // karartılıyor: ışık halkası duvarları bilmiyor, köşenin arkasını
+        // aydınlatmaması gerekiyor.
+        gc.setFill(FORGOTTEN_VEIL);
         for (int x = 0; x < dungeon.getWidth(); x++) {
             for (int y = 0; y < dungeon.getHeight(); y++) {
                 if (vision.isRemembered(x, y) && !vision.isVisible(x, y)) {
