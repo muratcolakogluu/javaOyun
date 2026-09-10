@@ -114,3 +114,18 @@ yüzden görüntü işine ters düşmüyor.
 
 SpriteRegistry önce <ad>_f0.png arıyor (animasyon), yoksa <ad>.png, o da
 yoksa şekil çizimi. Yürüyüş için <ad>_run aynı yolla aranıyor.
+
+--------------------------------------------------------------------
+Okcu
+--------------------------------------------------------------------
+
+  archer_f0..f3 / archer_run_f0..f3  <- wogol_idle / wogol_run
+
+Pakette yay tutan bir karakter yok. Bu yuzden secim benzerlige gore degil
+<b>ayirt edilebilirlige</b> gore yapildi: okcunun tehdidi, onu gorur gormez
+"nisan hattindan cikmam lazim" diyebilmene bagli. Wogol kirmizi-beyaz
+kukuletasiyla ekrandaki hicbir seye benzemiyor (goblin ve ork yesil, iskelet
+gri, imp kahve), yani kalabaligin icinde bir bakista secilyor.
+
+Kimligi gorselden degil davranistan geliyor: duran, ok atan, yaklasinca
+kacan tek dusman o.

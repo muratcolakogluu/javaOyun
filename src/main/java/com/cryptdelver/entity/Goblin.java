@@ -1,6 +1,7 @@
 package com.cryptdelver.entity;
 
 import com.cryptdelver.ai.GreedyPathfinder;
+import com.cryptdelver.game.Game;
 
 /**
  * Goblin: hızlı, cesareti canı kadar.
@@ -31,8 +32,8 @@ public class Goblin extends Enemy {
     }
 
     @Override
-    protected boolean shouldFlee() {
-        return getHp() < getMaxHp() * FLEE_HEALTH_RATIO;
+    protected Stance stanceTowards(Game game) {
+        return getHp() < getMaxHp() * FLEE_HEALTH_RATIO ? Stance.FLEE : Stance.CHASE;
     }
 
     @Override

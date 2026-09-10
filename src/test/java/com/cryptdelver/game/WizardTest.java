@@ -293,12 +293,14 @@ class WizardTest {
             Wizard smith = game.getWizard();
             assertNotNull(smith);
             player.setTile(smith.getTileX() + 1, smith.getTileY());
-            game.addGroundItem(LootTable.weaponForTier(1, player.getTileX(), player.getTileY()));
+
+            Weapon dropped = LootTable.weaponForTier(1, player.getTileX(), player.getTileY());
+            game.addGroundItem(dropped);
 
             assertTrue(game.interact());
 
             assertFalse(game.isForgeOpen(), "Once esya alinmali");
-            assertEquals(1, game.getInventory().size());
+            assertTrue(game.getInventory().getItems().contains(dropped), "Parca cantada olmali");
         }
 
         @Test

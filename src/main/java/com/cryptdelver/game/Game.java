@@ -1,5 +1,6 @@
 package com.cryptdelver.game;
 
+import com.cryptdelver.entity.Archer;
 import com.cryptdelver.entity.Armor;
 import com.cryptdelver.entity.Bomb;
 import com.cryptdelver.entity.Boss;
@@ -19,6 +20,7 @@ import com.cryptdelver.entity.LegendWeapon;
 import com.cryptdelver.entity.Orc;
 import com.cryptdelver.entity.Player;
 import com.cryptdelver.entity.Potion;
+import com.cryptdelver.entity.Projectile;
 import com.cryptdelver.entity.Saman;
 import com.cryptdelver.entity.Skeleton;
 import com.cryptdelver.entity.Weapon;
@@ -108,6 +110,15 @@ public class Game {
     private final MessageLog messageLog = new MessageLog();
     private final List<Enemy> enemies = new ArrayList<>();
     private final List<Item> groundItems = new ArrayList<>();
+
+    /**
+     * Havada uçan oklar.
+     *
+     * <p>Kayda yazılmıyor ve kat değişince siliniyor: uçan bir ok kalıcı bir
+     * durum değil, o anki dövüşün bir parçası. Kaydedip yükleyince havada
+     * asılı kalmış bir okla karşılaşmak tuhaf olurdu.</p>
+     */
+    private final List<Projectile> projectiles = new ArrayList<>();
     private final Random random = new Random();
 
     /**
@@ -386,6 +397,7 @@ public class Game {
 
         enemies.clear();
         enemies.addAll(floor.enemies());
+        projectiles.clear();
         groundItems.clear();
         groundItems.addAll(floor.groundItems());
 
@@ -738,6 +750,17 @@ public class Game {
         groundItems.add(item);
     }
 
+    /** Havadaki oklar; ekran bunları çiziyor. */
+    public List<Projectile> getProjectiles() {
+        return List.copyOf(projectiles);
+    }
+
+    /** Bir ok fırlatır; okçu bunu çağırıyor. */
+    public void addProjectile(Projectile arrow) {
+        projectiles.add(arrow);
+        sounds.play(SoundEffect.SWING);
+    }
+
     // ------------------------------------------------------------ oyun akışı
 
     /**
@@ -763,6 +786,8 @@ public class Game {
         for (Enemy enemy : List.copyOf(enemies)) {
             enemy.update(this, delta);
         }
+
+        updateProjectiles(delta);
 
         if (!isOver()) {
             elapsedSeconds += delta;
@@ -800,6 +825,20 @@ public class Game {
         }
         reinforceTimer = 0;
         sendReinforcement();
+    }
+
+    /**
+     * Okları uçurur ve düşenleri temizler.
+     *
+     * <p>Düşmanlardan <em>sonra</em> çalışıyor: aynı karede atılan ok, atıldığı
+     * kare içinde bir kare yol alsın. Önce çalışsaydı ok bir çerçeve boyunca
+     * okçunun üstünde durur, atış anı takılıyormuş gibi görünürdü.</p>
+     */
+    private void updateProjectiles(double delta) {
+        for (Projectile arrow : List.copyOf(projectiles)) {
+            arrow.update(this, delta);
+        }
+        projectiles.removeIf(Projectile::isSpent);
     }
 
     /** Oyuncudan uzakta yeni bir düşman doğurur. */
@@ -1232,7 +1271,29 @@ public class Game {
         sounds.play(SoundEffect.HURT);
         wearGear(player.getEquippedArmor(), "Zırhın");
         reflectThorns(enemy);
+        announceDeathIfFallen();
+    }
 
+    /**
+     * Ok oyuncuya isabet etti.
+     *
+     * <p>Hasar aynı boru hattından geçiyor: zırh yine sayılıyor, zırh yine
+     * yıpranıyor. Tek fark Dikenin işlememesi — diken <em>sana dokunanı</em>
+     * yakıyor, sekiz kare öteden ok atanı değil.</p>
+     */
+    public void projectileHitsPlayer(Projectile arrow) {
+        Enemy shooter = arrow.getShooter();
+        int damage = resolveDamage(shooter, player);
+
+        player.takeDamage(damage);
+        player.triggerHitFlash();
+        messageLog.combat(shooter.getName() + " oku sana " + damage + " hasar vurdu.");
+        sounds.play(SoundEffect.HURT);
+        wearGear(player.getEquippedArmor(), "Zırhın");
+        announceDeathIfFallen();
+    }
+
+    private void announceDeathIfFallen() {
         if (!player.isAlive()) {
             messageLog.addImportant("Zindanda öldün.");
             sounds.play(SoundEffect.DEATH);
@@ -1625,6 +1686,7 @@ public class Game {
             // "RAT": bu düşman İmp olarak yeniden adlandırılmadan önceki kayıtlar.
             case "IMP", "RAT" -> new Imp(data.x(), data.y());
             case "GOBLIN" -> new Goblin(data.x(), data.y());
+            case "ARCHER" -> new Archer(data.x(), data.y());
             case "ZOMBI" -> new Zombi(data.x(), data.y());
             case "SAMAN" -> new Saman(data.x(), data.y());
             case "ORC" -> new Orc(data.x(), data.y());
@@ -1659,6 +1721,7 @@ public class Game {
         elapsedSeconds = 0;
         enemies.clear();
         groundItems.clear();
+        projectiles.clear();
         messageLog.clear();
         regenerateFloor();
         messageLog.add("Yeniden zindana indin.");
@@ -1693,6 +1756,7 @@ public class Game {
 
         enemies.clear();
         enemies.addAll(floor.enemies());
+        projectiles.clear();
         groundItems.clear();
         groundItems.addAll(floor.groundItems());
 

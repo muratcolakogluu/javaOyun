@@ -7,6 +7,7 @@ import com.cryptdelver.entity.Entity;
 import com.cryptdelver.entity.Equipment;
 import com.cryptdelver.entity.Item;
 import com.cryptdelver.entity.Player;
+import com.cryptdelver.entity.Projectile;
 import com.cryptdelver.entity.Weapon;
 import com.cryptdelver.entity.Wizard;
 import com.cryptdelver.game.FloorTheme;
@@ -139,6 +140,13 @@ public class GameRenderer {
     private static final Color SWING_COLOR = Color.web("#e8c46a", 0.28);
     private static final Color HP_BAR_BACKGROUND = Color.web("#000000", 0.55);
     private static final Color HP_BAR_FILL = Color.web("#b64b45");
+    /** Ok gövdesi ve arkasindaki iz. */
+    private static final Color ARROW_COLOR = Color.web("#e8d8a8");
+    private static final Color ARROW_TRAIL = Color.web("#e8d8a8", 0.28);
+    private static final double ARROW_LENGTH = 9;
+    private static final double ARROW_HEAD = 4;
+    private static final double ARROW_TRAIL_LENGTH = 22;
+
     private static final Color HEART_FULL = Color.web("#d4544c");
     private static final Color HEART_EMPTY = Color.web("#3a2a30");
     private static final Color OVERLAY = Color.web("#0d0d12", 0.78);
@@ -532,6 +540,10 @@ public class GameRenderer {
         }
         drawPlayer(gc, player);
         drawEquipment(gc, player);
+
+        // Oklar herkesin üstünde: uçan bir okun bir gövdenin arkasında
+        // kaybolması, kaçınılabilir olmasının tek şartını yok ederdi.
+        drawArrows(gc, game, vision);
 
         drawMinimap(gc, game, vision, mapWidth);
 
@@ -1526,6 +1538,47 @@ public class GameRenderer {
         gc.setStroke(OVERLAY_TITLE);
         gc.setLineWidth(1);
         gc.strokeRect(x, y + 4, barWidth, barHeight);
+    }
+
+    /**
+     * Havadaki okları çizer.
+     *
+     * <p>Sprite değil, doğrudan çizim: ok dört yöne gidiyor ve döndürülmüş bir
+     * resim yerine gövde-uç çizmek hem her yönde doğru duruyor hem de dosya
+     * gerektirmiyor. Arkasında soluk bir iz var — göz, hızlı giden küçük bir
+     * şeyi ancak izinden yakalıyor.</p>
+     */
+    private void drawArrows(GraphicsContext gc, Game game, Vision vision) {
+        for (Projectile arrow : game.getProjectiles()) {
+            if (!vision.isVisible(arrow.getTileX(), arrow.getTileY())) {
+                continue;
+            }
+
+            double x = arrow.getRenderX() * TILE_SIZE;
+            double y = arrow.getRenderY() * TILE_SIZE;
+            double dx = arrow.getStepX();
+            double dy = arrow.getStepY();
+
+            gc.setStroke(ARROW_TRAIL);
+            gc.setLineWidth(2);
+            gc.strokeLine(x - dx * ARROW_TRAIL_LENGTH, y - dy * ARROW_TRAIL_LENGTH, x, y);
+
+            gc.setStroke(ARROW_COLOR);
+            gc.setLineWidth(2);
+            gc.strokeLine(x - dx * ARROW_LENGTH, y - dy * ARROW_LENGTH,
+                    x + dx * ARROW_LENGTH, y + dy * ARROW_LENGTH);
+
+            // Uç: gidiş yönünde bir üçgen, yani dikey giderken de doğru bakıyor.
+            gc.setFill(ARROW_COLOR);
+            gc.fillPolygon(
+                    new double[] {x + dx * ARROW_LENGTH,
+                            x + dy * ARROW_HEAD - dx * 2,
+                            x - dy * ARROW_HEAD - dx * 2},
+                    new double[] {y + dy * ARROW_LENGTH,
+                            y - dx * ARROW_HEAD - dy * 2,
+                            y + dx * ARROW_HEAD - dy * 2},
+                    3);
+        }
     }
 
     /**

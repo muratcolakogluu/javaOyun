@@ -99,9 +99,12 @@ public abstract class Enemy extends Combatant implements Actor {
         }
 
         onUpdate(game, delta);
+        Stance stance = stanceTowards(game);
 
-        // Kaçan düşman vurmaz; canını kurtarmaya çalışır.
-        if (!isMoving() && isAdjacentTo(player) && !shouldFlee()) {
+        // Kaçan düşman vurmaz; canını kurtarmaya çalışır. Duran düşman ise
+        // yanına gelirsen vurur — durmasının sebebi korkmak değil, mesafeyi
+        // kendi seçmek.
+        if (!isMoving() && isAdjacentTo(player) && stance != Stance.FLEE) {
             if (attackCooldown <= 0) {
                 game.enemyAttacksPlayer(this);
                 attackCooldown = stats.attackCooldown();
@@ -112,7 +115,7 @@ public abstract class Enemy extends Combatant implements Actor {
         double budget = stats.speed() * delta;
         int guard = 0;
         while (budget > 0 && guard++ < MAX_STEPS_PER_FRAME) {
-            if (!isMoving() && !startStep(game, player)) {
+            if (!isMoving() && !startStep(game, player, stance)) {
                 break;
             }
             budget = advance(budget);
@@ -120,14 +123,19 @@ public abstract class Enemy extends Combatant implements Actor {
     }
 
     /** Sıradaki adımı seçip başlatır. */
-    private boolean startStep(Game game, Player player) {
+    private boolean startStep(Game game, Player player, Stance stance) {
         if (tileDistanceTo(player) > stats.aggroRange()) {
             return startIdleStep(game);
         }
-        if (shouldFlee()) {
-            return startFleeStep(game, player);
-        }
 
+        return switch (stance) {
+            case FLEE -> startFleeStep(game, player);
+            case HOLD -> false;
+            case CHASE -> startChaseStep(game, player);
+        };
+    }
+
+    private boolean startChaseStep(Game game, Player player) {
         Position step = pathfinder.nextStep(game.getDungeon(), getTile(), player.getTile());
         if (step == null) {
             return false;
@@ -145,15 +153,19 @@ public abstract class Enemy extends Combatant implements Actor {
     }
 
     /**
-     * Şu an kaçmalı mı. Varsayılan: hayır, sonuna kadar dövüşür.
+     * Şu an ne yapmalı: yaklaşmalı mı, durmalı mı, kaçmalı mı.
      *
-     * <p>Goblin bunu canı azalınca açıyor. Kaçan düşman ne vuruyor ne
-     * kovalıyor; oyuncudan uzaklaşan bir kare arıyor. Bu, sayıları
-     * değiştirmeden gerçek bir davranış farkı yaratıyor: goblini bitirmek
-     * istiyorsan peşinden gitmen gerekiyor.</p>
+     * <p>Varsayılan yaklaşmak — oyundaki çoğu düşman sonuna kadar üstüne
+     * geliyor. Goblin canı azalınca {@link Stance#FLEE}'ye, okçu seni
+     * nişan hattında görünce {@link Stance#HOLD}'a geçiyor. Sayıları
+     * değiştirmeden gerçek davranış farkı yaratmanın yolu bu tek karar.</p>
+     *
+     * <p>Karar her karede bir kez soruluyor ve hem vuruşta hem adımda aynı
+     * cevap kullanılıyor: ikisi ayrı ayrı sorulsaydı, arada durum değişince
+     * "kaçıyorum ama vuruyorum" gibi tutarsız bir kare çıkabilirdi.</p>
      */
-    protected boolean shouldFlee() {
-        return false;
+    protected Stance stanceTowards(Game game) {
+        return Stance.CHASE;
     }
 
     /**

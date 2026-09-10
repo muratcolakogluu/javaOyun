@@ -1,5 +1,6 @@
 package com.cryptdelver.game;
 
+import com.cryptdelver.entity.Archer;
 import com.cryptdelver.entity.Bomb;
 import com.cryptdelver.entity.Boss;
 import com.cryptdelver.entity.Enemy;
@@ -60,7 +61,17 @@ public class FloorBuilder {
     private static final int ORC_MIN_DEPTH = 4;
 
     /**
-     * Yeni türler bölge sınırlarında giriyor: zombi Sarnıçta, şaman Korlukta.
+     * Okçu 3. kattan itibaren.
+     *
+     * <p>İlk iki kat oyunun temel dövüşünü öğretiyor: yaklaş, vur, geri çekil.
+     * Okçu tam o alışkanlığı bozmak için var, o yüzden alışkanlık kurulduktan
+     * hemen sonra giriyor — daha geç girseydi oyuncu yirmi kat boyunca tek bir
+     * hamleye güvenmeyi öğrenmiş olurdu.</p>
+     */
+    private static final int ARCHER_MIN_DEPTH = 3;
+
+    /**
+     * Zombi ve şaman bölge sınırlarında giriyor: zombi Sarnıçta, şaman Korlukta.
      *
      * <p>Bölge değiştiğinde yalnızca renk değil karşına çıkan şey de
      * değişiyor; yeni bölgeye inmenin ilk dakikası böylece bir şey
@@ -394,8 +405,13 @@ public class FloorBuilder {
         int zombiWeight = depth >= ZOMBI_MIN_DEPTH ? depth - 3 : 0;
         int samanWeight = depth >= SAMAN_MIN_DEPTH ? depth - 8 : 0;
 
+        // Okçunun ağırlığı derinlikle artmıyor, sabit kalıyor: tehdidi
+        // sayıdan değil türünden geliyor. Kalabalık okçu, kaçacak yer
+        // bırakmayan bir kat demek olurdu.
+        int archerWeight = depth >= ARCHER_MIN_DEPTH ? 3 : 0;
+
         int roll = random.nextInt(impWeight + skeletonWeight + goblinWeight + orcWeight
-                + zombiWeight + samanWeight);
+                + zombiWeight + samanWeight + archerWeight);
 
         if (roll < impWeight) {
             return new Imp(spot.x(), spot.y());
@@ -416,6 +432,11 @@ public class FloorBuilder {
             return new Orc(spot.x(), spot.y());
         }
         roll -= orcWeight;
+
+        if (roll < archerWeight) {
+            return new Archer(spot.x(), spot.y());
+        }
+        roll -= archerWeight;
 
         return roll < zombiWeight ? new Zombi(spot.x(), spot.y()) : new Saman(spot.x(), spot.y());
     }
