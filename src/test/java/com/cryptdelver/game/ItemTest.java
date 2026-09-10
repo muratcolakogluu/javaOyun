@@ -62,35 +62,46 @@ class ItemTest {
         player.setMoveInput(0, 0);
     }
 
-    @Test
-    @DisplayName("Ustune basip F'ye basinca esya cantaya girer")
-    void steppingOnItemAndTakingPicksItUp() {
-        Potion potion = new Potion(5, 4);
-        game.addGroundItem(potion);
-
-        stepRightAndTake();
-
-        assertEquals(5, player.getTileX());
-        assertTrue(game.getGroundItems().isEmpty(), "Esya yerden kalkmali");
-        assertSame(potion, game.getInventory().get(0));
-    }
-
     /**
-     * Toplama artik kendiliginden olmuyor: uzerinden gectigin esya yerde
-     * kaliyor. Oncesinde kacarken ustunden gectigin her sey cantayi
-     * dolduruyordu ve sakladigin parcayi geri almadan uzerinden gecemiyordun.
+     * Sinir su: <b>cantani sikistirabilen sey tus istiyor, sikistiramayan
+     * istemiyor.</b> Iksir tek slotta yigiliyor, altin cantaya hic girmiyor;
+     * ikisi icin de tus beklemek hicbir karara karsilik gelmeyen fazladan bir
+     * isti. Ekipman ise slot doldurdugu icin karar gerektiriyor.
      */
     @Test
-    @DisplayName("Ustunden gecmek esyayi almiyor")
-    void walkingOverAnItemLeavesIt() {
+    @DisplayName("Ustune basilan iksir kendiliginden cantaya girer")
+    void steppingOnAPotionPicksItUp() {
         Potion potion = new Potion(5, 4);
         game.addGroundItem(potion);
 
         stepRight();
 
+        assertEquals(5, player.getTileX());
+        assertTrue(game.getGroundItems().isEmpty(), "Iksir yerden kalkmali");
+        assertSame(potion, game.getInventory().get(0));
+    }
+
+    @Test
+    @DisplayName("Ekipman ustunden gecmekle alinmiyor")
+    void walkingOverGearLeavesIt() {
+        game.addGroundItem(LootTable.weaponForTier(1, 5, 4));
+
+        stepRight();
+
         assertEquals(5, player.getTileX(), "Uzerinde duruyoruz");
-        assertEquals(1, game.getGroundItems().size(), "Esya yerinde kalmali");
+        assertEquals(1, game.getGroundItems().size(), "Ekipman yerinde kalmali");
         assertTrue(game.getInventory().isEmpty());
+    }
+
+    @Test
+    @DisplayName("Ekipman F ile aliniyor")
+    void gearIsTakenWithTheKey() {
+        game.addGroundItem(LootTable.weaponForTier(1, 5, 4));
+
+        stepRightAndTake();
+
+        assertTrue(game.getGroundItems().isEmpty(), "Ekipman yerden kalkmali");
+        assertEquals(1, game.getInventory().size());
     }
 
     /** Ayaginin altinda bir sey yokken F bosa basiliyor. */
@@ -102,11 +113,11 @@ class ItemTest {
     }
 
     @Test
-    @DisplayName("Altin cantaya degil keseye gider")
+    @DisplayName("Altin kendiliginden keseye gider")
     void goldGoesToThePurse() {
         game.addGroundItem(new Gold(5, 4, 12));
 
-        stepRightAndTake();
+        stepRight();
 
         assertEquals(12, game.getGold());
         assertTrue(game.getInventory().isEmpty(), "Altin canta yeri kaplamamali");
@@ -122,7 +133,7 @@ class ItemTest {
         }
         game.addGroundItem(new Potion(5, 4));
 
-        stepRightAndTake();
+        stepRight();
 
         assertEquals(1, game.getGroundItems().size(), "Esya yerde kalmali");
     }
@@ -137,7 +148,7 @@ class ItemTest {
         }
         game.addGroundItem(new Gold(5, 4, 7));
 
-        stepRightAndTake();
+        stepRight();
 
         assertEquals(7, game.getGold());
         assertTrue(game.getGroundItems().isEmpty());

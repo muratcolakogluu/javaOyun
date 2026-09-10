@@ -36,6 +36,12 @@ public class FuryPotion extends Item {
         return (int) DURATION + " saniye +" + ATTACK_BONUS + " vurus";
     }
 
+    /** Tek slotta yigildigi icin cantani sikistirmaz: uzerine basmak yeter. */
+    @Override
+    public boolean isAutoPickedUp() {
+        return true;
+    }
+
     @Override
     public boolean isStackable() {
         return true;

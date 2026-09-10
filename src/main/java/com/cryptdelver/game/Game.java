@@ -129,6 +129,14 @@ public class Game {
     private Position stairs;
     private Boss boss;
     private Wizard wizard;
+
+    /**
+     * Kendiliğinden toplamanın en son denendiği kare.
+     *
+     * <p>Deneme kare değişince yapılıyor: aynı karede her çerçevede denemek,
+     * yere bıraktığın iksiri anında geri alırdı.</p>
+     */
+    private Position lastPickupTile;
     private boolean paused;
     private boolean forgeOpen;
     private boolean won;
@@ -176,7 +184,7 @@ public class Game {
         this.floors = new FloorBuilder(generators, floorWidth, floorHeight);
         this.player = player;
         generateFloor(random.nextLong());
-        messageLog.add("Zindana indin. Boşluk vurur, F yerden alır, 1-8 eşya kullanır.");
+        messageLog.add("Zindana indin. Boşluk vurur, F ekipman alır, 1-8 eşya kullanır.");
     }
 
     // ---------------------------------------------------------------- durum
@@ -745,6 +753,12 @@ public class Game {
         player.update(this, delta);
         refreshVision();
 
+        // İksir ve altın kendiliğinden alınıyor; ekipman F bekliyor.
+        if (!player.getTile().equals(lastPickupTile)) {
+            lastPickupTile = player.getTile();
+            pickUpAutomatically();
+        }
+
         // Kopya üzerinde geziyoruz: bir düşman hamlesi sırasında ölüp listeden düşebilir.
         for (Enemy enemy : List.copyOf(enemies)) {
             enemy.update(this, delta);
@@ -894,17 +908,45 @@ public class Game {
     // ---------------------------------------------------------------- eşya
 
     /**
-     * Ayağının altındaki eşyaları toplar; F tuşunun yaptığı iş.
+     * F tuşunun yaptığı iş: ayağının altındakini al, yoksa yanındaki büyücüyle
+     * konuş.
      *
-     * <p>Eskiden üstüne basmak yetiyordu ve bu, oyuncunun eline ne geçtiğine
-     * <em>karar veremediği</em> anlamına geliyordu: kaçarken üstünden geçtiğin
-     * kötü zırh çantayı dolduruyor, sakladığın iyi parçanın üstünden geçmek
-     * onu geri alıyordu. Toplama bir tuşa bağlanınca çanta yönetimi oyuncunun
-     * işi oluyor — yerde bıraktığın şey orada kalıyor.</p>
+     * <p>Tezgâhı T'ye taşıyıp F'yi toplamaya vermek yanlıştı: F yıllardır
+     * "buradaki şeyle bir şey yap" tuşu ve büyücünün yanında ona basmak hiçbir
+     * şey yapmıyordu. İki iş de aynı soruya cevap veriyor aslında —
+     * <em>burada ne var</em>. Sıra da bundan çıkıyor: ayağının altındaki, bir
+     * kare ötesindekinden önce gelir.</p>
      *
-     * <p>Altın da tuşa bağlı: kuralın "bazı eşyalar kendiliğinden alınır" diye
-     * bir istisnası olsaydı, oyuncu hangisinin hangisi olduğunu ezberlemek
-     * zorunda kalırdı.</p>
+     * <p>T yerinde duruyor: ayağının dibinde bir parça varken büyücüye
+     * ulaşmanın bir yolu kalsın diye.</p>
+     *
+     * @return bir şey olduysa {@code true}
+     */
+    public boolean interact() {
+        if (isFrozen()) {
+            return false;
+        }
+
+        if (!itemsUnderfoot().isEmpty()) {
+            return pickUp();
+        }
+
+        if (isNearWizard()) {
+            toggleForge();
+            return true;
+        }
+
+        messageLog.item("Ayağının altında bir şey yok.");
+        return false;
+    }
+
+    /**
+     * Ayağının altındaki <em>her şeyi</em> toplar; F tuşunun yaptığı iş.
+     *
+     * <p>Ekipman kendiliğinden alınmıyor çünkü çantada yer kaplıyor: kaçarken
+     * üstünden geçtiğin kötü zırhın slot doldurması ya da yere bıraktığın
+     * kılıcın anında geri gelmesi, oyuncunun eline ne geçtiğine karar
+     * verememesi demekti. Tuş, o kararı geri veriyor.</p>
      *
      * @return elini bir şey doldurduysa {@code true}
      */
@@ -918,7 +960,18 @@ public class Game {
             return false;
         }
 
-        return pickUpItemsExcept(null);
+        return pickUpItemsExcept(null, false);
+    }
+
+    /**
+     * Yeni girilen karedeki iksirleri ve altını kendiliğinden toplar.
+     *
+     * <p>Yalnızca kareye <em>girildiğinde</em> deneniyor: her karede denemek,
+     * yere bıraktığın iksiri anında geri alırdı. Neyin buraya girdiğini eşya
+     * kendisi söylüyor ({@link Item#isAutoPickedUp()}).</p>
+     */
+    private void pickUpAutomatically() {
+        pickUpItemsExcept(null, true);
     }
 
     /** Oyuncunun bastığı karedeki eşyalar; ekran "F: al" ipucunu buna göre gösteriyor. */
@@ -935,14 +988,18 @@ public class Game {
     /**
      * Ayağının altındakileri toplar; verilen parçayı atlar.
      *
-     * @param skipped az önce yere bırakılan parça; {@code null} olabilir
+     * @param skipped  az önce yere bırakılan parça; {@code null} olabilir
+     * @param onlyAuto yalnızca kendiliğinden alınanlar mı toplanacak
      * @return en az bir eşya alındıysa {@code true}
      */
-    private boolean pickUpItemsExcept(Item skipped) {
+    private boolean pickUpItemsExcept(Item skipped, boolean onlyAuto) {
         boolean took = false;
 
         for (Item item : List.copyOf(groundItems)) {
             if (item == skipped || !item.getTile().equals(player.getTile())) {
+                continue;
+            }
+            if (onlyAuto && !item.isAutoPickedUp()) {
                 continue;
             }
 
@@ -1012,11 +1069,14 @@ public class Game {
         addGroundItem(item);
         messageLog.item(item.getName() + " yere bıraktın.");
 
+        // Bırakmak kendiliğinden toplamayı tetiklemesin: bıraktığın iksir
+        // anında geri gelirdi.
+        lastPickupTile = player.getTile();
 
         // Bıraktığın anda ayağının altındakini alıyorsun: çanta doluyken
         // takas etmek için kareden çıkıp geri gelmek gerekiyordu. Yeni
         // bıraktığın parça hariç, yoksa onu geri toplardın.
-        pickUpItemsExcept(item);
+        pickUpItemsExcept(item, false);
         return true;
     }
 
@@ -1087,6 +1147,7 @@ public class Game {
 
         item.setTile(player.getTile());
         addGroundItem(item);
+        lastPickupTile = player.getTile();
         messageLog.item(item.getName() + " yere bırakıldı.");
     }
 

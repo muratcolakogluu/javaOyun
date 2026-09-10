@@ -132,4 +132,22 @@ public abstract class Item extends Entity {
     public boolean isStackable() {
         return false;
     }
+
+    /**
+     * Üstüne basınca kendiliğinden alınır mı.
+     *
+     * <p>Toplamayı F tuşuna bağlarken kuralı <em>her</em> eşyaya uygulamıştık;
+     * yanlıştı. Toplamanın tuşa bağlanmasının nedeni çanta yönetimiydi: yerde
+     * bıraktığın kılıcın üstünden geçmek onu geri almasın, kaçarken bastığın
+     * kötü zırh slot doldurmasın. İksirin ve altının böyle bir sorunu yok —
+     * iksirler tek slotta yığılıyor, altın çantaya hiç girmiyor. Onlar için tuş
+     * beklemek, hiçbir karara karşılık gelmeyen fazladan bir iş demekti.</p>
+     *
+     * <p>Sınır tam da bu: <b>çantanı sıkıştırabilen şeyler tuş istiyor,
+     * sıkıştıramayanlar istemiyor.</b> Cevabı eşyanın kendisi veriyor, toplama
+     * kodu tür kontrolü yapmıyor.</p>
+     */
+    public boolean isAutoPickedUp() {
+        return false;
+    }
 }

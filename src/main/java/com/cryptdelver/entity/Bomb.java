@@ -40,6 +40,12 @@ public class Bomb extends Item {
         return BLAST_RADIUS + " kare icindeki herkese " + BLAST_DAMAGE + " hasar";
     }
 
+    /** Tek slotta yigildigi icin cantani sikistirmaz: uzerine basmak yeter. */
+    @Override
+    public boolean isAutoPickedUp() {
+        return true;
+    }
+
     @Override
     public boolean isStackable() {
         return true;

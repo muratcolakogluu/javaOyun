@@ -39,6 +39,12 @@ public class Potion extends Item {
     }
 
     /** İksirler aynı slotta yığılır; birkaç tane taşımak çantayı tıkamasın. */
+    /** Tek slotta yigildigi icin cantani sikistirmaz: uzerine basmak yeter. */
+    @Override
+    public boolean isAutoPickedUp() {
+        return true;
+    }
+
     @Override
     public boolean isStackable() {
         return true;

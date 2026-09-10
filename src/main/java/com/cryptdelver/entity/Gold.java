@@ -29,6 +29,12 @@ public class Gold extends Item {
         return false;
     }
 
+    /** Keseye gidiyor, çantaya değil; yani alması hiçbir şeye mal olmuyor. */
+    @Override
+    public boolean isAutoPickedUp() {
+        return true;
+    }
+
     @Override
     public void onPickup(Game game) {
         game.addGold(amount);

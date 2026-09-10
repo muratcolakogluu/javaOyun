@@ -544,7 +544,7 @@ public class GameRenderer {
         }
 
         if (!game.isOver()) {
-            drawPickupHint(gc, game, mapWidth, mapHeight);
+            drawInteractHint(gc, game, mapWidth, mapHeight);
         }
 
         drawHud(gc, game, mapWidth, mapHeight);
@@ -667,9 +667,10 @@ public class GameRenderer {
                 {"Bosluk", "vur"},
                 {"1-8 / tik", "cantadaki esyayi kullan / kusan"},
                 {"Shift + 1-8 / tik", "esyayi yere birak"},
-                {"F", "ayagindakini yerden al"},
+                {"F", "yerdeki ekipmani al ya da buyucuyle konus"},
                 {"E", "merdivende in ya da cik"},
                 {"T", "büyücünün yaninda tezgahi ac"},
+                {"", "iksir ve altin kendiliginden alinir"},
                 {"F5 / F9", "kaydet / yukle"},
                 {"- / + / M", "ses azalt / artir / sustur"},
                 {"Enter", "olunce yeniden basla"},
@@ -1279,7 +1280,7 @@ public class GameRenderer {
         gc.setFont(slotFont);
         gc.setTextAlign(TextAlignment.LEFT);
         gc.setFill(SLOT_NUMBER);
-        gc.fillText("F yerden alir · 1-8 kullanir · Shift+1-8 birakir",
+        gc.fillText("F ekipmani alir · 1-8 kullanir · Shift+1-8 birakir",
                 INVENTORY_PANEL_X, mapHeight + 76);
         gc.setFont(hudFont);
     }
@@ -1528,25 +1529,35 @@ public class GameRenderer {
     }
 
     /**
-     * Ayağının altında eşya varken beliren "F: al" ipucu.
+     * F tuşunun şu an ne yapacağını söyleyen ipucu.
      *
      * <p>Toplama tuşa bağlanınca yerdeki eşyayı görmek yetmez oldu: üstünde
-     * duruyorsan da bir şey olmuyor ve bunun bir tuş beklediği hiçbir yerden
-     * anlaşılmıyor. İpucu tam o anda, tam o yerde çıkıyor.</p>
+     * duruyorsun ve bir şey olmuyor, bunun bir tuş beklediği hiçbir yerden
+     * anlaşılmıyor. Aynı boşluk büyücüde de vardı — yanına gidiyorsun, balon
+     * konuşuyor, ama hangi tuşun tezgâhı açtığı yazmıyor.</p>
+     *
+     * <p>İpucu tuşun <em>o andaki</em> işini yazıyor, sabit bir tuş listesi
+     * değil: F'nin ne yapacağı nerede durduğuna bağlı ve cevabı ekranda
+     * görmek, ezberlemekten iyi.</p>
      *
      * <p>Merdiven ipucuyla aynı kutuyu kullanıyor ama onun bir satır üstünde:
      * merdivenin üstünde duran eşya ikisini birden gerektiriyor ve üst üste
      * binmeleri her ikisini de okunmaz yapardı.</p>
      */
-    private void drawPickupHint(GraphicsContext gc, Game game, double mapWidth, double mapHeight) {
+    private void drawInteractHint(GraphicsContext gc, Game game, double mapWidth,
+                                  double mapHeight) {
         List<Item> here = game.itemsUnderfoot();
-        if (here.isEmpty()) {
+        String hint;
+
+        if (here.size() == 1) {
+            hint = "F ile " + here.get(0).getName() + " al";
+        } else if (!here.isEmpty()) {
+            hint = "F ile " + here.size() + " esyayi al";
+        } else if (game.isNearWizard()) {
+            hint = "F ile tezgahi ac";
+        } else {
             return;
         }
-
-        String hint = here.size() == 1
-                ? "F ile " + here.get(0).getName() + " al"
-                : "F ile " + here.size() + " esyayi al";
 
         double boxWidth = Math.max(160, measure(hint, hudFont) + 28);
         double boxHeight = 26;

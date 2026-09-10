@@ -34,6 +34,12 @@ public class HastePotion extends Item {
         return (int) DURATION + " saniye daha hizli yurursun";
     }
 
+    /** Tek slotta yigildigi icin cantani sikistirmaz: uzerine basmak yeter. */
+    @Override
+    public boolean isAutoPickedUp() {
+        return true;
+    }
+
     @Override
     public boolean isStackable() {
         return true;

@@ -261,6 +261,46 @@ class WizardTest {
             assertFalse(game.isForgeOpen(), "Ortada büyücü yokken acilmamali");
         }
 
+        /**
+         * F "buradakiyle bir sey yap" tusu. Tezgahi T'ye tasiyip F'yi yalnizca
+         * toplamaya vermek, büyücünün yaninda F'ye basmayi anlamsiz kilmisti.
+         */
+        @Test
+        @DisplayName("Büyücünün yaninda F tezgahi aciyor")
+        void interactingBesideTheWizardOpensTheForge() {
+            while (game.getDepth() < 5) {
+                player.setTile(game.getStairs());
+                assertTrue(game.descend());
+            }
+
+            Wizard smith = game.getWizard();
+            assertNotNull(smith, "Bu kat boss kati olmali");
+            player.setTile(smith.getTileX() + 1, smith.getTileY());
+
+            assertTrue(game.interact());
+            assertTrue(game.isForgeOpen(), "F tezgahi acmali");
+        }
+
+        /** Ayaginin altindaki once geliyor; büyücüye T ile ulasiliyor. */
+        @Test
+        @DisplayName("Ayaginin altindaki esya büyücüden once geliyor")
+        void lootUnderfootWinsOverTheWizard() {
+            while (game.getDepth() < 5) {
+                player.setTile(game.getStairs());
+                assertTrue(game.descend());
+            }
+
+            Wizard smith = game.getWizard();
+            assertNotNull(smith);
+            player.setTile(smith.getTileX() + 1, smith.getTileY());
+            game.addGroundItem(LootTable.weaponForTier(1, player.getTileX(), player.getTileY()));
+
+            assertTrue(game.interact());
+
+            assertFalse(game.isForgeOpen(), "Once esya alinmali");
+            assertEquals(1, game.getInventory().size());
+        }
+
         @Test
         @DisplayName("Tezgah acikken dunya durur")
         void forgeFreezesTheWorld() {

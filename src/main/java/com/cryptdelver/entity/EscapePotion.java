@@ -29,6 +29,12 @@ public class EscapePotion extends Item {
         return "Seni merdivenin basina isinlar";
     }
 
+    /** Tek slotta yigildigi icin cantani sikistirmaz: uzerine basmak yeter. */
+    @Override
+    public boolean isAutoPickedUp() {
+        return true;
+    }
+
     @Override
     public boolean isStackable() {
         return true;
