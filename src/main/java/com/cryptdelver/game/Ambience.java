@@ -1,22 +1,27 @@
 package com.cryptdelver.game;
 
 /**
- * Katın altında sürekli dönen ortam sesi.
+ * Katın altında sürekli dönen müzik.
  *
  * <p>{@link SoundEffect} tek seferlik olayları anlatıyor: vuruş, ölüm, eşya.
- * Burası tam tersi — bir <em>durum</em>. Zindanın yirmi katı boyunca hiç ses
- * yoktu ve bu, bölgelerin renk dışında birbirinden ayrılmadığı anlamına
- * geliyordu: Sarnıç yeşil bir Mahzendi.</p>
+ * Burası tam tersi — çalmayı hiç bırakmayan bir parça. Zindanın yirmi katı
+ * boyunca hiç müzik yoktu ve bu, bölgelerin renk dışında birbirinden
+ * ayrılmadığı anlamına geliyordu: Sarnıç yeşil bir Mahzendi.</p>
  *
- * <p>Ses o farkı renkten daha güçlü taşıyor. Sarnıçta damla, Korlukta ateş
- * çatırtısı, Kriptte doğaüstü bir çınlama var; hepsi aynı alçak uğultunun
- * üstüne biniyor, yani bölgeler ayrı ama oyun tek bir yer olmaya devam
+ * <p>Her bölgenin kendi parçası var ve hepsi aynı çalgıdan çıkıyor: Mahzen la
+ * minörde sakin, Sarnıç dorian modda akan, Korluk fa majörde sıcak, Kript mi
+ * minörde gizemli. Yani bölgeler ayrı ama oyun tek bir yer olmaya devam
  * ediyor.</p>
  *
- * <p>Boss katlarının kendi sesi var ve bölgeninkinin <em>yerine</em> geçiyor.
- * Müziğin değişmesi, oyuncunun "burası başka bir yer" diye anladığı ilk şey —
- * merdivenden inip bunu duyduğunda ne olacağını daha bossu görmeden
- * biliyorsun.</p>
+ * <p><b>Melodi, uğultu değil.</b> İlk denemede her bölge uzayan bir akordu ve
+ * sonuç korkutucuydu; akorları akortlu yapmak da kurtarmadı, çünkü sorun akort
+ * değil türdü — değişmeyen, uzayan bir ses korku filminin dili. Müzik hissi
+ * notaların <em>hareket etmesinden</em> geliyor.</p>
+ *
+ * <p>Boss katlarının kendi parçası var ve bölgeninkinin <em>yerine</em>
+ * geçiyor. Müziğin değişmesi, oyuncunun "burası başka bir yer" diye anladığı
+ * ilk şey — merdivenden inip bunu duyduğunda ne olacağını daha bossu görmeden
+ * biliyorsun. Gerilimi de ritimden alıyor, akortsuzluktan değil.</p>
  */
 public enum Ambience {
 
@@ -25,7 +30,7 @@ public enum Ambience {
     KORLUK("amb_korluk"),
     KRIPT("amb_kript"),
 
-    /** Boss katı: gerilim; bölge sesinin yerine geçiyor. */
+    /** Boss katı: re minörde nabızlı; bölge parçasının yerine geçiyor. */
     BOSS("amb_boss");
 
     private final String fileName;

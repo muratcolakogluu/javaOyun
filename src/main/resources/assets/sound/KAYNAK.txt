@@ -15,50 +15,50 @@ Ucgen dalga + alcak geciren yumusatma. Ilk surumde kare dalgaydi ve tinisi
 kulagi tirmaliyordu. Zarfin tepesi en basta: vurmali seslerin dogru sekli bu,
 tepe ortada olunca kulak "ses gec geldi" diye duyuyordu.
 
---------------------------------------------------------------------
-Ortam sesleri (AmbienceMaker.java)
---------------------------------------------------------------------
-
-  amb_mahzen  la minor: sakin bir yasti, arada oturan tas
-  amb_sarnic  re minor: genis ve nemli, ustunde damlalar
-  amb_korluk  fa major: sicak, catirdama doku olarak
-  amb_kript   mi minor: ustunde uzak cinlamalar
-  amb_boss    do minor: karanlik akor + yavas kalp atisi
-
-Her bolge bir akor. Ilk surumde frekanslar "kulaga alcak gelsin" diye elle
-secilmisti (49, 65, 82, 116...) ve birbiriyle hicbir muzikal iliskisi yoktu;
-ust uste binince akortsuz, tuhaf bir tini cikiyordu. Tini de testere disine
-yakindi. Simdi notalar tam beslerle ve oktavlarla bagli, harmonikler ucuncuden
-sonra neredeyse sifir, akort farki 0.09 Hz -- yani flute yakin ve yavasca
-nefes alan bir ses.
-
-12 saniyelik donguler, 22050 Hz mono. Dongu dikissiz olsun diye iki onlem
-var: tonal bilesenlerin frekanslari dongu uzunlugunun tam kati olacak sekilde
-yuvarlaniyor, gurultuye dayali bilesenler icin de fazladan uretilen 1.5
-saniyelik kuyruk basa capraz karistiriliyor.
-
-Seviyeler olculerek ayarlandi (scratchpad/Levels.java): ortam sesinin RMS'i
-efektlerin kabaca yarisi, ustune calarken bir kisma daha uygulaniyor. Ilk
-denemede ucte birdi ve pratikte hic duyulmuyordu.
 
 --------------------------------------------------------------------
-Ogrenilen: alcak frekans kucuk hoparlorde yok
+Muzik (MusicMaker.java)
 --------------------------------------------------------------------
 
-Ilk surumde ugultular saf sinustu ve temel frekanslar 49-116 Hz arasindaydi.
-Genis bantli RMS olcumu makul gorunuyordu ama oyunda hicbir sey duyulmadi:
-dizustu hoparlorleri ~150 Hz altini neredeyse hic uretmiyor, yani butun
-enerji hoparlorun korlestigi yerdeydi.
+  amb_mahzen  la minor, sakin ve merakli: Am - F - C - G
+  amb_sarnic  re dorian, akan ve genis
+  amb_korluk  fa major, sicak ve kararli
+  amb_kript   mi minor, gizemli ama guzel
+  amb_boss    re minor, nabizli; bolge muziginin yerine geciyor
 
-Iki arac bunu gorunur kildi:
+Her biri 8 olcu, 120 BPM, 16 saniye. Calgi bir muzik kutusu: sinus temeli,
+ustunde hizla sonen birkac harmonik, vurmali zarf. Ustune dort tapli yumusak
+bir yanki.
+
+Melodiler kodun icinde metin olarak duruyor ("A3 C4 E4 . . ."): sekizlik
+izgarada her simge bir adim, nokta sus. Sayi dizisiyle yazsaydik hangi
+cumlenin ne oldugu okunmazdi. Bir dizide 64 simge olmak zorunda ve arac bunu
+kontrol ediyor -- eksik simge parcayi kaydirir, dongu de tutmaz.
+
+Dongu kapanisi capraz gecis DEGIL: son notalarin dongu sonunu asan sonusu
+basa toplanarak ekleniyor. Capraz gecis muzikte ilk vurusu kisiyor ve bu
+hemen duyuluyor.
+
+--------------------------------------------------------------------
+Ogrenilen: once ugultu, sonra melodi
+--------------------------------------------------------------------
+
+Ilk deneme uzayan akorlardi: her bolge bir akor, ustunde damla ve catirdama.
+Iki ayri sorun cikti.
+
+Once hic duyulmadi. Ugultular saf sinustu ve temel frekanslar 49-116 Hz
+arasindaydi; dizustu hoparlorleri ~150 Hz altini neredeyse hic uretmiyor,
+yani butun enerji hoparlorun korlestigi yerdeydi. Genis bantli RMS olcumu
+makul gorundugu icin kacirdim -- o olcum enerjinin ne kadar oldugunu
+soyluyor, nerede oldugunu soylemiyor. Iki arac bunu gorunur kildi:
 
   Levels.java  tepe / RMS / kirpilma
   Bands.java   oktav bandi enerjisi -- asil soruyu soran olcum bu
 
-Genis bantli RMS tek basina yaniltici: enerjinin ne kadar oldugunu soyluyor,
-nerede oldugunu soylemiyor. Duzeltme, her ugultuyu harmonikleriyle uretmek ve
-temelleri bir oktav yukari tasimak oldu. Algilanan perde ayni kaldi, ses
-kucuk hoparlorde de var oldu.
+Duyulur hale gelince ikinci sorun ortaya cikti: ses korkutucuydu. Akorlari
+akortlu yapmak da duzeltmedi, cunku sorun akort degil turdu. Degismeyen,
+uzayan bir ses korku filminin dili. Muzik hissi notalarin hareket etmesinden
+geliyor; cozum melodi yazmakti.
 
-Olculen son durum: zemin 180-355 Hz bandinda -37 dB, hit.wav ayni bantta
--33 dB. Yani zemin efektlerin biraz altinda ve gercekten duyuluyor.
+Olculen son durum: muzik 180-355 Hz bandinda -38 dB, hit.wav ayni bantta
+-33 dB. Yani muzik efektlerin biraz altinda ve gercekten duyuluyor.
