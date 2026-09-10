@@ -26,13 +26,17 @@ public class SoundPlayer implements SoundListener {
     /**
      * Ortam sesinin efektlere göre payı.
      *
-     * <p>Dosyalar zaten efektlerden alçak üretildi, bu ikinci bir kısma. Sebep
-     * şu: efekt bir kez duyulup geçiyor, zemin ise dakikalarca dönüyor ve
-     * kulak sürekli bir sese çok daha çabuk yoruluyor. Oyuncu sesi tamamen
-     * kapatmak istemeden zemini "farkında olmadığı" bir seviyede tutmak
-     * istiyoruz.</p>
+     * <p>Efekt bir kez duyulup geçiyor, zemin ise dakikalarca dönüyor ve kulak
+     * sürekli bir sese çok daha çabuk yoruluyor; o yüzden zemin efektlerin
+     * biraz altında duruyor.</p>
+     *
+     * <p>Önce 0.55'ti. Zemin oyunda hiç duyulmuyordu ama asıl sebep bu değil,
+     * ses dosyalarının frekans içeriğiydi (bkz. {@code AmbienceMaker}). O
+     * düzeltildikten sonra ölçüm bu çarpanın da fazla ihtiyatlı olduğunu
+     * gösterdi: zeminin orta bantta efektlerin altı yedi desibel altında
+     * durması doğru yer.</p>
      */
-    private static final double AMBIENCE_MIX = 0.55;
+    private static final double AMBIENCE_MIX = 0.85;
 
     private final Map<SoundEffect, AudioClip> clips = new EnumMap<>(SoundEffect.class);
     private final Settings settings;

@@ -33,3 +33,25 @@ saniyelik kuyruk basa capraz karistiriliyor.
 Seviyeler olculerek ayarlandi (scratchpad/Levels.java): ortam sesinin RMS'i
 efektlerin kabaca yarisi, ustune calarken bir kisma daha uygulaniyor. Ilk
 denemede ucte birdi ve pratikte hic duyulmuyordu.
+
+--------------------------------------------------------------------
+Ogrenilen: alcak frekans kucuk hoparlorde yok
+--------------------------------------------------------------------
+
+Ilk surumde ugultular saf sinustu ve temel frekanslar 49-116 Hz arasindaydi.
+Genis bantli RMS olcumu makul gorunuyordu ama oyunda hicbir sey duyulmadi:
+dizustu hoparlorleri ~150 Hz altini neredeyse hic uretmiyor, yani butun
+enerji hoparlorun korlestigi yerdeydi.
+
+Iki arac bunu gorunur kildi:
+
+  Levels.java  tepe / RMS / kirpilma
+  Bands.java   oktav bandi enerjisi -- asil soruyu soran olcum bu
+
+Genis bantli RMS tek basina yaniltici: enerjinin ne kadar oldugunu soyluyor,
+nerede oldugunu soylemiyor. Duzeltme, her ugultuyu harmonikleriyle uretmek ve
+temelleri bir oktav yukari tasimak oldu. Algilanan perde ayni kaldi, ses
+kucuk hoparlorde de var oldu.
+
+Olculen son durum: zemin 180-355 Hz bandinda -37 dB, hit.wav ayni bantta
+-33 dB. Yani zemin efektlerin biraz altinda ve gercekten duyuluyor.
