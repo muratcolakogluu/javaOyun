@@ -60,6 +60,26 @@ class ClickMapTest {
         assertEquals(new UiAction.Slot(0), clicks.hit(80, 80), "Ustunde bir sey olmayan yer");
     }
 
+    /**
+     * Ayar satirinin yon isaretleri tam da bu kurala dayaniyor: satirin
+     * tamami "bir ileri" olarak kayitli, ustune iki kucuk ok bolgesi biniyor.
+     * Ok geri aliyor cunku sonra kaydediliyor.
+     *
+     * <p>Bu olmadan fareyle ses seviyesi yalnizca artiyordu: %100'e gelince
+     * geri donmenin hicbir yolu kalmiyordu.</p>
+     */
+    @Test
+    @DisplayName("Ayar satirindaki geri oku satirin kendisini yeniyor")
+    void theBackArrowBeatsTheRowBeneathIt() {
+        clicks.add(new UiAction.Setting(StartMenu.SettingRow.VOLUME, 1), 0, 0, 400, 30);
+        clicks.add(new UiAction.Setting(StartMenu.SettingRow.VOLUME, -1), 300, 0, 30, 30);
+
+        assertEquals(new UiAction.Setting(StartMenu.SettingRow.VOLUME, -1), clicks.hit(310, 15),
+                "Okun ustu geri almali");
+        assertEquals(new UiAction.Setting(StartMenu.SettingRow.VOLUME, 1), clicks.hit(100, 15),
+                "Satirin govdesi ileri almali");
+    }
+
     @Test
     @DisplayName("Yeni kare oncekinin bolgelerini siliyor")
     void clearForgetsEverything() {

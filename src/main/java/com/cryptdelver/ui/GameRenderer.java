@@ -186,6 +186,14 @@ public class GameRenderer {
     private static final double MENU_ROW_WIDTH = 460;
     private static final double MENU_ROW_HEIGHT = 34;
 
+    /** Ayar satirinda deger ve yon isaretlerinin sag kenardan uzakligi. */
+    private static final double ARROW_RIGHT_INSET = 24;
+    private static final double VALUE_INSET = 52;
+    private static final double ARROW_LEFT_INSET = 168;
+
+    /** Yon isaretinin tiklama karesi; harften genis, parmak degil fare icin bile. */
+    private static final double ARROW_HIT = 30;
+
     /** Tezgâh satırının tıklanabilir alanı; satırın tamamını kaplıyor. */
     private static final double FORGE_ROW_WIDTH = 620;
     private static final double FORGE_ROW_HEIGHT = 26;
@@ -411,7 +419,7 @@ public class GameRenderer {
         for (int i = 0; i < rows.size(); i++) {
             StartMenu.SettingRow row = rows.get(i);
             double rowY = y + i * 44 + (row == StartMenu.SettingRow.BACK ? 12 : 0);
-            boolean hovered = register(new UiAction.Setting(row), centerX, rowY);
+            boolean hovered = register(new UiAction.Setting(row, 1), centerX, rowY);
             boolean selected = hovered || i == menu.getIndex();
 
             if (row == StartMenu.SettingRow.BACK) {
@@ -419,8 +427,7 @@ public class GameRenderer {
                 continue;
             }
 
-            drawSettingRow(gc, row.getLabel(), settingValue(row, settings), centerX, rowY,
-                    selected);
+            drawSettingRow(gc, row, settingValue(row, settings), centerX, rowY, selected);
         }
 
         gc.setFont(hudFont);
@@ -449,7 +456,7 @@ public class GameRenderer {
     }
 
     /** Ayar satırı: solda ad, sağda değer. */
-    private void drawSettingRow(GraphicsContext gc, String label, String value,
+    private void drawSettingRow(GraphicsContext gc, StartMenu.SettingRow row, String value,
                                 double centerX, double centerY, boolean selected) {
         double width = MENU_ROW_WIDTH;
         double height = MENU_ROW_HEIGHT;
@@ -465,11 +472,33 @@ public class GameRenderer {
         gc.setFont(menuFont);
         gc.setTextAlign(TextAlignment.LEFT);
         gc.setFill(selected ? MESSAGE_TEXT : MESSAGE_FADED);
-        gc.fillText(label, centerX - width / 2 + 22, centerY);
+        gc.fillText(row.getLabel(), centerX - width / 2 + 22, centerY);
 
         gc.setTextAlign(TextAlignment.RIGHT);
         gc.setFill(selected ? GOLD_TEXT : HUD_TEXT);
-        gc.fillText(selected ? "< " + value + " >" : value, centerX + width / 2 - 22, centerY);
+        gc.fillText(value, centerX + width / 2 - VALUE_INSET, centerY);
+
+        // Oklar her zaman görünüyor, yalnızca seçiliyken değil: "bu satır iki
+        // yöne de gidiyor" bilgisi, satırın üstüne gelmeden de okunmalı.
+        drawSettingArrow(gc, row, -1, centerX + width / 2 - ARROW_LEFT_INSET, centerY, selected);
+        drawSettingArrow(gc, row, 1, centerX + width / 2 - ARROW_RIGHT_INSET, centerY, selected);
+    }
+
+    /**
+     * Ayar satırının iki ucundaki yön işareti.
+     *
+     * <p>Kendi tıklama bölgesini satırdan <em>sonra</em> kaydediyor: üst üste
+     * binen bölgelerde sonra kaydedilen kazanıyor, yani oka basmak satıra
+     * basmaktan farklı bir şey yapabiliyor.</p>
+     */
+    private void drawSettingArrow(GraphicsContext gc, StartMenu.SettingRow row, int step,
+                                  double x, double centerY, boolean selected) {
+        boolean hovered = clicks.add(new UiAction.Setting(row, step),
+                x - ARROW_HIT / 2, centerY - ARROW_HIT / 2, ARROW_HIT, ARROW_HIT);
+
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setFill(hovered ? GOLD_TEXT : (selected ? SLOT_EQUIPPED : MESSAGE_FADED));
+        gc.fillText(step < 0 ? "<" : ">", x, centerY);
     }
 
     /** Yardım sayfası: duraklatma perdesindeki tuş listesinin aynısı. */

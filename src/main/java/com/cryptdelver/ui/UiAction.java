@@ -21,8 +21,18 @@ public sealed interface UiAction {
     record Menu(StartMenu.Option option) implements UiAction {
     }
 
-    /** Ayarlar sayfasında bir satır; tıklamak değeri bir ileri alıyor. */
-    record Setting(StartMenu.SettingRow row) implements UiAction {
+    /**
+     * Ayarlar sayfasında bir satır ve tıklamanın hangi yöne götürdüğü.
+     *
+     * <p>Yön başta yoktu: her tıklama değeri bir <em>ileri</em> alıyordu.
+     * Açık/kapalı ve zorluk için sorun değil — sıradaki değere geçiyorsun — ama
+     * ses seviyeleri sınırda duruyor, yani %100'e gelince fareyle geri
+     * dönmenin hiçbir yolu kalmıyordu. Satırdaki {@code <} ve {@code >}
+     * işaretleri artık kendi bölgelerini kaydediyor.</p>
+     *
+     * @param step {@code +1} ileri, {@code -1} geri
+     */
+    record Setting(StartMenu.SettingRow row, int step) implements UiAction {
     }
 
     /** Büyücü tezgâhında tamir ya da yükseltme. */

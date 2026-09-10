@@ -166,7 +166,7 @@ public class GameScreen {
         UiAction hovered = renderer.getClicks().hovered();
         if (hovered instanceof UiAction.Menu(StartMenu.Option option)) {
             menu.select(option);
-        } else if (hovered instanceof UiAction.Setting(StartMenu.SettingRow row)) {
+        } else if (hovered instanceof UiAction.Setting(StartMenu.SettingRow row, var ignored)) {
             menu.selectSetting(row);
         }
     }
@@ -212,12 +212,12 @@ public class GameScreen {
                 menu.select(option);
                 chooseFromMenu();
             }
-            case UiAction.Setting(StartMenu.SettingRow row) -> {
+            case UiAction.Setting(StartMenu.SettingRow row, int step) -> {
                 menu.selectSetting(row);
                 if (row == StartMenu.SettingRow.BACK) {
                     menu.back();
                 } else {
-                    adjustSetting(1);
+                    adjustSetting(step);
                 }
             }
             case UiAction.Forge(UiAction.Bench bench) -> performBench(bench);
