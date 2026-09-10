@@ -159,7 +159,7 @@ class EquipmentWearTest {
         int healthy = totalDamageOverSwings(sword(500));
 
         Weapon broken = sword(1);
-        broken.restoreState(0, 0);
+        broken.setCondition(0, 0);
         int damaged = totalDamageOverSwings(broken);
 
         assertTrue(damaged < healthy * 0.6,

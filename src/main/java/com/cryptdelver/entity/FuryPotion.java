@@ -48,7 +48,7 @@ public class FuryPotion extends Item {
     }
 
     @Override
-    public String getSaveKind() {
+    public String getKind() {
         return "FURY";
     }
 

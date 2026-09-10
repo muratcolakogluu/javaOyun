@@ -150,7 +150,7 @@ public abstract class Boss extends Enemy {
     }
 
     @Override
-    public String getSaveKind() {
+    public String getKind() {
         return "BOSS";
     }
 

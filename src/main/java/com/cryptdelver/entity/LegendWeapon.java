@@ -36,7 +36,7 @@ public class LegendWeapon extends Weapon {
     }
 
     @Override
-    public String getSaveKind() {
+    public String getKind() {
         return "LEGEND";
     }
 }

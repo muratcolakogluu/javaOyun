@@ -97,7 +97,7 @@ public class Weapon extends Equipment {
     }
 
     @Override
-    public String getSaveKind() {
+    public String getKind() {
         return "WEAPON";
     }
 }

@@ -54,34 +54,13 @@ public abstract class Item extends Entity {
     public abstract boolean use(Game game);
 
     /**
-     * Kayıt dosyasındaki tür etiketi ({@code "POTION"}, {@code "GOLD"}...).
+     * Türün kısa etiketi ({@code "POTION"}, {@code "GOLD"}...).
      *
-     * <p>Kaydetme kodunun {@code instanceof} zinciri yazmasını önlüyor: eşya
-     * kendini nasıl adlandıracağını kendi biliyor. Karşılığında model sınıfları
-     * kayıt biçiminden az da olsa haberdar oluyor — bilinçli bir takas.</p>
+     * <p>Çantada yığınlama bunu kullanıyor: aynı etiketi ve aynı adı taşıyan
+     * eşyalar tek slotu paylaşıyor. Soruyu eşyanın kendisine bırakmak,
+     * yığınlama kodunu {@code instanceof} zincirinden kurtarıyor.</p>
      */
-    public abstract String getSaveKind();
-
-    /** Kayıtta saklanan sayısal değer: altın miktarı, vuruş ya da savunma bonusu. */
-    public int getSaveValue() {
-        return 0;
-    }
-
-    /**
-     * Kayıtta saklanan dayanıklılık ve yükseltme kademesi.
-     *
-     * <p>Yalnızca kuşanılan parçalar için anlamlı; iksir ve altın sıfır
-     * döndürüyor. Bunu {@code instanceof Equipment} ile sormak yerine soruyu
-     * eşyanın kendisine bırakmak, kaydetme kodunu tür bilmekten kurtarıyor —
-     * {@link #getSaveValue()} ile aynı gerekçe.</p>
-     */
-    public int getSaveDurability() {
-        return 0;
-    }
-
-    public int getSaveUpgradeLevel() {
-        return 0;
-    }
+    public abstract String getKind();
 
     /**
      * Balonda görünen ad; ekipman yükseltmesini ve büyülerini de gösteriyor.
@@ -103,11 +82,6 @@ public abstract class Item extends Entity {
      * veriyor, çizim katmanı tür kontrolü yapmıyor.</p>
      */
     public String getDescription() {
-        return "";
-    }
-
-    /** Kayıtta saklanan büyünün etiketi; büyü yoksa boş dizge. */
-    public String getSaveEnchantment() {
         return "";
     }
 

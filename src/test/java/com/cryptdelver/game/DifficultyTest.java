@@ -89,10 +89,4 @@ class DifficultyTest {
         assertEquals(Difficulty.ZOR, Difficulty.KOLAY.previous(), "Bastan sona sarmali");
     }
 
-    @Test
-    @DisplayName("Otomatik kaydetme varsayilan olarak acik")
-    void autoSaveDefaultsToOn() {
-        assertTrue(new Settings().isAutoSave(),
-                "F5'i bilmeyen oyuncunun ilk olumde her seyi kaybetmesi kotu bir karsilama olurdu");
-    }
 }

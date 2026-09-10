@@ -15,38 +15,29 @@ import org.junit.jupiter.api.Test;
  */
 class StartMenuTest {
 
+    /** Kaydetme kalkinca liste dort satira indi: yeni oyun, ayarlar, yardim, cikis. */
     @Test
-    @DisplayName("Kayit yoksa devam satiri hic gorunmuyor")
-    void continueIsHiddenWithoutASave() {
-        StartMenu menu = new StartMenu(false);
+    @DisplayName("Menu dort satir ve yeni oyun basta secili")
+    void theMenuOpensOnNewGame() {
+        StartMenu menu = new StartMenu();
 
-        assertFalse(menu.getOptions().contains(StartMenu.Option.CONTINUE),
-                "Secilemeyen soluk satir gostermektense hic gostermemek daha net");
+        assertEquals(4, menu.getOptions().size(), "Yeni oyun, ayarlar, yardim, cikis");
         assertEquals(StartMenu.Option.NEW_GAME, menu.getSelected(), "Yeni oyun basta secili");
-    }
-
-    @Test
-    @DisplayName("Kayit varsa devam satiri geliyor")
-    void continueAppearsWithASave() {
-        StartMenu menu = new StartMenu(true);
-
-        assertTrue(menu.getOptions().contains(StartMenu.Option.CONTINUE));
-        assertEquals(5, menu.getOptions().size(), "Yeni, devam, ayarlar, yardim, cikis");
     }
 
     @Test
     @DisplayName("Secim asagi ve yukari geziyor")
     void selectionMoves() {
-        StartMenu menu = new StartMenu(true);
-
-        menu.moveDown();
-        assertEquals(StartMenu.Option.CONTINUE, menu.getSelected());
+        StartMenu menu = new StartMenu();
 
         menu.moveDown();
         assertEquals(StartMenu.Option.SETTINGS, menu.getSelected());
 
+        menu.moveDown();
+        assertEquals(StartMenu.Option.HELP, menu.getSelected());
+
         menu.moveUp();
-        assertEquals(StartMenu.Option.CONTINUE, menu.getSelected());
+        assertEquals(StartMenu.Option.SETTINGS, menu.getSelected());
     }
 
     /**
@@ -56,7 +47,7 @@ class StartMenuTest {
     @Test
     @DisplayName("Alt sayfada gezinmek ana sayfanin secimini bozmuyor")
     void panesKeepTheirOwnSelection() {
-        StartMenu menu = new StartMenu(false);
+        StartMenu menu = new StartMenu();
         menu.moveDown();
         StartMenu.Option before = menu.getSelected();
 
@@ -72,7 +63,7 @@ class StartMenuTest {
     @Test
     @DisplayName("Ayarlar sayfasinda satirlar arasinda geziliyor")
     void settingRowsAreNavigable() {
-        StartMenu menu = new StartMenu(false);
+        StartMenu menu = new StartMenu();
         menu.openPane(StartMenu.Pane.SETTINGS);
 
         assertEquals(StartMenu.SettingRow.VOLUME, menu.getSelectedSetting());
@@ -92,7 +83,7 @@ class StartMenuTest {
     @Test
     @DisplayName("Ana sayfada geri bir sey yapmiyor")
     void backOnTheMainPaneIsHarmless() {
-        StartMenu menu = new StartMenu(false);
+        StartMenu menu = new StartMenu();
 
         menu.back();
 
@@ -104,7 +95,7 @@ class StartMenuTest {
     @Test
     @DisplayName("Secim listenin ucundan basa sariyor")
     void selectionWrapsAround() {
-        StartMenu menu = new StartMenu(false);
+        StartMenu menu = new StartMenu();
 
         menu.moveUp();
         assertEquals(StartMenu.Option.QUIT, menu.getSelected(), "Yukaridan sona sarmali");
@@ -116,7 +107,7 @@ class StartMenuTest {
     @Test
     @DisplayName("Menu kapaninca bir daha acilmiyor")
     void closingIsFinal() {
-        StartMenu menu = new StartMenu(false);
+        StartMenu menu = new StartMenu();
         assertTrue(menu.isOpen(), "Oyun menuyle basliyor");
 
         menu.close();

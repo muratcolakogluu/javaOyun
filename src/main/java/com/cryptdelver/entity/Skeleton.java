@@ -30,7 +30,7 @@ public class Skeleton extends Enemy {
     }
 
     @Override
-    public String getSaveKind() {
+    public String getKind() {
         return "SKELETON";
     }
 

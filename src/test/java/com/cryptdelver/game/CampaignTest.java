@@ -205,28 +205,5 @@ class CampaignTest {
                     "Her katta cikiyorsa nadir olma amaci kalmaz: " + withWizard + "/" + floors);
         }
 
-        /**
-         * Zar katin tohumundan atiliyor. Genel rastgelelikten atsaydik ayni
-         * kaydi yuklemek buyucuyu kaybettirebilirdi.
-         */
-        @Test
-        @DisplayName("Buyucunun varligi kayit yuklenince degismiyor")
-        void theWizardSurvivesAReload() {
-            Player player = new Player(0, 0);
-            Game game = new Game(List.of(new BspGenerator()), WIDTH, HEIGHT, player);
-
-            for (int i = 0; i < 60; i++) {
-                game.regenerateFloor();
-                boolean before = game.getWizard() != null;
-
-                game.applySave(game.captureSave());
-
-                if (before) {
-                    assertNotNull(game.getWizard(), "Kayitta olan buyucu kaybolmamali");
-                } else {
-                    assertNull(game.getWizard(), "Kayitta olmayan buyucu belirmemeli");
-                }
-            }
-        }
     }
 }

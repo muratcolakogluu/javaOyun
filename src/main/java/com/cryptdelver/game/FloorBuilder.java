@@ -212,9 +212,9 @@ public class FloorBuilder {
     /**
      * Katın sabit döşemesi: harita, doğulan yer, merdiven ve büyücü.
      *
-     * <p>Hepsi tohumdan belirlenimci olarak çıkıyor. Kayıt yüklerken de bu
-     * çağrılıyor: aynı tohum aynı döşemeyi verdiği için merdiven ve büyücü
-     * kayıt dosyasında saklanmak zorunda değil.</p>
+     * <p>Hepsi tohumdan belirlenimci olarak çıkıyor: aynı tohumla iki kez
+     * kurulan kat birebir aynı oluyor. Doldurma adımından ayrı durmasının
+     * sebebi bu — belirlenimcilik tek başına sınanabiliyor.</p>
      */
     public Floor layout(int generatorIndex, int depth, long seed) {
         Dungeon dungeon = generators.get(generatorIndex).generate(width, height, seed);
@@ -248,10 +248,9 @@ public class FloorBuilder {
      * arada bir gezgin büyücüye rastlamak, katı açmaya değer küçük bir
      * sürpriz.</p>
      *
-     * <p>Zar katın <em>tohumundan</em> atılıyor, genel rastgelelikten değil.
-     * Sebebi kayıt: kaydı yüklerken kat tohumdan yeniden kuruluyor, genel
-     * rastgelelikten zar atsaydık büyücü kaydettiğinde varken yüklediğinde yok
-     * olabilirdi.</p>
+     * <p>Zar katın <em>tohumundan</em> atılıyor, genel rastgelelikten değil:
+     * böylece kat kurulumu tohumun saf bir fonksiyonu kalıyor ve aynı tohumla
+     * kurulan iki kat büyücü konusunda da ayrışmıyor.</p>
      */
     private boolean hasWizard(int depth, long seed) {
         return isBossFloor(depth)

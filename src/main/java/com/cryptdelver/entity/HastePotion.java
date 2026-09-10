@@ -46,7 +46,7 @@ public class HastePotion extends Item {
     }
 
     @Override
-    public String getSaveKind() {
+    public String getKind() {
         return "HASTE";
     }
 

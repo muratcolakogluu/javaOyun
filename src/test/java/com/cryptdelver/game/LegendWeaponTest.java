@@ -121,26 +121,6 @@ class LegendWeaponTest {
     }
 
     @Test
-    @DisplayName("Iki buyu de kayitta korunuyor")
-    void bothSpellsSurviveTheSave() {
-        Player diver = new Player(0, 0);
-        Game generated = new Game(List.of(new BspGenerator()), 40, 22, diver);
-
-        LegendWeapon legend = new LegendWeapon(0, 0);
-        legend.enchant(Enchantment.VAMPIRLIK);
-        legend.enchant(Enchantment.ACELE);
-        generated.getInventory().add(legend);
-        diver.equip(legend);
-
-        generated.applySave(generated.captureSave());
-        Weapon restored = generated.getPlayer().getEquippedWeapon();
-
-        assertTrue(restored.hasEnchantment(Enchantment.VAMPIRLIK));
-        assertTrue(restored.hasEnchantment(Enchantment.ACELE));
-        assertEquals(2, restored.getEnchantSlots(), "Efsanevi olarak geri gelmeli");
-    }
-
-    @Test
     @DisplayName("Adinda iki buyu de goruunuyor")
     void theNameListsBothSpells() {
         LegendWeapon legend = new LegendWeapon(0, 0);

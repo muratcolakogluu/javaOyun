@@ -6,15 +6,13 @@ import java.util.List;
 /**
  * Oyun açılınca karşılayan menü ve alt sayfaları.
  *
- * <p>Önce pencere açılır açılmaz zindanın ortasına düşüyordun. Hem oyunun bir
- * başlangıcı yoktu hem de kayıtlı oyunu yüklemek için önce ölmeyi göze alıp
- * {@code F9}'a basman gerekiyordu.</p>
+ * <p>Önce pencere açılır açılmaz zindanın ortasına düşüyordun: oyunun bir
+ * başlangıcı yoktu, ayarlara da ancak oyunun içinden ulaşılıyordu.</p>
  *
  * <p>Menü yalnızca <em>nerede olduğunu ve neyin seçili olduğunu</em> tutuyor.
  * Seçilen şeyin ne yaptığını {@link GameScreen}, nasıl göründüğünü
- * {@link GameRenderer} biliyor. Bu ayrım sayesinde burası pencere, kayıt ya da
- * oyun durumu hakkında hiçbir şey bilmiyor ve JavaFX açmadan
- * sınanabiliyor.</p>
+ * {@link GameRenderer} biliyor. Bu ayrım sayesinde burası pencere ya da oyun
+ * durumu hakkında hiçbir şey bilmiyor ve JavaFX açmadan sınanabiliyor.</p>
  */
 public class StartMenu {
 
@@ -24,7 +22,6 @@ public class StartMenu {
     /** Ana sayfadaki satırlar. */
     public enum Option {
         NEW_GAME("Yeni Oyun"),
-        CONTINUE("Kayitli Oyuna Devam Et"),
         SETTINGS("Ayarlar"),
         HELP("Nasil Oynanir"),
         QUIT("Cikis");
@@ -52,7 +49,6 @@ public class StartMenu {
         MUSIC("Muzik"),
         MUTE("Sessiz"),
         DIFFICULTY("Zorluk"),
-        AUTO_SAVE("Otomatik kaydetme"),
         BACK("Geri");
 
         private final String label;
@@ -73,16 +69,8 @@ public class StartMenu {
     private int settingIndex;
     private boolean open = true;
 
-    /**
-     * @param saveExists kayıtlı oyun var mı; yoksa "devam et" satırı hiç
-     *                   görünmüyor. Seçilemeyen soluk bir satır göstermektense
-     *                   listeden çıkarmak daha az kafa karıştırıyor.
-     */
-    public StartMenu(boolean saveExists) {
+    public StartMenu() {
         options.add(Option.NEW_GAME);
-        if (saveExists) {
-            options.add(Option.CONTINUE);
-        }
         options.add(Option.SETTINGS);
         options.add(Option.HELP);
         options.add(Option.QUIT);
@@ -141,7 +129,7 @@ public class StartMenu {
      * Verilen satırı seçili yapar; fare imlecin altındaki satıra geldiğinde
      * çağrılıyor.
      *
-     * <p>Listede olmayan bir satır sessizce yok sayılıyor: kayıt yokken
+     * <p>Listede olmayan bir satır sessizce yok sayılıyor: eksik bir satır
      * "devam et" listede olmadığı için böyle bir istek gelebilir.</p>
      */
     public void select(Option option) {

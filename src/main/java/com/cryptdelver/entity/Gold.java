@@ -47,13 +47,8 @@ public class Gold extends Item {
     }
 
     @Override
-    public String getSaveKind() {
+    public String getKind() {
         return "GOLD";
-    }
-
-    @Override
-    public int getSaveValue() {
-        return amount;
     }
 
     @Override

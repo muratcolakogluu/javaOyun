@@ -117,7 +117,7 @@ class CreatureTest {
         Game generated = new Game(List.of(new BspGenerator()), 40, 24, fresh);
 
         Set<String> kinds = generated.getEnemies().stream()
-                .map(Enemy::getSaveKind)
+                .map(Enemy::getKind)
                 .collect(Collectors.toSet());
 
         assertFalse(kinds.contains("GOBLIN"), "Goblin 2. kattan once cikmamali");

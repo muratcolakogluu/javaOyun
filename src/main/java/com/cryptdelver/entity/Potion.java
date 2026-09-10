@@ -51,7 +51,7 @@ public class Potion extends Item {
     }
 
     @Override
-    public String getSaveKind() {
+    public String getKind() {
         return "POTION";
     }
 

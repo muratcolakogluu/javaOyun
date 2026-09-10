@@ -132,7 +132,7 @@ public class Archer extends Enemy {
     }
 
     @Override
-    public String getSaveKind() {
+    public String getKind() {
         return "ARCHER";
     }
 

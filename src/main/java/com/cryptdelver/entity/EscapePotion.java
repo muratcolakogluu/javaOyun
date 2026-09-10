@@ -41,7 +41,7 @@ public class EscapePotion extends Item {
     }
 
     @Override
-    public String getSaveKind() {
+    public String getKind() {
         return "ESCAPE";
     }
 

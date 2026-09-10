@@ -27,7 +27,7 @@ public class Saman extends Enemy {
     }
 
     @Override
-    public String getSaveKind() {
+    public String getKind() {
         return "SAMAN";
     }
 

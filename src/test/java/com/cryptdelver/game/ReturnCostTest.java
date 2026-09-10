@@ -7,7 +7,6 @@ import com.cryptdelver.entity.Armor;
 import com.cryptdelver.entity.Enchantment;
 import com.cryptdelver.entity.Player;
 import com.cryptdelver.entity.Weapon;
-import com.cryptdelver.persistence.SaveData;
 import com.cryptdelver.world.BspGenerator;
 import com.cryptdelver.world.DungeonGenerator;
 import com.cryptdelver.world.RandomWalkGenerator;
@@ -132,22 +131,6 @@ class ReturnCostTest {
         }
 
         assertTrue(game.getFloorPatience() >= 30.0, "Taban sabir korunmali");
-    }
-
-    /** Kaydedip yuklemek biriken ofkeyi silmiyor; yoksa geri donus yine bedava olurdu. */
-    @Test
-    @DisplayName("Geri donus sayaci kayitta yasiyor")
-    void theReturnCounterSurvivesASave() {
-        goDown();
-        game.ascend();
-        goDown();
-
-        SaveData data = game.captureSave();
-        Game loaded = new Game(generators(), WIDTH, HEIGHT, new Player(0, 0));
-        loaded.applySave(data);
-
-        assertEquals(game.getReturns(), loaded.getReturns());
-        assertEquals(game.getFloorPatience(), loaded.getFloorPatience(), 0.001);
     }
 
     @Test

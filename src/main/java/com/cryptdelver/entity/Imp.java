@@ -71,7 +71,7 @@ public class Imp extends Enemy {
     }
 
     @Override
-    public String getSaveKind() {
+    public String getKind() {
         return "IMP";
     }
 

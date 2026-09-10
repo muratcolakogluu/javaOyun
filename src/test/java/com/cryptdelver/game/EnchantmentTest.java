@@ -192,16 +192,17 @@ class EnchantmentTest {
     }
 
     @Test
-    @DisplayName("Parca varsayilan olarak buyusuz ve kayitta bos etiket yaziyor")
+    @DisplayName("Parca varsayilan olarak buyusuz")
     void gearStartsWithoutAnEnchantment() {
         Weapon plain = sword(20);
 
         assertNull(plain.getEnchantment());
-        assertEquals("", plain.getSaveEnchantment());
+        assertFalse(plain.isEnchanted());
 
         plain.enchant(Enchantment.VAMPIRLIK);
 
-        assertEquals("VAMPIRLIK", plain.getSaveEnchantment());
+        assertTrue(plain.isEnchanted());
+        assertEquals(Enchantment.VAMPIRLIK, plain.getEnchantment());
     }
 
     @Test

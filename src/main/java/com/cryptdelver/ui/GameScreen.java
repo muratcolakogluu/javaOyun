@@ -5,14 +5,10 @@ import com.cryptdelver.game.Game;
 import com.cryptdelver.game.Records;
 import com.cryptdelver.game.Settings;
 import com.cryptdelver.persistence.RecordsFile;
-import com.cryptdelver.persistence.SaveData;
-import com.cryptdelver.persistence.SaveFile;
 import com.cryptdelver.persistence.SettingsFile;
-import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.EnumSet;
-import java.util.Optional;
 import java.util.Set;
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
@@ -66,7 +62,6 @@ public class GameScreen {
     private final double scale;
     private final Set<KeyCode> pressedKeys = EnumSet.noneOf(KeyCode.class);
     private final Deque<KeyCode> heldDirections = new ArrayDeque<>();
-    private final SaveFile saveFile = new SaveFile();
     private final SettingsFile settingsFile = new SettingsFile();
     private final StartMenu menu;
     private final Records records = new Records();
@@ -100,8 +95,7 @@ public class GameScreen {
         // sütunu kırpılıyor, boss can çubuğu da hiç görünmüyordu.
         this.root = new Group(scaledCanvas);
 
-        // "Devam et" satırı yalnızca gerçekten kayıt varsa görünsün.
-        this.menu = new StartMenu(saveFile.exists());
+        this.menu = new StartMenu();
         recordsFile.load(records);
     }
 
@@ -113,8 +107,8 @@ public class GameScreen {
      * alanı 1280x800'e iniyor, pencere çerçevesi de eklenince tuvalin altı
      * ekranın dışında kalıyordu — bilgi şeridinin son satırı görünmüyordu.</p>
      *
-     * <p>Çözüm kat boyutunu küçültmek değil: o hem oynanışı değiştirirdi hem
-     * de kayıtları makineye bağlardı. Bunun yerine tüm sahne aynı oranda
+     * <p>Çözüm kat boyutunu küçültmek değil: o oynanışın kendisini
+     * değiştirirdi. Bunun yerine tüm sahne aynı oranda
      * ölçekleniyor. Oyun koordinatları değişmiyor, çizim kodu bundan
      * habersiz. Ekran yeterince büyükse oran 1 kalıyor ve hiçbir şey olmuyor.</p>
      */
@@ -382,8 +376,8 @@ public class GameScreen {
             return;
         }
 
-        // Duraklatmayı açıp kapatmak, ayarlar, kaydetmek ve yüklemek her zaman
-        // serbest; oynanışa dokunan komutlar duraklatmada geçersiz.
+        // Duraklatmayı açıp kapatmak ve ses ayarları her zaman serbest;
+        // oynanışa dokunan komutlar duraklatmada geçersiz.
         switch (code) {
             case ESCAPE -> game.togglePause();
             // Tezgâh açıkken F bir büyü tuşu, değilken "buradakiyle bir şey
@@ -398,8 +392,6 @@ public class GameScreen {
             // Tezgâhın kendi tuşu da duruyor: ayağının dibinde bir parça varken
             // F onu alıyor, büyücüye T ile ulaşıyorsun.
             case T -> game.toggleForge();
-            case F5 -> saveGame();
-            case F9 -> loadGame();
             case MINUS, SUBTRACT -> changeVolume(-Settings.VOLUME_STEP);
             case PLUS, ADD, EQUALS -> changeVolume(Settings.VOLUME_STEP);
             case M -> toggleMute();
@@ -443,10 +435,6 @@ public class GameScreen {
 
         switch (menu.getSelected()) {
             case NEW_GAME -> startPlaying();
-            case CONTINUE -> {
-                loadGame();
-                startPlaying();
-            }
             case SETTINGS -> menu.openPane(StartMenu.Pane.SETTINGS);
             case HELP -> menu.openPane(StartMenu.Pane.HELP);
             case QUIT -> {
@@ -486,7 +474,6 @@ public class GameScreen {
             case DIFFICULTY -> settings.setDifficulty(step > 0
                     ? settings.getDifficulty().next()
                     : settings.getDifficulty().previous());
-            case AUTO_SAVE -> settings.toggleAutoSave();
             case BACK -> {
                 return;
             }
@@ -552,13 +539,7 @@ public class GameScreen {
         }
     }
 
-    /**
-     * Bir alt kata iner; ayar açıksa iniş sonrası kendiliğinden kaydeder.
-     *
-     * <p>Kaydetme anı olarak kat inişi seçildi: kat sınırı oyunun doğal
-     * kontrol noktası, hem oyuncunun kafasında hem kayıt biçiminde. Her
-     * saniye kaydetmek diski yorar, ölümde kaydetmek de anlamsız olurdu.</p>
-     */
+    /** Merdivende yön: alttaysan inersin, üsttekindeysen çıkarsın. */
     private void descend() {
         // Tek tuş iki merdiveni de kullanıyor: hangisinin üstünde durduğun
         // zaten belli, ayrıca bir "yukarı çık" tuşu ezberletmek gereksiz.
@@ -567,38 +548,7 @@ public class GameScreen {
             return;
         }
 
-        if (game.descend() && game.getSettings().isAutoSave()) {
-            saveGame();
-        }
-    }
-
-    /**
-     * Oyunu diske yazar.
-     *
-     * <p>Dosya işlemleri patlarsa oyun düşmesin: hata mesaj kaydına yazılıyor,
-     * oyuncu ekranda görüyor ve oynamaya devam ediyor.</p>
-     */
-    private void saveGame() {
-        try {
-            saveFile.write(game.captureSave());
-            game.getMessageLog().add("Oyun kaydedildi.");
-        } catch (IOException e) {
-            game.getMessageLog().add("Kaydedilemedi: " + e.getMessage());
-        }
-    }
-
-    /** Diskteki kaydı yükler; kayıt yoksa uyarır. */
-    private void loadGame() {
-        try {
-            Optional<SaveData> data = saveFile.read();
-            if (data.isEmpty()) {
-                game.getMessageLog().add("Kayıtlı oyun yok.");
-                return;
-            }
-            game.applySave(data.get());
-        } catch (IOException | RuntimeException e) {
-            game.getMessageLog().add("Kayıt yüklenemedi: " + e.getMessage());
-        }
+        game.descend();
     }
 
     /**

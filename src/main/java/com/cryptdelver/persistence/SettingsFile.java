@@ -58,7 +58,6 @@ public class SettingsFile {
         lines.add("music|" + settings.getMusicVolume());
         lines.add("muted|" + settings.isMuted());
         lines.add("difficulty|" + settings.getDifficulty().name());
-        lines.add("autosave|" + settings.isAutoSave());
 
         try {
             Path parent = path.getParent();
@@ -82,7 +81,6 @@ public class SettingsFile {
             case "music" -> settings.setMusicVolume(Double.parseDouble(parts[1]));
             case "muted" -> settings.setMuted(Boolean.parseBoolean(parts[1]));
             case "difficulty" -> settings.setDifficulty(parseDifficulty(parts[1]));
-            case "autosave" -> settings.setAutoSave(Boolean.parseBoolean(parts[1]));
             default -> {
                 // Tanımadığımız satırı yok sayıyoruz; ileride eklenen bir ayar
                 // eski sürümü çalıştırmayı engellemesin.

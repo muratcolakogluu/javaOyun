@@ -28,7 +28,7 @@ public class Zombi extends Enemy {
     }
 
     @Override
-    public String getSaveKind() {
+    public String getKind() {
         return "ZOMBI";
     }
 

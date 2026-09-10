@@ -444,7 +444,6 @@ public class GameRenderer {
             case MUSIC -> "%" + settings.getMusicPercent();
             case MUTE -> settings.isMuted() ? "Acik" : "Kapali";
             case DIFFICULTY -> settings.getDifficulty().getLabel();
-            case AUTO_SAVE -> settings.isAutoSave() ? "Acik" : "Kapali";
             case BACK -> "";
         };
     }
@@ -639,9 +638,9 @@ public class GameRenderer {
         gc.setFill(HUD_TEXT);
         gc.fillText("- / +  efekt,  M  sustur,  muzik menudeki ayarlardan", mapWidth / 2, rowY);
 
-        // Zorluk ve otomatik kaydetme burada yalnızca gösteriliyor. Oyunun
-        // ortasında ok tuşlarıyla zorluk değiştirmek kolayca yanlışlıkla
-        // yapılırdı; ikisi de menüdeki ayarlar sayfasından değişiyor.
+        // Zorluk burada yalnızca gösteriliyor. Oyunun ortasında ok tuşlarıyla
+        // zorluk değiştirmek kolayca yanlışlıkla yapılırdı; menüdeki ayarlar
+        // sayfasından değişiyor.
         rowY += 24;
         gc.setTextAlign(TextAlignment.RIGHT);
         gc.setFill(MESSAGE_TEXT);
@@ -649,14 +648,6 @@ public class GameRenderer {
         gc.setTextAlign(TextAlignment.LEFT);
         gc.setFill(GOLD_TEXT);
         gc.fillText(settings.getDifficulty().getLabel(), mapWidth / 2 + 20, rowY);
-
-        rowY += 20;
-        gc.setTextAlign(TextAlignment.RIGHT);
-        gc.setFill(MESSAGE_TEXT);
-        gc.fillText("Otomatik kaydetme", mapWidth / 2 - 20, rowY);
-        gc.setTextAlign(TextAlignment.LEFT);
-        gc.setFill(settings.isAutoSave() ? GOLD_TEXT : HUD_TEXT);
-        gc.fillText(settings.isAutoSave() ? "acik" : "kapali", mapWidth / 2 + 20, rowY);
 
         return rowY;
     }
@@ -708,7 +699,6 @@ public class GameRenderer {
                 {"E", "merdivende in ya da cik"},
                 {"T", "büyücünün yaninda tezgahi ac"},
                 {"", "iksir ve altin kendiliginden alinir"},
-                {"F5 / F9", "kaydet / yukle"},
                 {"- / + / M", "ses azalt / artir / sustur"},
                 {"Enter", "olunce yeniden basla"},
                 {"ESC", "devam et"},

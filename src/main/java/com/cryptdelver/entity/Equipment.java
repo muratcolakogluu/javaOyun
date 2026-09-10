@@ -2,7 +2,6 @@ package com.cryptdelver.entity;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Kuşanılan parçaların ortak atası: silah ve zırh.
@@ -196,7 +195,7 @@ public abstract class Equipment extends Item {
     }
 
     /** Kayıttan dönerken kullanılıyor; oyun içi akışta çağrılmaz. */
-    public void restoreState(int durability, int upgradeLevel) {
+    public void setCondition(int durability, int upgradeLevel) {
         this.upgradeLevel = Math.max(0, upgradeLevel);
         this.durability = Math.clamp(durability, 0, maxDurability);
     }
@@ -234,28 +233,6 @@ public abstract class Equipment extends Item {
     /** Çantada ve büyücüde görünen ad; yükseltilmişse kademesiyle. */
     public String getDisplayName() {
         return upgradeLevel > 0 ? getName() + " +" + upgradeLevel : getName();
-    }
-
-    /** Kayıtta taban bonus saklanıyor; yükseltmeler ayrı alanda. */
-    @Override
-    public int getSaveValue() {
-        return baseBonus;
-    }
-
-    @Override
-    public int getSaveDurability() {
-        return durability;
-    }
-
-    @Override
-    public int getSaveUpgradeLevel() {
-        return upgradeLevel;
-    }
-
-    /** Kayıtta virgülle ayrılmış etiketler; alan sayısı sabit kalıyor. */
-    @Override
-    public String getSaveEnchantment() {
-        return enchantments.stream().map(Enchantment::name).collect(Collectors.joining(","));
     }
 
     @Override

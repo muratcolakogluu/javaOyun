@@ -116,7 +116,7 @@ public class Armor extends Equipment {
     }
 
     @Override
-    public String getSaveKind() {
+    public String getKind() {
         return "ARMOR";
     }
 }

@@ -17,10 +17,11 @@ import java.util.List;
  * olarak dönüyor.</p>
  *
  * <p>Katın iki hâli var. <b>Döşeme</b> ({@link FloorBuilder#layout}) yalnızca
- * haritayı, doğulan yeri, merdiveni ve büyücüyü içeriyor — bunlar tohumdan
- * belirlenimci olarak çıkıyor, o yüzden kayıt yüklerken de aynısı kuruluyor.
- * <b>Dolu kat</b> ({@link FloorBuilder#build}) buna boss, düşmanlar ve eşyalar
- * ekliyor; kayıt yüklerken bunlar dosyadan geldiği için o adım atlanıyor.</p>
+ * haritayı, doğulan yeri, merdiveni ve büyücüyü içeriyor ve tamamen tohumdan
+ * çıkıyor — aynı tohum her zaman aynı döşemeyi veriyor. <b>Dolu kat</b>
+ * ({@link FloorBuilder#build}) buna boss, düşmanlar ve eşyalar ekliyor; o adım
+ * zar atıyor. İkisini ayırmak belirlenimciliği tek başına sınanabilir
+ * kılıyor.</p>
  *
  * @param boss merdiveni tutan boss; boss katı değilse {@code null}
  * @param wizard kattaki büyücü; yoksa {@code null}

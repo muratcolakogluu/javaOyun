@@ -37,7 +37,7 @@ public class Goblin extends Enemy {
     }
 
     @Override
-    public String getSaveKind() {
+    public String getKind() {
         return "GOBLIN";
     }
 

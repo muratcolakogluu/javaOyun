@@ -22,7 +22,6 @@ public class Settings {
     private double musicVolume = DEFAULT_VOLUME;
     private boolean muted;
     private Difficulty difficulty = Difficulty.NORMAL;
-    private boolean autoSave = true;
 
     /** Ayarlanmış efekt seviyesi, 0 ile 1 arası (sessize almadan bağımsız). */
     public double getVolume() {
@@ -98,25 +97,6 @@ public class Settings {
 
     public void setDifficulty(Difficulty difficulty) {
         this.difficulty = difficulty == null ? Difficulty.NORMAL : difficulty;
-    }
-
-    /**
-     * Her kat inişinde kendiliğinden kaydedilsin mi.
-     *
-     * <p>Varsayılan açık: {@code F5} tuşunun varlığını bilmeyen oyuncunun ilk
-     * ölümünde bir saatlik ilerlemeyi kaybetmesi kötü bir karşılama olurdu.
-     * Kaydetmeyi bir <em>karar</em> olarak yaşamak isteyen kapatabiliyor.</p>
-     */
-    public boolean isAutoSave() {
-        return autoSave;
-    }
-
-    public void setAutoSave(boolean autoSave) {
-        this.autoSave = autoSave;
-    }
-
-    public void toggleAutoSave() {
-        autoSave = !autoSave;
     }
 
     private double clamp(double value) {

@@ -139,20 +139,6 @@ class WizardTest {
             assertFalse(game.isTileFree(smith.getTileX(), smith.getTileY(), player));
         }
 
-        /** Ayni tohum ayni kati verdigi icin büyücü de ayni yere dusmeli. */
-        @Test
-        @DisplayName("Kayit yuklenince büyücü yerinde duruyor")
-        void wizardSurvivesSaveAndLoad() {
-            for (int i = 0; i < 4; i++) {
-                goDownOneFloor();
-            }
-            var before = game.getWizard().getTile();
-
-            game.applySave(game.captureSave());
-
-            assertNotNull(game.getWizard());
-            assertEquals(before, game.getWizard().getTile());
-        }
     }
 
     /**
@@ -178,7 +164,7 @@ class WizardTest {
         @DisplayName("Kirik parca her seyin onune geciyor")
         void brokenGearComesFirst() {
             Weapon weapon = new Weapon(0, 0, "Test Kilici", 2, "sword", 10);
-            weapon.restoreState(0, 0);
+            weapon.setCondition(0, 0);
             player.equip(weapon);
 
             assertTrue(smith.greetingFor(game).contains("Kırılmış"));
@@ -188,7 +174,7 @@ class WizardTest {
         @DisplayName("Yipranmis takim tamire cagiriyor")
         void wornGearAsksForRepair() {
             Weapon weapon = new Weapon(0, 0, "Test Kilici", 2, "sword", 10);
-            weapon.restoreState(3, 0);
+            weapon.setCondition(3, 0);
             player.equip(weapon);
 
             assertTrue(smith.greetingFor(game).contains("Tamir"));
@@ -248,7 +234,7 @@ class WizardTest {
 
         private Weapon wornSword() {
             Weapon weapon = new Weapon(0, 0, "Test Kilici", 4, "sword", 20);
-            weapon.restoreState(10, 0);
+            weapon.setCondition(10, 0);
             player.equip(weapon);
             return weapon;
         }

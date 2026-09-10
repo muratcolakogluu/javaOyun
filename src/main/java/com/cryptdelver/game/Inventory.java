@@ -157,6 +157,6 @@ public class Inventory {
      * durur.</p>
      */
     private String stackKey(Item item) {
-        return item.getSaveKind() + "|" + item.getName();
+        return item.getKind() + "|" + item.getName();
     }
 }

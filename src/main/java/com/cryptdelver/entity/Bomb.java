@@ -52,7 +52,7 @@ public class Bomb extends Item {
     }
 
     @Override
-    public String getSaveKind() {
+    public String getKind() {
         return "BOMB";
     }
 
