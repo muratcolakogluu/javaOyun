@@ -1,42 +1,35 @@
-Ses efektleri
-=============
+Ses kaynagi
+===========
 
-Bu dosyalar hazır bir paketten gelmiyor; scratchpad'deki SoundMaker aracıyla
-sentezlendi (üçgen dalga + filtrelenmiş gürültü, 22050 Hz 16-bit mono WAV).
+Hicbiri disaridan alinmadi; hepsi scratchpad'deki iki araçla sentezlendi.
+Sebep lisans degil boyut ve tutarlilik: uretilen sesler birkaç yuz kilobayt,
+hepsi ayni tiniden geliyor ve dengeyi kod degistirerek ayarlayabiliyoruz.
 
-İlk sürümde kare dalga kullanılmıştı ama tınısı sert ve vızıldayan çıkıyordu.
-Üçgen dalgada üst harmonikler çok daha hızlı sönüyor: aynı 8-bit hissi kalıyor,
-kulağı tırmalaması gidiyor. Üstüne bir alçak geçiren yumuşatma var.
+--------------------------------------------------------------------
+Efektler (SoundMaker.java)
+--------------------------------------------------------------------
 
-Zarf ikinci kez değişti: eskiden ses ilk %12'sinde yavaşça açılıyor ve tepe
-noktası ortalara düşüyordu, bu da kulakta "ses geç geldi" hissi yaratıyordu.
-Şimdi vurmalı bir zarf var — %2'lik açılış yalnızca klik sesini engelliyor,
-tepe en başta, gerisi sönüyor. Ölüm ve boss sesleri de kısaltıldı.
+  swing, hit, hurt, kill, pickup, potion, equip, stairs, boss, death
 
-Gecikmenin ikinci kaynağı ses aygıtının ilk çalışta açılmasıydı; SoundPlayer
-artık her klibi açılışta sıfır seviyede bir kez çalıp aygıtı ısıtıyor.
+Ucgen dalga + alcak geciren yumusatma. Ilk surumde kare dalgaydi ve tinisi
+kulagi tirmaliyordu. Zarfin tepesi en basta: vurmali seslerin dogru sekli bu,
+tepe ortada olunca kulak "ses gec geldi" diye duyuyordu.
 
-Neden üretildi:
-- Lisans derdi yok, tamamen bize ait
-- Efektler kısa ve karakteristik; oyunun temposuna göre ayarlanabiliyor
-- Piksel sanatıyla aynı "8-bit" dilde konuşuyor
+--------------------------------------------------------------------
+Ortam sesleri (AmbienceMaker.java)
+--------------------------------------------------------------------
 
-Dosyalar ve tetikleyen olay (SoundEffect enum'u ile birebir):
+  amb_mahzen  kuru tas: alcak ugultu, arada oturan tas
+  amb_sarnic  su: damlalar ve genis yanki
+  amb_korluk  ates: surekli catirdama ve gumburtu
+  amb_kript   doganin disi: ust uste ugultular, uzak cinlama
+  amb_boss    gerilim: birbirine yakin iki ugultu (vuruslu tini) + kalp atisi
 
-  swing.wav   kılıç savuruldu (isabet olsun olmasın)
-  hit.wav     vuruş düşmana isabet etti
-  hurt.wav    oyuncu hasar aldı
-  kill.wav    düşman öldü
-  pickup.wav  yerden eşya alındı
-  potion.wav  iksir içildi
-  equip.wav   silah ya da zırh kuşanıldı
-  stairs.wav  bir alt kata inildi
-  boss.wav    boss belirdi
-  death.wav   oyuncu öldü
+12 saniyelik donguler, 22050 Hz mono. Dongu dikissiz olsun diye iki onlem
+var: tonal bilesenlerin frekanslari dongu uzunlugunun tam kati olacak sekilde
+yuvarlaniyor, gurultuye dayali bilesenler icin de fazladan uretilen 1.5
+saniyelik kuyruk basa capraz karistiriliyor.
 
-Sesi değiştirmek istersen SoundMaker.java içindeki frekans/süre değerlerini
-oynatıp yeniden çalıştırmak yeterli.
-
-Ses seviyesi oyun içinden ayarlanıyor (ESC → Ayarlar, - / + ve M). Tercih
-~/.cryptdelver/settings.txt dosyasında saklanıyor; dosyadaki değer 0-1
-arasında bir çarpan.
+Seviyeler olculerek ayarlandi (scratchpad/Levels.java): ortam sesinin RMS'i
+efektlerin kabaca yarisi, ustune calarken bir kisma daha uygulaniyor. Ilk
+denemede ucte birdi ve pratikte hic duyulmuyordu.

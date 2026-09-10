@@ -292,6 +292,7 @@ public class Game {
         if (depth >= FloorTheme.MAX_DEPTH) {
             won = true;
             sounds.play(SoundEffect.STAIRS);
+            sounds.stopAmbience();
             messageLog.addImportant("Kriptten çıktın. Zindan arkanda kaldı.");
             return true;
         }
@@ -405,6 +406,8 @@ public class Game {
         floorSeconds = known.floorSeconds();
         dungeonAwake = known.awake();
         reinforceTimer = 0;
+
+        refreshAmbience();
     }
 
     /**
@@ -463,6 +466,29 @@ public class Game {
      */
     public void setSoundListener(SoundListener listener) {
         this.sounds = listener == null ? SoundListener.SILENT : listener;
+
+        // Dinleyici oyun kurulduktan sonra takılıyor, yani ilk katın sesi
+        // burada başlatılmazsa oyuncu ikinci kata inene kadar sessizlik duyar.
+        refreshAmbience();
+    }
+
+    /**
+     * Altta dönmesi gereken sesi çalana bildirir.
+     *
+     * <p>Kat değişiminin üç ayrı yolu var (üretim, geri dönüş, kayıt yükleme)
+     * ve hepsinin sonunda ses doğru olmalı. Her birine tek tek çağrı koymak
+     * yerine "şu an ne çalmalı" sorusunu tek yerde yanıtlıyoruz; çalan taraf
+     * da aynı ses ikinci kez istenirse onu baştan başlatmıyor.</p>
+     */
+    private void refreshAmbience() {
+        if (isOver() || won) {
+            sounds.stopAmbience();
+            return;
+        }
+
+        sounds.playAmbience(FloorBuilder.isBossFloor(depth)
+                ? Ambience.BOSS
+                : Ambience.forTheme(getTheme()));
     }
 
     /**
@@ -1294,10 +1320,16 @@ public class Game {
     }
 
     private void announceDeathIfFallen() {
-        if (!player.isAlive()) {
-            messageLog.addImportant("Zindanda öldün.");
-            sounds.play(SoundEffect.DEATH);
+        if (player.isAlive()) {
+            return;
         }
+
+        messageLog.addImportant("Zindanda öldün.");
+        sounds.play(SoundEffect.DEATH);
+
+        // Zemin sesi susuyor: sessizlik, ölümü ekrandaki yazıdan daha net
+        // anlatıyor.
+        sounds.stopAmbience();
     }
 
     /**
@@ -1772,6 +1804,8 @@ public class Game {
         floorSeconds = 0;
         reinforceTimer = 0;
         dungeonAwake = false;
+
+        refreshAmbience();
     }
 
     /**

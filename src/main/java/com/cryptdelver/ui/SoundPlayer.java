@@ -1,5 +1,6 @@
 package com.cryptdelver.ui;
 
+import com.cryptdelver.game.Ambience;
 import com.cryptdelver.game.Settings;
 import com.cryptdelver.game.SoundEffect;
 import com.cryptdelver.game.SoundListener;
@@ -22,8 +23,22 @@ public class SoundPlayer implements SoundListener {
 
     private static final String SOUND_PATH = "/assets/sound/";
 
+    /**
+     * Ortam sesinin efektlere göre payı.
+     *
+     * <p>Dosyalar zaten efektlerden alçak üretildi, bu ikinci bir kısma. Sebep
+     * şu: efekt bir kez duyulup geçiyor, zemin ise dakikalarca dönüyor ve
+     * kulak sürekli bir sese çok daha çabuk yoruluyor. Oyuncu sesi tamamen
+     * kapatmak istemeden zemini "farkında olmadığı" bir seviyede tutmak
+     * istiyoruz.</p>
+     */
+    private static final double AMBIENCE_MIX = 0.55;
+
     private final Map<SoundEffect, AudioClip> clips = new EnumMap<>(SoundEffect.class);
     private final Settings settings;
+
+    private Ambience current;
+    private AudioClip playing;
 
     /**
      * @param settings ses seviyesi buradan okunuyor; oyuncu ayarlar ekranından
@@ -70,16 +85,94 @@ public class SoundPlayer implements SoundListener {
         }
     }
 
+    /**
+     * Kat sesini başlatır; zaten o çalıyorsa dokunmuyor.
+     *
+     * <p>Aynı bölgede kat değiştirmek çok sık oluyor. Her seferinde baştan
+     * başlatsaydık ses her inişte kesilip yeniden açılırdı — bölgenin sürekli
+     * olması gereken zemini, kat sınırlarını duyuran bir efekte dönüşürdü.</p>
+     */
+    @Override
+    public void playAmbience(Ambience ambience) {
+        if (ambience == current) {
+            return;
+        }
+
+        stopAmbience();
+        current = ambience;
+        startCurrent();
+    }
+
+    @Override
+    public void stopAmbience() {
+        if (playing != null) {
+            playing.stop();
+            playing = null;
+        }
+        current = null;
+    }
+
+    /**
+     * Ses seviyesi değişince zemini yeni seviyeyle yeniden kurar.
+     *
+     * <p>{@code AudioClip} çalarken seviyesi değiştirilemiyor; sonraki
+     * çalışta geçerli oluyor. Sürekli dönen bir ses için "sonraki çalış"
+     * asla gelmediğinden, sesi kısan oyuncu zeminin kısılmadığını duyuyordu.
+     * Yeniden başlatmak tek çözüm ve ayar değişikliği zaten seyrek.</p>
+     */
+    public void refreshAmbienceVolume() {
+        if (current == null) {
+            return;
+        }
+
+        Ambience wanted = current;
+        stopAmbience();
+        current = wanted;
+        startCurrent();
+    }
+
+    private void startCurrent() {
+        double volume = settings.getEffectiveVolume();
+        if (current == null || volume <= 0) {
+            return;
+        }
+
+        AudioClip clip = loadAmbience(current);
+        if (clip == null) {
+            return;
+        }
+
+        clip.setCycleCount(AudioClip.INDEFINITE);
+        clip.setVolume(volume * AMBIENCE_MIX);
+        clip.play();
+        playing = clip;
+    }
+
     private AudioClip load(SoundEffect effect) {
+        return loadFile(effect.getFileName(), effect.name());
+    }
+
+    /**
+     * Ortam sesleri önden yüklenmiyor.
+     *
+     * <p>Efektler bellekte duruyor çünkü sık ve ani çalınıyorlar. Ortam sesi
+     * ise on iki saniyelik, yarım megabaytlık bir dosya ve aynı anda yalnızca
+     * biri gerekiyor; beşini birden bellekte tutmak boşuna.</p>
+     */
+    private AudioClip loadAmbience(Ambience ambience) {
+        return loadFile(ambience.getFileName(), ambience.name());
+    }
+
+    private AudioClip loadFile(String fileName, String label) {
         try {
-            URL url = getClass().getResource(SOUND_PATH + effect.getFileName() + ".wav");
+            URL url = getClass().getResource(SOUND_PATH + fileName + ".wav");
             if (url == null) {
                 return null;
             }
 
             return new AudioClip(url.toExternalForm());
         } catch (RuntimeException e) {
-            System.err.println("Ses yüklenemedi, sessiz geçiliyor: " + effect);
+            System.err.println("Ses yüklenemedi, sessiz geçiliyor: " + label);
             return null;
         }
     }

@@ -76,6 +76,9 @@ public class GameScreen {
     private long lastFrameNanos;
     private boolean runRecorded;
 
+    /** Ses calici; pencere acilinca takiliyor, bassiz calistirmalarda null. */
+    private SoundPlayer sound;
+
     public GameScreen(Game game) {
         this.game = game;
 
@@ -258,7 +261,21 @@ public class GameScreen {
      */
     public void enableSound() {
         settingsFile.load(game.getSettings());
-        game.setSoundListener(new SoundPlayer(game.getSettings()));
+        sound = new SoundPlayer(game.getSettings());
+        game.setSoundListener(sound);
+    }
+
+    /**
+     * Ses seviyesi degisince altta donen zemini yeni seviyeyle tazeler.
+     *
+     * <p>Efektler bir sonraki calista yeni seviyeyi zaten aliyor; surekli donen
+     * ses icin "bir sonraki calis" hic gelmiyor, o yuzden ayrica soylemek
+     * gerekiyor.</p>
+     */
+    private void refreshAmbienceVolume() {
+        if (sound != null) {
+            sound.refreshAmbienceVolume();
+        }
     }
 
     /** Oyun döngüsünü başlatır. */
@@ -485,12 +502,14 @@ public class GameScreen {
         game.getSettings().adjustVolume(delta);
         settingsFile.save(game.getSettings());
         game.getMessageLog().add("Ses: %" + game.getSettings().getVolumePercent());
+        refreshAmbienceVolume();
     }
 
     private void toggleMute() {
         game.getSettings().toggleMuted();
         settingsFile.save(game.getSettings());
         game.getMessageLog().add(game.getSettings().isMuted() ? "Ses kapatıldı." : "Ses açıldı.");
+        refreshAmbienceVolume();
     }
 
     /** Yalnızca oyun akarken işleyen tek seferlik komutlar. */
