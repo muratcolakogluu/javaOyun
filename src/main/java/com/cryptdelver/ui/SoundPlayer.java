@@ -136,7 +136,7 @@ public class SoundPlayer implements SoundListener {
     }
 
     private void startCurrent() {
-        double volume = settings.getEffectiveVolume();
+        double volume = settings.getEffectiveMusicVolume();
         if (current == null || volume <= 0) {
             return;
         }

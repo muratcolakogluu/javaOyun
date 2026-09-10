@@ -30,6 +30,7 @@ class SettingsFileTest {
         SettingsFile file = new SettingsFile(tempDir.resolve("settings.txt"));
         Settings saved = new Settings();
         saved.setVolume(0.3);
+        saved.setMusicVolume(0.8);
         saved.setMuted(true);
 
         file.save(saved);
@@ -38,6 +39,7 @@ class SettingsFileTest {
         file.load(loaded);
 
         assertEquals(0.3, loaded.getVolume(), 1e-9);
+        assertEquals(0.8, loaded.getMusicVolume(), 1e-9, "Muzik seviyesi de saklanmali");
         assertTrue(loaded.isMuted());
     }
 
@@ -71,7 +73,7 @@ class SettingsFileTest {
     @DisplayName("Tanimadigimiz satirlar atlanir")
     void unknownKeysAreSkipped() throws IOException {
         Path path = tempDir.resolve("settings.txt");
-        Files.writeString(path, "volume|0.7\nmuzik|acik\n", StandardCharsets.UTF_8);
+        Files.writeString(path, "volume|0.7\nparlaklik|yuksek\n", StandardCharsets.UTF_8);
 
         Settings settings = new Settings();
         new SettingsFile(path).load(settings);

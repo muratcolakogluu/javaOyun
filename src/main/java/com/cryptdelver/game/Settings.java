@@ -19,11 +19,12 @@ public class Settings {
     private static final double DEFAULT_VOLUME = 0.5;
 
     private double volume = DEFAULT_VOLUME;
+    private double musicVolume = DEFAULT_VOLUME;
     private boolean muted;
     private Difficulty difficulty = Difficulty.NORMAL;
     private boolean autoSave = true;
 
-    /** Ayarlanmış ses seviyesi, 0 ile 1 arası (sessize almadan bağımsız). */
+    /** Ayarlanmış efekt seviyesi, 0 ile 1 arası (sessize almadan bağımsız). */
     public double getVolume() {
         return volume;
     }
@@ -35,6 +36,38 @@ public class Settings {
     /** Sesi bir kademe artırır ya da azaltır; sınırların dışına taşmaz. */
     public void adjustVolume(double delta) {
         setVolume(volume + delta);
+    }
+
+    /**
+     * Ortam sesinin kendi seviyesi.
+     *
+     * <p>Efektlerden ayrı tutuluyor çünkü ikisi farklı şeyler istiyor: vuruşun
+     * duyulması <em>gerekiyor</em> — o bir geri bildirim — ama altta dönen
+     * müzik bir tercih. Tek bir seviye olsaydı müzikten rahatsız olan oyuncu
+     * dövüşün sesini de kısmak zorunda kalırdı.</p>
+     *
+     * <p>Sıfıra çekmek müziği tamamen kapatıyor; ayrı bir "müzik kapalı"
+     * anahtarı eklemedik, çünkü sıfır zaten bunu söylüyor.</p>
+     */
+    public double getMusicVolume() {
+        return musicVolume;
+    }
+
+    public void setMusicVolume(double value) {
+        this.musicVolume = clamp(value);
+    }
+
+    public void adjustMusicVolume(double delta) {
+        setMusicVolume(musicVolume + delta);
+    }
+
+    /** Çalma anında kullanılacak müzik seviyesi: sessizdeyse 0. */
+    public double getEffectiveMusicVolume() {
+        return muted ? 0 : musicVolume;
+    }
+
+    public int getMusicPercent() {
+        return (int) Math.round(musicVolume * 100);
     }
 
     public boolean isMuted() {

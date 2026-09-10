@@ -48,7 +48,8 @@ public class StartMenu {
      * ama bilmen gerekmiyor.</p>
      */
     public enum SettingRow {
-        VOLUME("Ses seviyesi"),
+        VOLUME("Efekt sesi"),
+        MUSIC("Muzik"),
         MUTE("Sessiz"),
         DIFFICULTY("Zorluk"),
         AUTO_SAVE("Otomatik kaydetme"),

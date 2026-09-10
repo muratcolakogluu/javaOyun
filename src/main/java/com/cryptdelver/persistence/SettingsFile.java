@@ -55,6 +55,7 @@ public class SettingsFile {
     public void save(Settings settings) {
         List<String> lines = new ArrayList<>();
         lines.add("volume|" + settings.getVolume());
+        lines.add("music|" + settings.getMusicVolume());
         lines.add("muted|" + settings.isMuted());
         lines.add("difficulty|" + settings.getDifficulty().name());
         lines.add("autosave|" + settings.isAutoSave());
@@ -78,6 +79,7 @@ public class SettingsFile {
 
         switch (parts[0]) {
             case "volume" -> settings.setVolume(Double.parseDouble(parts[1]));
+            case "music" -> settings.setMusicVolume(Double.parseDouble(parts[1]));
             case "muted" -> settings.setMuted(Boolean.parseBoolean(parts[1]));
             case "difficulty" -> settings.setDifficulty(parseDifficulty(parts[1]));
             case "autosave" -> settings.setAutoSave(Boolean.parseBoolean(parts[1]));

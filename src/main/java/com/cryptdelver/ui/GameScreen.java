@@ -478,6 +478,10 @@ public class GameScreen {
         Settings settings = game.getSettings();
         switch (menu.getSelectedSetting()) {
             case VOLUME -> settings.adjustVolume(step * Settings.VOLUME_STEP);
+            case MUSIC -> {
+                settings.adjustMusicVolume(step * Settings.VOLUME_STEP);
+                refreshAmbienceVolume();
+            }
             case MUTE -> settings.toggleMuted();
             case DIFFICULTY -> settings.setDifficulty(step > 0
                     ? settings.getDifficulty().next()

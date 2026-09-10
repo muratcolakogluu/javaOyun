@@ -78,7 +78,7 @@ class StartMenuTest {
         assertEquals(StartMenu.SettingRow.VOLUME, menu.getSelectedSetting());
 
         menu.moveDown();
-        assertEquals(StartMenu.SettingRow.MUTE, menu.getSelectedSetting());
+        assertEquals(StartMenu.SettingRow.MUSIC, menu.getSelectedSetting());
 
         menu.moveUp();
         menu.moveUp();

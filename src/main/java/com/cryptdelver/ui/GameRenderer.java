@@ -441,6 +441,7 @@ public class GameRenderer {
     private String settingValue(StartMenu.SettingRow row, Settings settings) {
         return switch (row) {
             case VOLUME -> "%" + settings.getVolumePercent();
+            case MUSIC -> "%" + settings.getMusicPercent();
             case MUTE -> settings.isMuted() ? "Acik" : "Kapali";
             case DIFFICULTY -> settings.getDifficulty().getLabel();
             case AUTO_SAVE -> settings.isAutoSave() ? "Acik" : "Kapali";
@@ -624,21 +625,19 @@ public class GameRenderer {
         gc.fillText("— AYARLAR —", mapWidth / 2, top);
 
         double rowY = top + 28;
-        gc.setTextAlign(TextAlignment.RIGHT);
-        gc.setFill(MESSAGE_TEXT);
-        gc.fillText("Ses", mapWidth / 2 - 90, rowY);
+        drawLevelRow(gc, settings, "Efekt", settings.getVolume(),
+                settings.getVolumePercent(), mapWidth, rowY);
 
-        drawVolumeBar(gc, settings, mapWidth / 2 - 75, rowY);
-
-        gc.setTextAlign(TextAlignment.LEFT);
-        gc.setFill(settings.isMuted() ? HUD_TEXT : GOLD_TEXT);
-        gc.fillText(settings.isMuted() ? "kapali" : "%" + settings.getVolumePercent(),
-                mapWidth / 2 + 90, rowY);
+        // Müzik kendi satırında: efektten ayrı bir seviye olmasının anlamı
+        // ancak ayrı görünürse var.
+        rowY += 22;
+        drawLevelRow(gc, settings, "Muzik", settings.getMusicVolume(),
+                settings.getMusicPercent(), mapWidth, rowY);
 
         rowY += 20;
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setFill(HUD_TEXT);
-        gc.fillText("- / +  ile ayarla,  M  ile sustur", mapWidth / 2, rowY);
+        gc.fillText("- / +  efekt,  M  sustur,  muzik menudeki ayarlardan", mapWidth / 2, rowY);
 
         // Zorluk ve otomatik kaydetme burada yalnızca gösteriliyor. Oyunun
         // ortasında ok tuşlarıyla zorluk değiştirmek kolayca yanlışlıkla
@@ -663,9 +662,24 @@ public class GameRenderer {
     }
 
     /** On kademeli ses çubuğu; sessizdeyken sönük çiziliyor. */
-    private void drawVolumeBar(GraphicsContext gc, Settings settings, double left, double centerY) {
+    /** Duraklatma perdesinde tek bir seviye satırı: ad, çubuk, yüzde. */
+    private void drawLevelRow(GraphicsContext gc, Settings settings, String label,
+                              double level, int percent, double mapWidth, double rowY) {
+        gc.setTextAlign(TextAlignment.RIGHT);
+        gc.setFill(MESSAGE_TEXT);
+        gc.fillText(label, mapWidth / 2 - 90, rowY);
+
+        drawVolumeBar(gc, settings, level, mapWidth / 2 - 75, rowY);
+
+        gc.setTextAlign(TextAlignment.LEFT);
+        gc.setFill(settings.isMuted() ? HUD_TEXT : GOLD_TEXT);
+        gc.fillText(settings.isMuted() ? "kapali" : "%" + percent, mapWidth / 2 + 90, rowY);
+    }
+
+    private void drawVolumeBar(GraphicsContext gc, Settings settings, double level,
+                              double left, double centerY) {
         int steps = (int) Math.round(1 / Settings.VOLUME_STEP);
-        int filled = (int) Math.round(settings.getVolume() * steps);
+        int filled = (int) Math.round(level * steps);
 
         double cellWidth = 14;
         double height = 12;

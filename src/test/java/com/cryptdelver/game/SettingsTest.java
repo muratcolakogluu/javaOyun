@@ -76,6 +76,50 @@ class SettingsTest {
         assertEquals(65, settings.getVolumePercent());
     }
 
+    /**
+     * Muzik efektlerden ayri: vurusun duyulmasi <em>gerekiyor</em>, o bir geri
+     * bildirim; altta donen muzik ise bir tercih. Tek seviye olsaydi muzikten
+     * rahatsiz olan oyuncu dovusun sesini de kismak zorunda kalirdi.
+     */
+    @Test
+    @DisplayName("Muzik seviyesi efektlerden bagimsiz")
+    void musicHasItsOwnLevel() {
+        settings.setVolume(0.9);
+        settings.setMusicVolume(0.2);
+
+        assertEquals(0.9, settings.getEffectiveVolume(), 1e-9);
+        assertEquals(0.2, settings.getEffectiveMusicVolume(), 1e-9);
+    }
+
+    @Test
+    @DisplayName("Muzik sifira cekilince tamamen kapaniyor")
+    void musicCanBeTurnedOffCompletely() {
+        settings.setMusicVolume(0);
+
+        assertEquals(0, settings.getEffectiveMusicVolume(), 1e-9);
+        assertTrue(settings.getEffectiveVolume() > 0, "Efektler duruyor");
+    }
+
+    /** Sessize alma ikisini birden kapatiyor; tek tusla her sey sussun. */
+    @Test
+    @DisplayName("Sessiz muzigi de kapatiyor")
+    void mutingSilencesMusicToo() {
+        settings.setMusicVolume(0.8);
+        settings.setMuted(true);
+
+        assertEquals(0, settings.getEffectiveMusicVolume(), 1e-9);
+    }
+
+    @Test
+    @DisplayName("Muzik seviyesi de sinirlar icinde kaliyor")
+    void musicStaysWithinBounds() {
+        settings.adjustMusicVolume(5);
+        assertEquals(1.0, settings.getMusicVolume(), 1e-9);
+
+        settings.adjustMusicVolume(-5);
+        assertEquals(0.0, settings.getMusicVolume(), 1e-9);
+    }
+
     @Test
     @DisplayName("Ayarlar oyun yeniden baslayinca sifirlanmaz")
     void settingsSurviveRestart() {
