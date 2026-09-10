@@ -1693,7 +1693,7 @@ public class Game {
             case "SKELETON" -> new Skeleton(data.x(), data.y());
             // Bossun gövdesi ve adı kaçıncı boss olduğuna bağlı; kayıtta ayrı
             // bir alan tutmak yerine derinlikten çıkarıyoruz.
-            case "BOSS" -> new Boss(data.x(), data.y(), FloorBuilder.bossNumber(floorDepth));
+            case "BOSS" -> Boss.forNumber(data.x(), data.y(), FloorBuilder.bossNumber(floorDepth));
             default -> throw new IllegalArgumentException("Bilinmeyen düşman türü: " + data.kind());
         };
 

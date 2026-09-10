@@ -62,8 +62,26 @@ public abstract class Enemy extends Combatant implements Actor {
         bonusDefense += extraDefense;
     }
 
+    /**
+     * Saniyede kaç kare ilerlediği.
+     *
+     * <p>Türün değeri varsayılan ama <em>dövüş sırasında değişebiliyor</em>:
+     * Kor Şeytanı canı yarılanınca hızlanıyor. Bu yüzden hareket bütçesi
+     * doğrudan {@link EnemyStats#speed()} yerine buradan okunuyor — yoksa
+     * öfkelenme kodu yazılabilir ama hiçbir etkisi olmazdı.</p>
+     */
     public double getSpeed() {
         return stats.speed();
+    }
+
+    /**
+     * İki vuruş arasındaki bekleme, saniye.
+     *
+     * <p>{@link #getSpeed()} ile aynı gerekçe: öfkelenen bir düşmanın yalnızca
+     * hızlı yürüyüp aynı tempoda vurması yarım bir değişiklik olurdu.</p>
+     */
+    public double getAttackCooldown() {
+        return stats.attackCooldown();
     }
 
     public Pathfinder getPathfinder() {
@@ -107,12 +125,12 @@ public abstract class Enemy extends Combatant implements Actor {
         if (!isMoving() && isAdjacentTo(player) && stance != Stance.FLEE) {
             if (attackCooldown <= 0) {
                 game.enemyAttacksPlayer(this);
-                attackCooldown = stats.attackCooldown();
+                attackCooldown = getAttackCooldown();
             }
             return;
         }
 
-        double budget = stats.speed() * delta;
+        double budget = getSpeed() * delta;
         int guard = 0;
         while (budget > 0 && guard++ < MAX_STEPS_PER_FRAME) {
             if (!isMoving() && !startStep(game, player, stance)) {

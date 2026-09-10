@@ -3,24 +3,34 @@ package com.cryptdelver.entity;
 import com.cryptdelver.ai.AStarPathfinder;
 import com.cryptdelver.game.Game;
 import com.cryptdelver.game.LootTable;
-import java.util.Random;
 
 /**
- * Kript Lordu: belirli katlarda merdiveni tutan boss.
+ * Bir bölgenin sahibi: belirli katlarda merdiveni tutan boss.
  *
  * <p>Öldürülmeden aşağı inilemez — inişin bir bedeli olsun diye. Sıradan
- * düşmanlardan üç şeyle ayrılıyor:</p>
+ * düşmanlardan üç şeyle ayrılıyor: menzili tüm harita (nerede olursan ol peşine
+ * düşer), ganimet bırakır, ve <b>her birinin kendine ait bir yeteneği
+ * var.</b></p>
+ *
+ * <h2>Neden dört sınıf</h2>
+ * <p>Uzun süre tek sınıftı ve dört bossun farkı yalnızca adı, gövdesi ve
+ * sayılarıydı. Yani 20. kattaki boss, 5. kattakinin büyütülmüş hâliydi:
+ * on beş kat inip aynı dövüşü tekrar veriyordun. Sayı büyütmek bir bossu
+ * <em>sertleştiriyor</em> ama <em>değiştirmiyor</em>.</p>
+ *
+ * <p>Şimdi dördü de başka bir soru soruyor:</p>
  * <ul>
- *   <li><b>Menzili tüm harita:</b> nerede olursan ol peşine düşer, A* ile.</li>
- *   <li><b>Yaratık çağırır:</b> belli aralıklarla etrafına imp doğurur, bu
- *       yüzden onu görmezden gelip beklemek işe yaramaz.</li>
- *   <li><b>Ganimet bırakır:</b> öldüğünde altın ve bir balta düşürür.</li>
+ *   <li>{@link Bekci} — yaratık çağırır: kuşatılmadan dövüşmeyi öğretir.</li>
+ *   <li>{@link Bogucu} — dört yöne salvo atar: hizadan çıkmayı öğretir.</li>
+ *   <li>{@link Seytan} — canı yarılanınca öfkelenir: bitirme anını öğretir.</li>
+ *   <li>{@link Lort} — yanına ışınlanır: kaçmanın bittiği yer.</li>
  * </ul>
  *
- * <p>Bu üç davranışın üçü de {@link Enemy} sınıfındaki genişleme noktalarıyla
- * eklendi; ortak tur akışının tek satırı değişmedi.</p>
+ * <p>Ortak olan her şey (değerler, ölçekleme, ganimet, ödül) burada duruyor;
+ * alt sınıflar yalnızca {@link #onUpdate} ve gerekiyorsa hız/bekleme
+ * geçersiz kılıyor. Yani dört sınıf, aynı kodun dört kopyası değil.</p>
  */
-public class Boss extends Enemy {
+public abstract class Boss extends Enemy {
 
     /**
      * Boss değerleri, büyücü geldikten sonra yeniden ayarlandı.
@@ -32,8 +42,9 @@ public class Boss extends Enemy {
      * sürüyor. Yani <b>altını harcamamak artık bir seçim, ihmal değil</b>:
      * boss eskisi gibi ayakta durup vuruşmayı affetmiyor.</p>
      *
-     * <p>Asıl kaçış yolu yine hız farkı: oyuncu saniyede 6 kare, boss 2.4.
-     * Vurup geri çekilerek dövüşürsen hiç hasar almadan da bitirebilirsin.</p>
+     * <p>Taban hız oyuncunun yarısı: vurup geri çekilerek dövüşmek mümkün
+     * kalsın. Bunu kıran tek boss Kript Lordu, ve kırma biçimi hız değil
+     * ışınlanma — çünkü "daha hızlı boss" oyuncuya bir şey öğretmiyor.</p>
      */
     private static final EnemyStats STATS = new EnemyStats(
             55,     // can
@@ -46,7 +57,7 @@ public class Boss extends Enemy {
     /**
      * Her yeni bossun bir öncekine göre kazandığı değerler.
      *
-     * <p>Katın kendi derinlik bonusu ({@code Game.applyDepthBonus}) tüm
+     * <p>Katın kendi derinlik bonusu ({@code FloorBuilder.applyDepthBonus}) tüm
      * düşmanlara ortak ve yavaş artıyor; boss için yeterli değil. Oyuncunun
      * takımı her kademede sıçradığı için bossun da sıçraması gerekiyordu,
      * yoksa 15. kattaki boss 5. kattakinden kolay geliyordu.</p>
@@ -54,23 +65,6 @@ public class Boss extends Enemy {
     private static final int HP_PER_BOSS = 16;
     private static final int ATTACK_PER_BOSS = 2;
     private static final int DEFENSE_PER_BOSS = 1;
-
-    /** İki çağırma arasındaki süre, saniye. */
-    private static final double SUMMON_INTERVAL = 6.0;
-
-    /**
-     * İlk çağırmadan önceki hazırlık süresi.
-     *
-     * <p>Dövüşün ilk saniyelerinde yaratık gelmiyor: hem boss hem sürü aynı
-     * anda üstüne binerse kaçacak yer kalmıyordu.</p>
-     */
-    private static final double FIRST_SUMMON_DELAY = 4.5;
-
-    /** Her çağırmada kaç yaratık gelir. */
-    private static final int MINIONS_PER_SUMMON = 2;
-
-    /** Kattaki düşman sayısı bunu aşarsa çağırmayı bırakır. */
-    private static final int ENEMY_LIMIT = 16;
 
     /**
      * Ganimet altını büyücüyle birlikte yükseltildi: altının harcanacağı bir
@@ -91,122 +85,39 @@ public class Boss extends Enemy {
      */
     private static final int MAX_HP_REWARD = 5;
 
-    private static final int[][] SUMMON_SPOTS = {
-            {0, -1}, {0, 1}, {-1, 0}, {1, 0}, {-1, -1}, {1, -1}, {-1, 1}, {1, 1}};
+    private final String spriteName;
 
-    private final Random random = new Random();
-    private double summonTimer = FIRST_SUMMON_DELAY;
+    protected Boss(int tileX, int tileY, String name, String spriteName) {
+        super(tileX, tileY, name, STATS, new AStarPathfinder());
+        this.spriteName = spriteName;
+    }
 
     /**
-     * Bölgelerin sahipleri.
+     * Kaçıncı bossa hangi bölge sahibinin düştüğü.
      *
-     * <p>Dört boss, dört ayrı gövde ve ad. Davranışları aynı — hepsi peşine
-     * düşüyor ve yaratık çağırıyor — ama her bölgenin sonunda başka bir şeyle
-     * karşılaşmak yolculuğun ilerlediğini gösteriyor. Ayrı sınıf yazmadım:
-     * fark eden şey görüntü ve ad, davranış değil; dört sınıf yazmak aynı kodu
-     * dört kez kopyalamak olurdu.</p>
+     * <p>Sırayı boss kendi bilmiyor, katı kuran taraf söylüyor: "ben kaçıncıyım"
+     * derinliğin bilgisi, bossun değil. Kayıttan dönerken de aynı yerden
+     * çıkıyor, o yüzden ayrı bir alan saklanmıyor.</p>
+     *
+     * @param bossNumber 1 ilk boss (5. kat), 4 sonuncu (20. kat)
      */
-    private enum Kind {
-        BEKCI("Mahzen Bekcisi", "boss_bekci"),
-        BOGUCU("Sarnic Bogucusu", "boss_bogucu"),
-        SEYTAN("Kor Seytani", "boss_seytan"),
-        LORT("Kript Lordu", "boss");
-
-        private final String label;
-        private final String sprite;
-
-        Kind(String label, String sprite) {
-            this.label = label;
-            this.sprite = sprite;
-        }
-    }
-
-    private final Kind kind;
-
-    /**
-     * @param bossNumber kaçıncı boss: 1 ilk (5. kat), 4 sonuncu (20. kat).
-     *                   Gövdesini ve adını buradan alıyor.
-     */
-    public Boss(int tileX, int tileY, int bossNumber) {
-        this(tileX, tileY, kindFor(bossNumber));
-    }
-
-    private Boss(int tileX, int tileY, Kind kind) {
-        super(tileX, tileY, kind.label, STATS, new AStarPathfinder());
-        this.kind = kind;
-    }
-
-    /** Kayıttan dönen boss; sırası bilinmiyorsa son bölgenin sahibi sayılıyor. */
-    public Boss(int tileX, int tileY) {
-        this(tileX, tileY, Kind.LORT);
-    }
-
-    private static Kind kindFor(int bossNumber) {
-        Kind[] kinds = Kind.values();
-        return kinds[Math.clamp(bossNumber, 1, kinds.length) - 1];
+    public static Boss forNumber(int tileX, int tileY, int bossNumber) {
+        return switch (Math.clamp(bossNumber, 1, 4)) {
+            case 1 -> new Bekci(tileX, tileY);
+            case 2 -> new Bogucu(tileX, tileY);
+            case 3 -> new Seytan(tileX, tileY);
+            default -> new Lort(tileX, tileY);
+        };
     }
 
     /**
      * Kaçıncı boss olduğuna göre güçlenir.
-     *
-     * <p>Sayacı bossun kendisi tutmuyor, katı kuran taraf söylüyor: aynı sınıf
-     * her derinlikte kullanılıyor, "ben kaçıncıyım" bilgisi ona ait değil.</p>
      *
      * @param bossNumber 1 ilk boss (5. kat), 2 ikinci (10. kat)...
      */
     public void scaleTo(int bossNumber) {
         int steps = Math.max(0, bossNumber - 1);
         strengthen(HP_PER_BOSS * steps, ATTACK_PER_BOSS * steps, DEFENSE_PER_BOSS * steps);
-    }
-
-    /** Sayacı işletir ve zamanı gelince yaratık çağırır. */
-    @Override
-    protected void onUpdate(Game game, double delta) {
-        summonTimer -= delta;
-        if (summonTimer > 0) {
-            return;
-        }
-
-        summonTimer = SUMMON_INTERVAL;
-        summonMinions(game);
-    }
-
-    private void summonMinions(Game game) {
-        if (game.getEnemies().size() >= ENEMY_LIMIT) {
-            return;
-        }
-
-        int summoned = 0;
-        for (int[] spot : shuffledSpots()) {
-            if (summoned >= MINIONS_PER_SUMMON) {
-                break;
-            }
-
-            int x = getTileX() + spot[0];
-            int y = getTileY() + spot[1];
-            if (!game.isTileFree(x, y, this)) {
-                continue;
-            }
-
-            game.addEnemy(new Imp(x, y));
-            summoned++;
-        }
-
-        if (summoned > 0) {
-            game.getMessageLog().combat(getName() + " " + summoned + " yaratık çağırdı!");
-        }
-    }
-
-    /** Yaratıklar hep aynı yönde belirmesin diye komşu kareleri karıştırır. */
-    private int[][] shuffledSpots() {
-        int[][] spots = SUMMON_SPOTS.clone();
-        for (int i = spots.length - 1; i > 0; i--) {
-            int j = random.nextInt(i + 1);
-            int[] temp = spots[i];
-            spots[i] = spots[j];
-            spots[j] = temp;
-        }
-        return spots;
     }
 
     /**
@@ -245,7 +156,7 @@ public class Boss extends Enemy {
 
     @Override
     public String getSpriteName() {
-        return kind.sprite;
+        return spriteName;
     }
 
     /**

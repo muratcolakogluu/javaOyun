@@ -356,7 +356,7 @@ public class FloorBuilder {
         }
 
         int number = bossNumber(depth);
-        Boss boss = new Boss(floor.stairs().x(), floor.stairs().y(), number);
+        Boss boss = Boss.forNumber(floor.stairs().x(), floor.stairs().y(), number);
         applyDepthBonus(boss, depth, difficulty);
         boss.scaleTo(number);
         return boss;

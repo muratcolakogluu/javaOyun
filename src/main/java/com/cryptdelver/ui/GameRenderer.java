@@ -1,6 +1,7 @@
 package com.cryptdelver.ui;
 
 import com.cryptdelver.entity.Armor;
+import com.cryptdelver.entity.Bogucu;
 import com.cryptdelver.entity.Enchantment;
 import com.cryptdelver.entity.Enemy;
 import com.cryptdelver.entity.Entity;
@@ -8,6 +9,7 @@ import com.cryptdelver.entity.Equipment;
 import com.cryptdelver.entity.Item;
 import com.cryptdelver.entity.Player;
 import com.cryptdelver.entity.Projectile;
+import com.cryptdelver.entity.Seytan;
 import com.cryptdelver.entity.Weapon;
 import com.cryptdelver.entity.Wizard;
 import com.cryptdelver.game.FloorTheme;
@@ -140,6 +142,12 @@ public class GameRenderer {
     private static final Color SWING_COLOR = Color.web("#e8c46a", 0.28);
     private static final Color HP_BAR_BACKGROUND = Color.web("#000000", 0.55);
     private static final Color HP_BAR_FILL = Color.web("#b64b45");
+    /** Boss uyarilari: Bogucunun salvo bandi, Seytanin ofke halkasi. */
+    private static final Color VOLLEY_TELL = Color.web("#c9564f");
+    private static final Color ENRAGE_GLOW = Color.web("#ff5a3d");
+    private static final int ENRAGE_RINGS = 3;
+    private static final long ENRAGE_PULSE_MILLIS = 900;
+
     /** Ok gövdesi ve arkasindaki iz. */
     private static final Color ARROW_COLOR = Color.web("#e8d8a8");
     private static final Color ARROW_TRAIL = Color.web("#e8d8a8", 0.28);
@@ -535,6 +543,9 @@ public class GameRenderer {
             if (!isSeen(vision, enemy)) {
                 continue;
             }
+            // Uyarı gövdenin altına: üstüne binen çizimlerin nasıl durduğunu
+            // daha önce gördük.
+            drawBossTells(gc, enemy);
             drawEntity(gc, enemy, 1.0);
             drawHealthBar(gc, enemy);
         }
@@ -1538,6 +1549,62 @@ public class GameRenderer {
         gc.setStroke(OVERLAY_TITLE);
         gc.setLineWidth(1);
         gc.strokeRect(x, y + 4, barWidth, barHeight);
+    }
+
+    /**
+     * Bossların yeteneklerinin görünen tarafı.
+     *
+     * <p>Bir mekanik ancak <em>görülebiliyorsa</em> mekanik: Boğucunun salvosu
+     * uyarısız gelseydi kaçınılamaz olurdu, Şeytanın öfkesi de "boss birden
+     * hızlandı" diye anlaşılmaz bir sıçrama gibi dururdu. Uyarıyı sormak yerine
+     * durumu bossun kendisine soruyoruz.</p>
+     */
+    private void drawBossTells(GraphicsContext gc, Enemy enemy) {
+        if (enemy instanceof Bogucu choker && choker.isWindingUp()) {
+            drawVolleyTell(gc, choker);
+        }
+        if (enemy instanceof Seytan devil && devil.isEnraged()) {
+            drawEnrageAura(gc, devil);
+        }
+    }
+
+    /**
+     * Boğucunun salvosu: dört kola uzanan kızıl bantlar.
+     *
+     * <p>Bant, salvo yaklaştıkça koyulaşıyor — kaçmak için ne kadar vaktin
+     * kaldığını sayı okumadan görüyorsun. Kaçınma yolu da bantların şeklinden
+     * anlaşılıyor: aralarındaki köşeler boş.</p>
+     */
+    private void drawVolleyTell(GraphicsContext gc, Bogucu choker) {
+        double centerX = choker.getRenderX() * TILE_SIZE;
+        double centerY = choker.getRenderY() * TILE_SIZE;
+        double reach = choker.getVolleyRange() * TILE_SIZE;
+        double thickness = TILE_SIZE * 0.55;
+        double alpha = 0.15 + 0.35 * choker.getWindupProgress();
+
+        gc.setFill(Color.color(VOLLEY_TELL.getRed(), VOLLEY_TELL.getGreen(),
+                VOLLEY_TELL.getBlue(), alpha));
+        gc.fillRect(centerX - reach, centerY - thickness / 2, reach * 2, thickness);
+        gc.fillRect(centerX - thickness / 2, centerY - reach, thickness, reach * 2);
+    }
+
+    /** Öfkelenen Şeytanın çevresindeki kızıl halka: hızlanmanın görünen hâli. */
+    private void drawEnrageAura(GraphicsContext gc, Seytan devil) {
+        double centerX = devil.getRenderX() * TILE_SIZE;
+        double centerY = devil.getRenderY() * TILE_SIZE + TILE_SIZE * 0.2;
+
+        double phase = (System.currentTimeMillis() % ENRAGE_PULSE_MILLIS)
+                / (double) ENRAGE_PULSE_MILLIS;
+        double breath = 0.5 + 0.5 * Math.sin(phase * 2 * Math.PI);
+
+        for (int ring = ENRAGE_RINGS; ring >= 1; ring--) {
+            double radius = TILE_SIZE * 0.38 * ring * (0.9 + 0.1 * breath);
+            double alpha = 0.16 / ring * (0.7 + 0.3 * breath);
+
+            gc.setFill(Color.color(ENRAGE_GLOW.getRed(), ENRAGE_GLOW.getGreen(),
+                    ENRAGE_GLOW.getBlue(), alpha));
+            gc.fillOval(centerX - radius, centerY - radius * 0.6, radius * 2, radius * 1.2);
+        }
     }
 
     /**

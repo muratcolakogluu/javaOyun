@@ -277,6 +277,11 @@ class WizardTest {
             assertNotNull(smith, "Bu kat boss kati olmali");
             player.setTile(smith.getTileX() + 1, smith.getTileY());
 
+            // Ayaginin altindaki esya buyucuden once geliyor; o kural ayrica
+            // sinaniyor. Burada kati uretim o kareye bir sey birakmis olabilir,
+            // once onu topluyoruz ki test zara bagli olmasin.
+            game.pickUp();
+
             assertTrue(game.interact());
             assertTrue(game.isForgeOpen(), "F tezgahi acmali");
         }

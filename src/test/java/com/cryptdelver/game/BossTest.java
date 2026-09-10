@@ -157,7 +157,7 @@ class BossTest {
     class Ability {
 
         @Test
-        @DisplayName("Boss zamanla yaratik cagirir")
+        @DisplayName("Mahzen Bekcisi zamanla yaratik cagirir")
         void bossSummonsMinionsOverTime() {
             Dungeon dungeon = new Dungeon(20, 12);
             dungeon.fill(Tile.FLOOR);
@@ -172,7 +172,8 @@ class BossTest {
 
             Player player = new Player(2, 2);
             Game game = new Game(dungeon, player);
-            game.addEnemy(new Boss(16, 9));
+            // Cagirma birinci bossun yetenegi; digerlerinin baska yetenegi var.
+            game.addEnemy(Boss.forNumber(16, 9, 1));
 
             for (int i = 0; i < 60 * 8; i++) {
                 game.update(FRAME);
@@ -192,7 +193,7 @@ class BossTest {
         @Test
         @DisplayName("Boss siradan dusmandan cok daha dayanikli")
         void bossIsTougherThanRegularEnemies() {
-            Enemy boss = new Boss(3, 3);
+            Enemy boss = Boss.forNumber(3, 3, 1);
             Enemy skeleton = new Skeleton(3, 3);
 
             assertTrue(boss.getMaxHp() > skeleton.getMaxHp() * 3,
