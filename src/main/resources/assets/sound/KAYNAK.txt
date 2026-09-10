@@ -19,11 +19,18 @@ tepe ortada olunca kulak "ses gec geldi" diye duyuyordu.
 Ortam sesleri (AmbienceMaker.java)
 --------------------------------------------------------------------
 
-  amb_mahzen  kuru tas: alcak ugultu, arada oturan tas
-  amb_sarnic  su: damlalar ve genis yanki
-  amb_korluk  ates: surekli catirdama ve gumburtu
-  amb_kript   doganin disi: ust uste ugultular, uzak cinlama
-  amb_boss    gerilim: birbirine yakin iki ugultu (vuruslu tini) + kalp atisi
+  amb_mahzen  la minor: sakin bir yasti, arada oturan tas
+  amb_sarnic  re minor: genis ve nemli, ustunde damlalar
+  amb_korluk  fa major: sicak, catirdama doku olarak
+  amb_kript   mi minor: ustunde uzak cinlamalar
+  amb_boss    do minor: karanlik akor + yavas kalp atisi
+
+Her bolge bir akor. Ilk surumde frekanslar "kulaga alcak gelsin" diye elle
+secilmisti (49, 65, 82, 116...) ve birbiriyle hicbir muzikal iliskisi yoktu;
+ust uste binince akortsuz, tuhaf bir tini cikiyordu. Tini de testere disine
+yakindi. Simdi notalar tam beslerle ve oktavlarla bagli, harmonikler ucuncuden
+sonra neredeyse sifir, akort farki 0.09 Hz -- yani flute yakin ve yavasca
+nefes alan bir ses.
 
 12 saniyelik donguler, 22050 Hz mono. Dongu dikissiz olsun diye iki onlem
 var: tonal bilesenlerin frekanslari dongu uzunlugunun tam kati olacak sekilde
