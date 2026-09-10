@@ -46,7 +46,7 @@ class SaveFileTest {
                 base.depth(), base.seed(), base.generatorIndex(), base.gold(), base.elapsedSeconds(),
                 base.playerX(), base.playerY(), base.playerHp(), base.playerMaxHp(),
                 base.equippedWeaponSlot(), base.equippedArmorSlot(),
-                "110010",
+                3, "110010",
                 base.inventory(), base.groundItems(), base.enemies(),
                 List.of(
                         new SaveData.FloorData(1, 918273645L, 0, 41.5, true, "101010",

@@ -86,6 +86,61 @@ class MessageLogTest {
         assertEquals("Birinci", log.latest(2).get(1));
     }
 
+    /**
+     * Mesajlar uc kanala ayrildi cunku uc ayri soruya cevap veriyorlar:
+     * "dovus nasil gidiyor", "elime ne gecti", "ustumde ne var". Ekranda da
+     * ayri sutunlarda duruyorlar.
+     */
+    @Test
+    @DisplayName("Her kanal yalnizca kendi satirlarini veriyor")
+    void eachChannelKeepsItsOwnLines() {
+        log.combat("Imp 3 hasar aldi");
+        log.item("Altin topladin");
+        log.add("Iksiri ictin");
+
+        assertEquals(1, log.latestEntries(MessageLog.Channel.COMBAT, 10).size());
+        assertEquals(1, log.latestEntries(MessageLog.Channel.ITEM, 10).size());
+        assertEquals(1, log.latestEntries(MessageLog.Channel.STATUS, 10).size());
+    }
+
+    /**
+     * Dovus gurultusu artik ganimet satirini disari itemiyor: eskiden tek liste
+     * vardi ve kalabalik bir kavga "Altin topladin"i ekrandan siliyordu.
+     */
+    @Test
+    @DisplayName("Dovus gurultusu esya satirini ezmiyor")
+    void combatNoiseDoesNotEvictItemLines() {
+        log.item("Altin topladin");
+        for (int i = 0; i < 200; i++) {
+            log.combat("Imp " + i + " hasar aldi");
+        }
+
+        assertEquals("Altin topladin",
+                log.latestEntries(MessageLog.Channel.ITEM, 1).get(0).getDisplay());
+    }
+
+    /** Katlama kanal icinde bakiliyor: baska sutundaki bir olay sayaci bolmuyor. */
+    @Test
+    @DisplayName("Baska kanaldaki mesaj katlamayi bozmuyor")
+    void anotherChannelDoesNotBreakFolding() {
+        log.combat("Imp 3 hasar aldi");
+        log.item("Altin topladin");
+        log.combat("Imp 3 hasar aldi");
+
+        assertEquals(1, log.latestEntries(MessageLog.Channel.COMBAT, 10).size());
+        assertEquals("Imp 3 hasar aldi x2",
+                log.latestEntries(MessageLog.Channel.COMBAT, 1).get(0).getDisplay());
+    }
+
+    @Test
+    @DisplayName("Kanal belirtilmeyen mesaj durum sutununa dusuyor")
+    void unlabelledMessagesLandInStatus() {
+        log.add("Bir sey oldu");
+
+        assertEquals(MessageLog.Channel.STATUS,
+                log.latestEntries(1).get(0).getChannel());
+    }
+
     @Test
     @DisplayName("Temizlenince kayit bosaliyor")
     void clearingEmptiesTheLog() {

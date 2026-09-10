@@ -369,14 +369,18 @@ public class GameScreen {
         // serbest; oynanışa dokunan komutlar duraklatmada geçersiz.
         switch (code) {
             case ESCAPE -> game.togglePause();
-            // Tezgâh açıkken F bir büyü tuşu; tezgâhtan ESC ile çıkılıyor.
+            // Tezgâh açıkken F bir büyü tuşu, değilken yerden alma tuşu;
+            // tezgâhtan ESC ile çıkılıyor.
             case F -> {
                 if (game.isForgeOpen()) {
                     handleForgeCommand(code);
                 } else {
-                    game.toggleForge();
+                    game.pickUp();
                 }
             }
+            // Tezgâh F'ten T'ye taşındı: F artık yerden alıyor ve toplama,
+            // tezgâhtan çok daha sık yapılan iş. T de "tezgâh"ın baş harfi.
+            case T -> game.toggleForge();
             case F5 -> saveGame();
             case F9 -> loadGame();
             case MINUS, SUBTRACT -> changeVolume(-Settings.VOLUME_STEP);

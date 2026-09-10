@@ -89,16 +89,21 @@ class DropTest {
         assertEquals(1, game.getGroundItems().size());
     }
 
+    /**
+     * Birakilan esya kaybolmuyor: geri gelip F ile alinabiliyor. Toplama artik
+     * kendiliginden olmadigi icin kareye girmek yetmiyor, almak gerekiyor.
+     */
     @Test
-    @DisplayName("Uzaklasip donunce esya tekrar alinir")
+    @DisplayName("Uzaklasip donunce esya tekrar alinabilir")
     void leavingAndReturningPicksItUpAgain() {
         game.getInventory().add(new Potion(0, 0));
         game.dropItem(0);
 
         moveTo(6, 4);
         moveTo(4, 4);
+        game.pickUp();
 
-        assertEquals(1, game.getInventory().size(), "Kareye tekrar girince alinmali");
+        assertEquals(1, game.getInventory().size(), "Kareye donup alinca cantada");
         assertTrue(game.getGroundItems().isEmpty());
     }
 
@@ -140,6 +145,7 @@ class DropTest {
         game.dropItem(0);
         moveTo(6, 4);
         moveTo(4, 4);
+        game.pickUp();
         game.useItem(0);
 
         assertSame(sword, player.getEquippedWeapon());

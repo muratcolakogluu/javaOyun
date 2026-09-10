@@ -1,5 +1,6 @@
 package com.cryptdelver.game;
 
+import com.cryptdelver.entity.Enchantment;
 import com.cryptdelver.entity.Equipment;
 
 /**
@@ -31,6 +32,23 @@ public final class Forge {
     private static final int UPGRADE_BASE_COST = 30;
     private static final int UPGRADE_COST_PER_BONUS = 20;
 
+    /**
+     * Üstündeki her büyünün bir sonraki büyüye bindirdiği pay.
+     *
+     * <p>Büyüler sabit fiyatlıyken geri dönüş mekaniği dengeyi bozuyordu:
+     * derin katlarda altın biriktir, yukarıdaki büyücüye dön, <em>hepsini</em>
+     * al. Fiyatlar sabit olduğu için biriken altın doğrudan güce çevriliyordu
+     * ve tam takım kuşanmış oyuncu için sığ katlarda hiçbir tehlike
+     * kalmıyordu.</p>
+     *
+     * <p>Şimdi her büyü bir sonrakini pahalandırıyor: ilk büyü tam fiyat,
+     * ikincisi 1.6 katı, üçüncüsü 2.2 katı. Bir büyü hâlâ erişilebilir, tam
+     * takım ise gerçekten pahalı — yani "hangisini alayım" bir soru olarak
+     * kalıyor. Yükseltmenin mevcut bonusla pahalanmasıyla aynı fikir, bir
+     * eksen ötede.</p>
+     */
+    private static final double ENCHANT_SURCHARGE = 0.6;
+
     private Forge() {
     }
 
@@ -46,5 +64,18 @@ public final class Forge {
     /** Bir kademe yükseltmenin bedeli. */
     public static int upgradeCost(Equipment item) {
         return UPGRADE_BASE_COST + UPGRADE_COST_PER_BONUS * item.getBonus();
+    }
+
+    /**
+     * Bir büyü basmanın bedeli.
+     *
+     * <p>Fiyat büyünün kendi değerine <em>ve</em> üstünde zaten kaç büyü
+     * taşıdığına bağlı; ikisi de sayılıyor, çünkü pahalı olan tek bir büyü
+     * değil tam takım kuşanmak.</p>
+     *
+     * @param carried silahında ve zırhında hâlihazırda duran büyü sayısı
+     */
+    public static int enchantCost(Enchantment enchantment, int carried) {
+        return (int) Math.round(enchantment.getCost() * (1 + ENCHANT_SURCHARGE * carried));
     }
 }

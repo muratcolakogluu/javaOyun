@@ -47,7 +47,13 @@ class ItemTest {
         game = new Game(dungeon, player);
     }
 
-    /** Oyuncuyu saga bir kare yurutur. */
+    /** Oyuncuyu saga bir kare yurutup ayagindakini almasini soyler. */
+    private void stepRightAndTake() {
+        stepRight();
+        game.pickUp();
+    }
+
+    /** Oyuncuyu saga bir kare yurutur; toplama ayri bir is. */
     private void stepRight() {
         player.setMoveInput(1, 0);
         for (int i = 0; i < FRAMES_PER_STEP; i++) {
@@ -57,16 +63,42 @@ class ItemTest {
     }
 
     @Test
-    @DisplayName("Ustune basilan esya cantaya girer")
-    void steppingOnItemPicksItUp() {
+    @DisplayName("Ustune basip F'ye basinca esya cantaya girer")
+    void steppingOnItemAndTakingPicksItUp() {
+        Potion potion = new Potion(5, 4);
+        game.addGroundItem(potion);
+
+        stepRightAndTake();
+
+        assertEquals(5, player.getTileX());
+        assertTrue(game.getGroundItems().isEmpty(), "Esya yerden kalkmali");
+        assertSame(potion, game.getInventory().get(0));
+    }
+
+    /**
+     * Toplama artik kendiliginden olmuyor: uzerinden gectigin esya yerde
+     * kaliyor. Oncesinde kacarken ustunden gectigin her sey cantayi
+     * dolduruyordu ve sakladigin parcayi geri almadan uzerinden gecemiyordun.
+     */
+    @Test
+    @DisplayName("Ustunden gecmek esyayi almiyor")
+    void walkingOverAnItemLeavesIt() {
         Potion potion = new Potion(5, 4);
         game.addGroundItem(potion);
 
         stepRight();
 
-        assertEquals(5, player.getTileX());
-        assertTrue(game.getGroundItems().isEmpty(), "Esya yerden kalkmali");
-        assertSame(potion, game.getInventory().get(0));
+        assertEquals(5, player.getTileX(), "Uzerinde duruyoruz");
+        assertEquals(1, game.getGroundItems().size(), "Esya yerinde kalmali");
+        assertTrue(game.getInventory().isEmpty());
+    }
+
+    /** Ayaginin altinda bir sey yokken F bosa basiliyor. */
+    @Test
+    @DisplayName("Bos karede toplama bir sey yapmaz")
+    void takingOnAnEmptyTileDoesNothing() {
+        assertFalse(game.pickUp(), "Alinacak bir sey yok");
+        assertTrue(game.getInventory().isEmpty());
     }
 
     @Test
@@ -74,7 +106,7 @@ class ItemTest {
     void goldGoesToThePurse() {
         game.addGroundItem(new Gold(5, 4, 12));
 
-        stepRight();
+        stepRightAndTake();
 
         assertEquals(12, game.getGold());
         assertTrue(game.getInventory().isEmpty(), "Altin canta yeri kaplamamali");
@@ -90,7 +122,7 @@ class ItemTest {
         }
         game.addGroundItem(new Potion(5, 4));
 
-        stepRight();
+        stepRightAndTake();
 
         assertEquals(1, game.getGroundItems().size(), "Esya yerde kalmali");
     }
@@ -105,7 +137,7 @@ class ItemTest {
         }
         game.addGroundItem(new Gold(5, 4, 7));
 
-        stepRight();
+        stepRightAndTake();
 
         assertEquals(7, game.getGold());
         assertTrue(game.getGroundItems().isEmpty());

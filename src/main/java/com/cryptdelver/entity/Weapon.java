@@ -58,12 +58,12 @@ public class Weapon extends Equipment {
         Player player = game.getPlayer();
 
         if (player.getEquippedWeapon() == this) {
-            game.getMessageLog().add(getDisplayName() + " zaten elinde.");
+            game.getMessageLog().item(getDisplayName() + " zaten elinde.");
             return false;
         }
 
         player.equip(this);
-        game.getMessageLog().add(getDisplayName() + " kuşandın (+" + getBonus() + " vuruş).");
+        game.getMessageLog().item(getDisplayName() + " kuşandın (+" + getBonus() + " vuruş).");
         return false;
     }
 
@@ -84,7 +84,7 @@ public class Weapon extends Equipment {
 
         if (current == null || getBonus() > current.getBonus()) {
             player.equip(this);
-            game.getMessageLog().add(getDisplayName() + " kuşandın (+" + getBonus() + " vuruş).");
+            game.getMessageLog().item(getDisplayName() + " kuşandın (+" + getBonus() + " vuruş).");
         }
     }
 

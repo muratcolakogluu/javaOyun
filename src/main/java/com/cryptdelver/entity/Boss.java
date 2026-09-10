@@ -193,7 +193,7 @@ public class Boss extends Enemy {
         }
 
         if (summoned > 0) {
-            game.getMessageLog().add(getName() + " " + summoned + " yaratık çağırdı!");
+            game.getMessageLog().combat(getName() + " " + summoned + " yaratık çağırdı!");
         }
     }
 
@@ -234,7 +234,7 @@ public class Boss extends Enemy {
 
         game.getPlayer().gainMaxHp(MAX_HP_REWARD);
 
-        game.getMessageLog().add(getName() + " düştü! " + reward.getName() + " bıraktı.");
+        game.getMessageLog().combat(getName() + " düştü! " + reward.getName() + " bıraktı.");
         game.getMessageLog().addImportant("Gücü sana geçti: +" + MAX_HP_REWARD + " azami can.");
     }
 

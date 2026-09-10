@@ -76,19 +76,41 @@ public class GameRenderer {
     private static final int SLOT_SIZE = 30;
     private static final int SLOT_GAP = 4;
 
+    /** Kuşanılan parçanın yuvası; çanta slotundan bilerek büyük. */
+    private static final int GEAR_SLOT_SIZE = 38;
+
+    /**
+     * Bir kalp kaç can.
+     *
+     * <p>Dörtte karar kıldık: taban can 20, boss ödülleriyle 40'a çıkıyor. İkişer
+     * canlık kalpler yirmi kalp demek olurdu ve şeride sığmazdı; dörder canla
+     * beş ile on kalp arasında kalıyor, yani dizinin uzunluğu bir bakışta
+     * okunabiliyor.</p>
+     */
+    private static final int HP_PER_HEART = 4;
+    private static final double HEART_SIZE = 11;
+    private static final double HEART_STEP = 13;
+
     /** Panel ayraçlarının solunda bıraktığımız boşluk. */
     private static final double PANEL_GAP = 14;
 
     /**
      * Panellerin sol kenarları.
      *
-     * <p>Harita 40 kare, yani 1280 piksel geniş. Şerit üç parçaya bölündü:
-     * durum solda, çanta ortada, olaylar sağda. Sayılar sabit çünkü pencere
-     * boyutu da sabit; oranla hesaplamak burada gereksiz karmaşa olurdu.</p>
+     * <p>Harita 40 kare, yani 1280 piksel geniş. Şerit beş sütuna bölündü:
+     * karakter, çanta ve <em>ayrı ayrı</em> savaş, eşya, durum yazıları.
+     * Sayılar sabit çünkü pencere boyutu da sabit; oranla hesaplamak burada
+     * gereksiz karmaşa olurdu.</p>
+     *
+     * <p>Mesajlar tek sütundayken üçü birbirini kovalıyordu: iksiri içtiğini
+     * görmek için dövüş satırlarının arasından okumak gerekiyordu. Artık her
+     * sorunun kendi sütunu var ve göz nereye bakacağını biliyor.</p>
      */
-    private static final double STATUS_PANEL_X = 10;
-    private static final double INVENTORY_PANEL_X = 260;
-    private static final double EVENT_PANEL_X = 600;
+    private static final double CHARACTER_PANEL_X = 10;
+    private static final double INVENTORY_PANEL_X = 268;
+    private static final double COMBAT_PANEL_X = 556;
+    private static final double ITEM_PANEL_X = 796;
+    private static final double STATUS_PANEL_X = 1036;
 
     private static final Color BACKGROUND = Color.web("#0d0d12");
     private static final Color STAIRS_EDGE = Color.web("#9a8fc0");
@@ -117,6 +139,8 @@ public class GameRenderer {
     private static final Color SWING_COLOR = Color.web("#e8c46a", 0.28);
     private static final Color HP_BAR_BACKGROUND = Color.web("#000000", 0.55);
     private static final Color HP_BAR_FILL = Color.web("#b64b45");
+    private static final Color HEART_FULL = Color.web("#d4544c");
+    private static final Color HEART_EMPTY = Color.web("#3a2a30");
     private static final Color OVERLAY = Color.web("#0d0d12", 0.78);
 
     /** Menü perdesi oyun perdesinden daha kapalı: menü ön planda.  */
@@ -519,6 +543,10 @@ public class GameRenderer {
             drawStairsHint(gc, game, mapWidth, mapHeight);
         }
 
+        if (!game.isOver()) {
+            drawPickupHint(gc, game, mapWidth, mapHeight);
+        }
+
         drawHud(gc, game, mapWidth, mapHeight);
 
         if (game.isForgeOpen()) {
@@ -639,8 +667,9 @@ public class GameRenderer {
                 {"Bosluk", "vur"},
                 {"1-8 / tik", "cantadaki esyayi kullan / kusan"},
                 {"Shift + 1-8 / tik", "esyayi yere birak"},
+                {"F", "ayagindakini yerden al"},
                 {"E", "merdivende in ya da cik"},
-                {"F", "büyücünün yaninda tezgahi ac"},
+                {"T", "büyücünün yaninda tezgahi ac"},
                 {"F5 / F9", "kaydet / yukle"},
                 {"- / + / M", "ses azalt / artir / sustur"},
                 {"Enter", "olunce yeniden basla"},
@@ -971,12 +1000,27 @@ public class GameRenderer {
         gc.setFont(hudFont);
         gc.setTextBaseline(VPos.CENTER);
 
-        drawStatusPanel(gc, game, mapHeight);
+        // Balon bütün paneller çizildikten sonra geliyor, yoksa sonraki panel
+        // onun üstüne binerdi; hangi slotun anlatılacağı çizim sırasında
+        // belirleniyor.
+        tooltipItem = null;
+        drawCharacterPanel(gc, game, mapHeight);
         drawInventoryPanel(gc, game, mapHeight);
-        drawEventPanel(gc, game, mapWidth, mapHeight);
+
+        drawMessageColumn(gc, game, MessageLog.Channel.COMBAT, "SAVAS",
+                COMBAT_PANEL_X, mapHeight);
+        drawMessageColumn(gc, game, MessageLog.Channel.ITEM, "ESYA",
+                ITEM_PANEL_X, mapHeight);
+        drawMessageColumn(gc, game, MessageLog.Channel.STATUS, "DURUM",
+                STATUS_PANEL_X, mapHeight);
+        drawFooter(gc, game, mapWidth, mapHeight);
 
         drawPanelDivider(gc, INVENTORY_PANEL_X - PANEL_GAP, mapHeight);
-        drawPanelDivider(gc, EVENT_PANEL_X - PANEL_GAP, mapHeight);
+        drawPanelDivider(gc, COMBAT_PANEL_X - PANEL_GAP, mapHeight);
+        drawPanelDivider(gc, ITEM_PANEL_X - PANEL_GAP, mapHeight);
+        drawPanelDivider(gc, STATUS_PANEL_X - PANEL_GAP, mapHeight);
+
+        drawSlotTooltip(gc);
     }
 
     /** Panelleri birbirinden ayıran dikey çizgi. */
@@ -994,57 +1038,212 @@ public class GameRenderer {
         gc.setFont(hudFont);
     }
 
-    /** Sol panel: can çubuğu, savaş değerleri ve ilerleme. */
-    private void drawStatusPanel(GraphicsContext gc, Game game, double mapHeight) {
-        drawPanelTitle(gc, "DURUM", STATUS_PANEL_X, mapHeight);
-        drawHealthBar(gc, game, mapHeight + 36);
+    /**
+     * Sol panel: kuşandıkların, canın ve savaş değerlerin.
+     *
+     * <p>Zırhın ve silahın artık <b>kendi yuvalarında</b> duruyor, çantanın
+     * yanında bir yazı satırı olarak değil. Kuşanılan parça çantadaki sekiz
+     * slottan biriydi ve "hangisi üstümde" sorusunun cevabı ince bir sarı
+     * çerçeveydi; oyuncu kırık zırhla katlarca dolaşabiliyordu. Ayrı yuva bunu
+     * bir bakışta gösteriyor — Minecraft'ın zırh yuvaları da tam bu yüzden
+     * çantadan ayrı.</p>
+     *
+     * <p>Can da aynı dilde: çubuk yerine kalp dizisi. Çubuk "yarısı gitti"
+     * diyordu, kalpler "üç vuruş kaldı" diyor — dövüşün ortasında okunması
+     * gereken şey bu.</p>
+     */
+    private void drawCharacterPanel(GraphicsContext gc, Game game, double mapHeight) {
+        drawPanelTitle(gc, "KARAKTER", CHARACTER_PANEL_X, mapHeight);
+
+        Player player = game.getPlayer();
+        double slotTop = mapHeight + 22;
+
+        drawGearSlot(gc, player.getEquippedArmor(), "Z", CHARACTER_PANEL_X, slotTop);
+        drawGearSlot(gc, player.getEquippedWeapon(), "S",
+                CHARACTER_PANEL_X + GEAR_SLOT_SIZE + SLOT_GAP, slotTop);
+
+        double right = CHARACTER_PANEL_X + 2 * (GEAR_SLOT_SIZE + SLOT_GAP) + 8;
+        drawHearts(gc, player, right, slotTop + 12);
+
+        // Rozetler can sayisinin sagina siraliyor: kalplerin altinda ayri bir
+        // satir acmak seride sigmiyordu.
+        drawActiveEffects(gc, player, right + 62, slotTop + 28);
 
         gc.setTextAlign(TextAlignment.LEFT);
-        double line = mapHeight + 60;
+        double line = mapHeight + 72;
 
         gc.setFill(HUD_TEXT);
-        gc.fillText("Vurus " + game.getPlayer().getAttackPower(), STATUS_PANEL_X, line);
-        gc.fillText("Zirh " + game.getPlayer().getDefense(), STATUS_PANEL_X + 82, line);
+        gc.fillText("Vurus " + player.getAttackPower(), CHARACTER_PANEL_X, line);
+        gc.fillText("Zirh " + player.getDefense(), CHARACTER_PANEL_X + 76, line);
 
         gc.setFill(GOLD_TEXT);
-        gc.fillText("Altin " + game.getGold(), STATUS_PANEL_X + 148, line);
+        gc.fillText("Altin " + game.getGold(), CHARACTER_PANEL_X + 136, line);
 
-        line += 18;
         gc.setFill(HUD_ACCENT);
-        gc.fillText("Kat " + game.getDepth() + "/" + FloorTheme.MAX_DEPTH, STATUS_PANEL_X, line);
-
+        gc.fillText("Kat " + game.getDepth() + "/" + FloorTheme.MAX_DEPTH,
+                CHARACTER_PANEL_X, line + 16);
         gc.setFill(HUD_TEXT);
-        gc.fillText(String.format("Sure %.0fs", game.getElapsedSeconds()), STATUS_PANEL_X + 62, line);
-        gc.fillText("Dusman " + game.getEnemies().size(), STATUS_PANEL_X + 150, line);
-
-        drawActiveEffects(gc, game.getPlayer(), mapHeight);
+        gc.fillText(String.format("Sure %.0fs", game.getElapsedSeconds()),
+                CHARACTER_PANEL_X + 76, line + 16);
+        gc.fillText("Dusman " + game.getEnemies().size(), CHARACTER_PANEL_X + 156, line + 16);
 
         // Zindan uyandıysa kalıcı bir uyarı: takviyeler gelirken oyuncu
         // "neden birden kalabalıklaştı" diye düşünmesin.
         if (game.isDungeonAwake()) {
-            gc.setTextAlign(TextAlignment.LEFT);
+            gc.setFont(slotFont);
+            gc.setTextAlign(TextAlignment.RIGHT);
             gc.setFill(HP_TEXT);
-            gc.fillText("ZINDAN UYANDI", STATUS_PANEL_X, mapHeight + 14);
+            gc.fillText("ZINDAN UYANDI", INVENTORY_PANEL_X - PANEL_GAP - 6, mapHeight + 14);
+            gc.setFont(hudFont);
         }
     }
 
     /**
-     * Etkin iksirlerin kalan süresi, can çubuğunun sağında.
+     * Kuşanılan tek bir parçanın yuvası: görseli, yıpranması, kırıklığı.
+     *
+     * <p>Boş yuva da çiziliyor — köşesindeki harf ("Z" zırh, "S" silah) orada
+     * bir şey <em>olması gerektiğini</em> söylüyor. Boşluğu hiç göstermeseydik
+     * zırhsız dolaşan oyuncu eksiği fark etmezdi.</p>
+     */
+    private void drawGearSlot(GraphicsContext gc, Equipment item, String letter,
+                              double x, double top) {
+        gc.setFill(SLOT_BACKGROUND);
+        gc.fillRoundRect(x, top, GEAR_SLOT_SIZE, GEAR_SLOT_SIZE, 5, 5);
+
+        if (item != null && item.isEnchanted()) {
+            drawEnchantGlow(gc, x, top, GEAR_SLOT_SIZE, GEAR_SLOT_SIZE);
+        }
+
+        // Kırık parçanın çerçevesi kırmızı: yuvaya bakan gözün ilk gördüğü şey
+        // parçanın işe yaramaz hâle geldiği olsun.
+        gc.setStroke(item == null ? SLOT_BORDER : (item.isBroken() ? HP_TEXT : SLOT_EQUIPPED));
+        gc.setLineWidth(item == null ? 1 : 2);
+        gc.strokeRoundRect(x, top, GEAR_SLOT_SIZE, GEAR_SLOT_SIZE, 5, 5);
+
+        if (item != null && clicks.isOver(x, top, GEAR_SLOT_SIZE, GEAR_SLOT_SIZE)) {
+            tooltipItem = item;
+            tooltipX = x + GEAR_SLOT_SIZE / 2.0;
+            tooltipY = top;
+        }
+
+        gc.setFont(slotFont);
+        gc.setTextAlign(TextAlignment.LEFT);
+        gc.setFill(SLOT_NUMBER);
+        gc.fillText(letter, x + 3, top + 7);
+        gc.setFont(hudFont);
+
+        if (item == null) {
+            return;
+        }
+
+        if (item.isEnchanted()) {
+            gc.setEffect(enchantAura(ENCHANT_SLOT_RADIUS));
+        }
+        sprites.get(item.getSpriteName())
+                .draw(gc, x + GEAR_SLOT_SIZE / 2.0, top + GEAR_SLOT_SIZE / 2.0 - 2,
+                        GEAR_SLOT_SIZE * 0.72);
+        gc.setEffect(null);
+
+        // Dayanıklılık yuvanın dibinde ince bir şerit: sayı okumadan da
+        // "tamire gitme vakti" görünüyor.
+        double ratio = item.getDurability() / (double) item.getMaxDurability();
+        double barY = top + GEAR_SLOT_SIZE - 6;
+        gc.setFill(HP_BAR_BACKGROUND);
+        gc.fillRect(x + 3, barY, GEAR_SLOT_SIZE - 6, 3);
+        gc.setFill(durabilityColor(ratio));
+        gc.fillRect(x + 3, barY, (GEAR_SLOT_SIZE - 6) * Math.max(0, ratio), 3);
+
+        // Kırık parça ayrıca yazıyla söyleniyor. Kırmızı çerçeve ve boş çubuk
+        // yetmiyordu: oyuncu kırık kılıçla katlarca dolaşıp durumu fark etmedi.
+        // "KIRIK" kelimesi gözden kaçmıyor.
+        if (item.isBroken()) {
+            gc.setFont(slotFont);
+            gc.setTextAlign(TextAlignment.CENTER);
+            gc.setFill(HP_BAR_BACKGROUND);
+            gc.fillRect(x, top + GEAR_SLOT_SIZE / 2.0 - 7, GEAR_SLOT_SIZE, 13);
+            gc.setFill(HP_TEXT);
+            gc.fillText("KIRIK", x + GEAR_SLOT_SIZE / 2.0, top + GEAR_SLOT_SIZE / 2.0);
+            gc.setFont(hudFont);
+        }
+    }
+
+    /**
+     * Can, kalp dizisi olarak.
+     *
+     * <p>Bir kalp {@value #HP_PER_HEART} can; azami can boss ödülleriyle
+     * büyüdüğü için dizi de uzuyor, yani "canım arttı" ekranda görünüyor.
+     * Yarım kalp de çiziliyor, yoksa tek canlık fark yuvarlanıp kaybolurdu.</p>
+     */
+    private void drawHearts(GraphicsContext gc, Player player, double x, double centerY) {
+        int hearts = (int) Math.ceil(player.getMaxHp() / (double) HP_PER_HEART);
+        double left = x;
+
+        for (int i = 0; i < hearts; i++) {
+            double filled = Math.max(0, Math.min(1,
+                    (player.getHp() - i * (double) HP_PER_HEART) / HP_PER_HEART));
+            drawHeart(gc, left + i * HEART_STEP, centerY, filled);
+        }
+
+        gc.setFont(slotFont);
+        gc.setTextAlign(TextAlignment.LEFT);
+        gc.setFill(MESSAGE_TEXT);
+        gc.fillText(player.getHp() + " / " + player.getMaxHp(), left, centerY + 16);
+        gc.setFont(hudFont);
+    }
+
+    /** Tek bir kalp; {@code filled} 0 boş, 1 dolu, arası yarım. */
+    private void drawHeart(GraphicsContext gc, double x, double centerY, double filled) {
+        double size = HEART_SIZE;
+        double top = centerY - size / 2;
+
+        gc.setFill(HEART_EMPTY);
+        fillHeart(gc, x, top, size);
+
+        if (filled <= 0) {
+            return;
+        }
+
+        // Kısmen dolu kalp soldan doluyor: kırpma alanı kalbin sol parçası.
+        gc.save();
+        gc.beginPath();
+        gc.rect(x, top, size * filled, size);
+        gc.clip();
+        gc.setFill(HEART_FULL);
+        fillHeart(gc, x, top, size);
+        gc.restore();
+    }
+
+    /** Kalbin gövdesi: iki yay ve aşağı inen bir uç. */
+    private void fillHeart(GraphicsContext gc, double x, double top, double size) {
+        double half = size / 2;
+
+        gc.fillOval(x, top, half + 1, half + 1);
+        gc.fillOval(x + half - 1, top, half + 1, half + 1);
+
+        gc.beginPath();
+        gc.moveTo(x, top + half * 0.55);
+        gc.lineTo(x + half, top + size);
+        gc.lineTo(x + size, top + half * 0.55);
+        gc.closePath();
+        gc.fill();
+    }
+
+    /**
+     * Etkin iksirlerin kalan süresi, kalplerin altında.
      *
      * <p>Süreli etki ekranda görünmezse oyuncu ne zaman bittiğini bilemez ve
      * hızın kesildiği anı ancak bir düşmana yakalanınca fark eder. İki kısa
      * rozet yetiyor: harf ve saniye.</p>
      */
-    private void drawActiveEffects(GraphicsContext gc, Player player, double mapHeight) {
-        double x = STATUS_PANEL_X + 186;
-        double y = mapHeight + 36;
+    private void drawActiveEffects(GraphicsContext gc, Player player, double x, double y) {
+        double left = x;
 
         if (player.isHasted()) {
-            drawEffectBadge(gc, "H", player.getHasteRemaining(), HASTE_BADGE, x, y);
-            x += 30;
+            drawEffectBadge(gc, "H", player.getHasteRemaining(), HASTE_BADGE, left, y);
+            left += 30;
         }
         if (player.isFurious()) {
-            drawEffectBadge(gc, "O", player.getFuryRemaining(), FURY_BADGE, x, y);
+            drawEffectBadge(gc, "O", player.getFuryRemaining(), FURY_BADGE, left, y);
         }
     }
 
@@ -1063,18 +1262,26 @@ public class GameRenderer {
         gc.setFont(hudFont);
     }
 
-    /** Orta panel: çanta slotları ve kuşanılan parçaların durumu. */
+    /**
+     * Orta panel: çantadaki sekiz slot.
+     *
+     * <p>Kuşanılan parçaların satırları buradan çıktı: artık sol paneldeki
+     * kendi yuvalarında duruyorlar. Aynı bilgiyi iki yerde göstermek, ikisinin
+     * er geç ayrı düşmesi demekti — ve çantanın işi taşıdıkların, kuşandıkların
+     * değil.</p>
+     */
     private void drawInventoryPanel(GraphicsContext gc, Game game, double mapHeight) {
         drawPanelTitle(gc, "CANTA", INVENTORY_PANEL_X, mapHeight);
+        drawInventory(gc, game, INVENTORY_PANEL_X, mapHeight + 28);
 
-        tooltipItem = null;
-        drawInventory(gc, game, INVENTORY_PANEL_X, mapHeight + 20);
-
-        Player player = game.getPlayer();
-        drawGearRow(gc, player.getEquippedWeapon(), mapHeight + 64);
-        drawGearRow(gc, player.getEquippedArmor(), mapHeight + 82);
-
-        drawSlotTooltip(gc);
+        // Slotların altındaki tek satır: toplama tuşa bağlandığından beri
+        // "eşyayla ne yapabilirim" sorusunun cevabı sürekli göz önünde dursun.
+        gc.setFont(slotFont);
+        gc.setTextAlign(TextAlignment.LEFT);
+        gc.setFill(SLOT_NUMBER);
+        gc.fillText("F yerden alir · 1-8 kullanir · Shift+1-8 birakir",
+                INVENTORY_PANEL_X, mapHeight + 76);
+        gc.setFont(hudFont);
     }
 
     /**
@@ -1118,42 +1325,6 @@ public class GameRenderer {
         }
     }
 
-    /**
-     * Kuşanılan bir parçanın adı ve dayanıklılık çubuğu.
-     *
-     * <p>Çubuk sayıdan önemli: yıpranmayı fark etmek için "82/120" okumak
-     * gerekmesin, çubuğun kısaldığını görmek yetsin. Renk de üç kademede
-     * uyarıyor — dolu, azalmış, kırık.</p>
-     */
-    private void drawGearRow(GraphicsContext gc, Equipment item, double centerY) {
-        if (item == null) {
-            return;
-        }
-
-        gc.setFont(hudFont);
-        gc.setTextAlign(TextAlignment.LEFT);
-        gc.setFill(item.isBroken() ? HP_TEXT : SLOT_EQUIPPED);
-
-        // Kırık parça ayrıca yazıyla söyleniyor. Yalnızca kırmızı ad ve boş
-        // çubuk yetmiyordu: oyuncu kırık kılıçla katlarca dolaşıp durumu fark
-        // etmedi. "KIRIK" kelimesi gözden kaçmıyor.
-        String label = item.isBroken()
-                ? item.getFullName() + "  KIRIK"
-                : item.getFullName();
-        gc.fillText(label, INVENTORY_PANEL_X, centerY);
-
-        double barX = INVENTORY_PANEL_X + 170;
-        double barWidth = 140;
-        double barHeight = 6;
-        double y = centerY - barHeight / 2;
-        double ratio = item.getDurability() / (double) item.getMaxDurability();
-
-        gc.setFill(HP_BAR_BACKGROUND);
-        gc.fillRect(barX, y, barWidth, barHeight);
-        gc.setFill(durabilityColor(ratio));
-        gc.fillRect(barX, y, barWidth * Math.max(0, ratio), barHeight);
-    }
-
     /** Dolu yeşilimsi, azalmış sarı, kırık kırmızı. */
     private Color durabilityColor(double ratio) {
         if (ratio <= 0) {
@@ -1162,61 +1333,43 @@ public class GameRenderer {
         return ratio < DURABILITY_WARNING ? GOLD_TEXT : DURABILITY_FULL;
     }
 
-    /** Sağ panel: son olaylar ve tek satırlık yardım ipucu. */
-    private void drawEventPanel(GraphicsContext gc, Game game, double mapWidth, double mapHeight) {
-        drawPanelTitle(gc, "OLAYLAR", EVENT_PANEL_X, mapHeight);
+    /**
+     * Bir mesaj sütunu: tek bir kanalın son satırları.
+     *
+     * <p>Üç sütun da aynı koddan çiziliyor, farkları yalnızca kanal, başlık ve
+     * sol kenar. Her sütunun kendi tarihçesi olduğu için kalabalık bir dövüş
+     * artık "Altın topladın"ı ekrandan itemiyor.</p>
+     */
+    private void drawMessageColumn(GraphicsContext gc, Game game, MessageLog.Channel channel,
+                                   String title, double x, double mapHeight) {
+        drawPanelTitle(gc, title, x, mapHeight);
 
         gc.setTextAlign(TextAlignment.LEFT);
-        List<MessageLog.Entry> recent = game.getMessageLog().latestEntries(MESSAGE_LINES);
+        List<MessageLog.Entry> recent = game.getMessageLog().latestEntries(channel, MESSAGE_LINES);
         double line = mapHeight + 36;
 
         for (int i = 0; i < recent.size(); i++) {
             MessageLog.Entry entry = recent.get(i);
 
-            // Önemli olaylar dövüş gürültüsünün arasında renkle ayrılıyor;
-            // sıradan satırlarda en yenisi parlak, eskiler soluk.
+            // Önemli olaylar gürültünün arasında renkle ayrılıyor; sıradan
+            // satırlarda en yenisi parlak, eskiler soluk.
             if (entry.isImportant()) {
                 gc.setFill(i == 0 ? GOLD_TEXT : SLOT_EQUIPPED.deriveColor(0, 1, 0.7, 1));
             } else {
                 gc.setFill(i == 0 ? MESSAGE_TEXT : MESSAGE_FADED);
             }
-            gc.fillText(entry.getDisplay(), EVENT_PANEL_X, line + i * 17);
+            gc.fillText(entry.getDisplay(), x, line + i * 17);
         }
-
-        gc.setTextAlign(TextAlignment.RIGHT);
-        gc.setFill(HUD_TEXT);
-        gc.fillText("ESC: durdur, ayarlar ve tuslar", mapWidth - 10, mapHeight + 14);
-
-        // Burada eskiden zindan üreticisinin adı yazıyordu. Oyuncu üreticiyi
-        // artık seçemediği için o bilgi ona bir şey söylemiyordu; yerini
-        // bulunduğu bölgenin adı aldı.
-        gc.setFill(HUD_ACCENT);
-        gc.fillText(game.getTheme().getLabel() + " · " + game.getDepth() + "/"
-                        + FloorTheme.MAX_DEPTH,
-                mapWidth - 10, mapHeight + HUD_HEIGHT - 14);
     }
 
-    /** Can çubuğu: sayıyı okumadan da kalan canı görebilesin diye. */
-    private void drawHealthBar(GraphicsContext gc, Game game, double centerY) {
-        double width = 170;
-        double height = 14;
-        double x = STATUS_PANEL_X;
-        double y = centerY - height / 2;
-        double ratio = game.getPlayer().getHp() / (double) game.getPlayer().getMaxHp();
+    /** Şeridin sağ alt köşesi: bulunduğun bölge ve tek satırlık yardım ipucu. */
+    private void drawFooter(GraphicsContext gc, Game game, double mapWidth, double mapHeight) {
+        gc.setTextAlign(TextAlignment.RIGHT);
+        gc.setFill(HUD_ACCENT);
+        gc.fillText(game.getTheme().getLabel(), mapWidth - 10, mapHeight + 14);
 
-        gc.setFill(HP_BAR_BACKGROUND);
-        gc.fillRect(x, y, width, height);
-        gc.setFill(HP_BAR_FILL);
-        gc.fillRect(x, y, width * Math.max(0, ratio), height);
-        gc.setStroke(HUD_TEXT);
-        gc.setLineWidth(1);
-        gc.strokeRect(x, y, width, height);
-
-        gc.setFont(hudFont);
-        gc.setTextAlign(TextAlignment.CENTER);
-        gc.setFill(MESSAGE_TEXT);
-        gc.fillText(game.getPlayer().getHp() + " / " + game.getPlayer().getMaxHp(),
-                x + width / 2, centerY);
+        gc.setFill(HUD_TEXT);
+        gc.fillText("ESC: durdur, ayarlar ve tuslar", mapWidth - 10, mapHeight + HUD_HEIGHT - 10);
     }
 
     /**
@@ -1372,6 +1525,45 @@ public class GameRenderer {
         gc.setStroke(OVERLAY_TITLE);
         gc.setLineWidth(1);
         gc.strokeRect(x, y + 4, barWidth, barHeight);
+    }
+
+    /**
+     * Ayağının altında eşya varken beliren "F: al" ipucu.
+     *
+     * <p>Toplama tuşa bağlanınca yerdeki eşyayı görmek yetmez oldu: üstünde
+     * duruyorsan da bir şey olmuyor ve bunun bir tuş beklediği hiçbir yerden
+     * anlaşılmıyor. İpucu tam o anda, tam o yerde çıkıyor.</p>
+     *
+     * <p>Merdiven ipucuyla aynı kutuyu kullanıyor ama onun bir satır üstünde:
+     * merdivenin üstünde duran eşya ikisini birden gerektiriyor ve üst üste
+     * binmeleri her ikisini de okunmaz yapardı.</p>
+     */
+    private void drawPickupHint(GraphicsContext gc, Game game, double mapWidth, double mapHeight) {
+        List<Item> here = game.itemsUnderfoot();
+        if (here.isEmpty()) {
+            return;
+        }
+
+        String hint = here.size() == 1
+                ? "F ile " + here.get(0).getName() + " al"
+                : "F ile " + here.size() + " esyayi al";
+
+        double boxWidth = Math.max(160, measure(hint, hudFont) + 28);
+        double boxHeight = 26;
+        double x = (mapWidth - boxWidth) / 2;
+        double y = mapHeight - boxHeight - 44;
+
+        gc.setFill(HINT_BACKGROUND);
+        gc.fillRoundRect(x, y, boxWidth, boxHeight, 6, 6);
+        gc.setStroke(GOLD_TEXT);
+        gc.setLineWidth(1);
+        gc.strokeRoundRect(x, y, boxWidth, boxHeight, 6, 6);
+
+        gc.setFont(hudFont);
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setTextBaseline(VPos.CENTER);
+        gc.setFill(GOLD_TEXT);
+        gc.fillText(hint, mapWidth / 2, y + boxHeight / 2);
     }
 
     /** Merdivenin üstündeyken haritanın altında beliren ipucu. */
@@ -1611,7 +1803,8 @@ public class GameRenderer {
             Enchantment option = options.get(i);
             boolean active = item != null && item.hasEnchantment(option);
             boolean available = item != null && !active;
-            boolean affordable = available && game.getGold() >= option.getCost();
+            int price = game.enchantPrice(option);
+            boolean affordable = available && game.getGold() >= price;
 
             boolean onWeapon = item instanceof Weapon;
             if (registerForgeRow(new UiAction.Enchant(onWeapon, option), mapWidth, y)) {
@@ -1632,7 +1825,7 @@ public class GameRenderer {
 
             gc.setTextAlign(TextAlignment.RIGHT);
             gc.setFill(affordable ? GOLD_TEXT : MESSAGE_FADED);
-            gc.fillText(item == null ? "—" : option.getCost() + " altin", mapWidth / 2 + 300, y);
+            gc.fillText(item == null ? "—" : price + " altin", mapWidth / 2 + 300, y);
 
             y += 26;
         }

@@ -73,12 +73,12 @@ public class Armor extends Equipment {
         Player player = game.getPlayer();
 
         if (player.getEquippedArmor() == this) {
-            game.getMessageLog().add(getDisplayName() + " zaten üstünde.");
+            game.getMessageLog().item(getDisplayName() + " zaten üstünde.");
             return false;
         }
 
         player.equip(this);
-        game.getMessageLog().add(getDisplayName() + " kuşandın (+" + getBonus() + " savunma).");
+        game.getMessageLog().item(getDisplayName() + " kuşandın (+" + getBonus() + " savunma).");
         return false;
     }
 
@@ -103,7 +103,7 @@ public class Armor extends Equipment {
         }
 
         player.equip(this);
-        game.getMessageLog().add(getDisplayName() + " kuşandın (+" + getBonus() + " savunma).");
+        game.getMessageLog().item(getDisplayName() + " kuşandın (+" + getBonus() + " savunma).");
         game.discardToGround(current);
     }
 

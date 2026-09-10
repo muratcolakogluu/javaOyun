@@ -64,6 +64,18 @@ public class ClickMap {
     }
 
     /**
+     * Fare bu dikdörtgenin üstünde mi — bölgeyi kaydetmeden.
+     *
+     * <p>Tıklanamayan ama üstüne gelinince bilgi veren öğeler için: kuşanılan
+     * parçanın yuvası balonu açıyor ama tıklamayla bir şey yapmıyor. Bunu
+     * {@link #add} ile yapmak, hiçbir işi olmayan bir eylem kaydı uydurmak
+     * demek olurdu.</p>
+     */
+    public boolean isOver(double x, double y, double width, double height) {
+        return new Region(null, x, y, width, height).contains(mouseX, mouseY);
+    }
+
+    /**
      * Verilen noktadaki eylem; hiçbir bölge yoksa {@code null}.
      *
      * <p>Sondan başa bakılıyor: sonra çizilen üstte duruyor, dolayısıyla

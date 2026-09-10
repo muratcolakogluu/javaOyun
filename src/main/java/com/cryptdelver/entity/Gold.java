@@ -32,7 +32,7 @@ public class Gold extends Item {
     @Override
     public void onPickup(Game game) {
         game.addGold(amount);
-        game.getMessageLog().add(amount + " altın topladın.");
+        game.getMessageLog().item(amount + " altın topladın.");
     }
 
     @Override

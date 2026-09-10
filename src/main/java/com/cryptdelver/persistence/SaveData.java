@@ -36,6 +36,7 @@ public record SaveData(
         int playerMaxHp,
         int equippedWeaponSlot,
         int equippedArmorSlot,
+        int returns,
         String visionMask,
         List<ItemData> inventory,
         List<ItemData> groundItems,
@@ -62,7 +63,8 @@ public record SaveData(
     }
 
     /**
-     * Keşfi ve kat hafızası olmayan kayıt: sürüm 8 öncesi dosyalar.
+     * Keşfi, kat hafızası ve geri dönüş sayacı olmayan kayıt: sürüm 8 öncesi
+     * dosyalar.
      *
      * <p>Boş maske "hiçbir yeri görmedin" demek, yani eski bir kaydı açan
      * oyuncu katı yeniden keşfediyor. Uydurulmuş bir haritayı doğru sanmasından
@@ -74,7 +76,7 @@ public record SaveData(
                     List<ItemData> inventory, List<ItemData> groundItems,
                     List<EnemyData> enemies) {
         this(depth, seed, generatorIndex, gold, elapsedSeconds, playerX, playerY, playerHp,
-                playerMaxHp, equippedWeaponSlot, equippedArmorSlot, "",
+                playerMaxHp, equippedWeaponSlot, equippedArmorSlot, 0, "",
                 inventory, groundItems, enemies, List.of());
     }
 

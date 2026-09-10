@@ -40,8 +40,8 @@ import java.util.Optional;
  */
 public class SaveFile {
 
-    /** Yazılan dosya sürümü; gezilmiş katlar eklenince 8 oldu. */
-    private static final int VERSION = 8;
+    /** Yazılan dosya sürümü; geri dönüş sayacı eklenince 9 oldu. */
+    private static final int VERSION = 9;
 
     private static final String SEPARATOR = "|";
     private static final String SPLIT_PATTERN = "\\|";
@@ -79,6 +79,7 @@ public class SaveFile {
                 String.valueOf(data.playerHp()), String.valueOf(data.playerMaxHp())));
         lines.add(line("equipped", String.valueOf(data.equippedWeaponSlot()),
                 String.valueOf(data.equippedArmorSlot())));
+        lines.add(line("returns", String.valueOf(data.returns())));
 
         for (SaveData.ItemData item : data.inventory()) {
             lines.add(itemLine("inv", item));
@@ -134,6 +135,7 @@ public class SaveFile {
         int playerMaxHp = 0;
         int weaponSlot = SaveData.NO_SLOT;
         int armorSlot = SaveData.NO_SLOT;
+        int returns = 0;
         String visionMask = "";
         List<SaveData.ItemData> inventory = new ArrayList<>();
         List<SaveData.ItemData> ground = new ArrayList<>();
@@ -170,6 +172,7 @@ public class SaveFile {
                     case "inv" -> inventory.add(parseItem(parts));
                     case "ground" -> ground.add(parseItem(parts));
                     case "enemy" -> enemies.add(parseEnemy(parts));
+                    case "returns" -> returns = Integer.parseInt(parts[1]);
                     case "seen" -> visionMask = parts[1];
                     case "floor" -> floors.add(new FloorBlock(
                             Integer.parseInt(parts[1]),
@@ -193,8 +196,8 @@ public class SaveFile {
         }
 
         return Optional.of(new SaveData(depth, seed, generatorIndex, gold, elapsed,
-                playerX, playerY, playerHp, playerMaxHp, weaponSlot, armorSlot, visionMask,
-                inventory, ground, enemies, visitedFloors));
+                playerX, playerY, playerHp, playerMaxHp, weaponSlot, armorSlot,
+                returns, visionMask, inventory, ground, enemies, visitedFloors));
     }
 
     /**

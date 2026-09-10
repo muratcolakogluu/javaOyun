@@ -82,6 +82,24 @@ public class Game {
     private static final double FLOOR_PATIENCE = 90.0;
     private static final double REINFORCE_INTERVAL = 20.0;
 
+    /**
+     * Her geri dönüşün zindanın sabrından götürdüğü saniye.
+     *
+     * <p>Merdivenden yukarı çıkmak bedava bir hamleydi: temizlenmiş katlar
+     * boş, geri dönüş yolu tehlikesiz, yani "aşağıda altın topla, yukarıdaki
+     * büyücüye dön" hiçbir risk taşımıyordu. Oyunun kolaylaşması bunun
+     * sonucuydu.</p>
+     *
+     * <p>Artık zindan her dönüşü hatırlıyor ve <em>bütün</em> katlarda daha
+     * çabuk uyanıyor. İlk dönüş neredeyse bedava (90 → 75 saniye), dördüncüsü
+     * seni her katta yarım dakikada takviyelerle karşılıyor. Yani geri dönmek
+     * hâlâ mümkün ve hâlâ doğru bir hamle olabilir — ama artık bir karar.</p>
+     */
+    private static final double PATIENCE_LOSS_PER_RETURN = 15.0;
+
+    /** Zindanın sabrı bunun altına inmiyor; geri dönüş cezası da olsa nefes payı kalıyor. */
+    private static final double MIN_FLOOR_PATIENCE = 30.0;
+
     /** Takviyeler kattaki düşman sayısını bu sınırın üstüne çıkarmıyor. */
     private static final int REINFORCE_LIMIT = 24;
 
@@ -111,7 +129,6 @@ public class Game {
     private Position stairs;
     private Boss boss;
     private Wizard wizard;
-    private Position lastPickupTile;
     private boolean paused;
     private boolean forgeOpen;
     private boolean won;
@@ -121,6 +138,9 @@ public class Game {
     private double reinforceTimer;
     private boolean dungeonAwake;
     private Position upStairs;
+
+    /** Kaç kez yukarı çıkıldı; zindanın sabrını bu kısaltıyor. */
+    private int returns;
 
     /**
      * Gezilmiş ama şu anda yüklü olmayan katlar: derinlik -> kat, o katın görüşü
@@ -156,7 +176,7 @@ public class Game {
         this.floors = new FloorBuilder(generators, floorWidth, floorHeight);
         this.player = player;
         generateFloor(random.nextLong());
-        messageLog.add("Zindana indin. Boşluk vurur, 1-8 eşya kullanır.");
+        messageLog.add("Zindana indin. Boşluk vurur, F yerden alır, 1-8 eşya kullanır.");
     }
 
     // ---------------------------------------------------------------- durum
@@ -275,9 +295,10 @@ public class Game {
      * altın yalnızca bulunduğun katta büyücü varsa işe yarıyordu, yani çoğu
      * kat boyunca ölü bir kaynaktı.</p>
      *
-     * <p>Bedava değil: geri dönmek zaman alıyor ve zindanın sabrı kat başına
-     * <em>hatırlanıyor</em> — uyanmış bir kata geri dönersen takviyeler
-     * kaldığı yerden devam ediyor.</p>
+     * <p>Bedava değil: geri dönmek zaman alıyor, zindanın sabrı kat başına
+     * <em>hatırlanıyor</em> — uyanmış bir kata geri dönersen takviyeler kaldığı
+     * yerden devam ediyor — ve her dönüş zindanı bütün katlarda biraz daha
+     * sabırsız yapıyor.</p>
      *
      * @return çıkıldıysa {@code true}
      */
@@ -286,9 +307,27 @@ public class Game {
             return false;
         }
 
+        returns++;
         travelTo(depth - 1);
         messageLog.add(depth + ". kata çıktın (" + getTheme().getLabel() + ").");
+        messageLog.addImportant("Zindan geri döndüğünü gördü; artık daha çabuk uyanıyor.");
         return true;
+    }
+
+    /**
+     * Zindanın bu andaki sabrı, saniye.
+     *
+     * <p>Her geri dönüşle kısalıyor ama bir tabanın altına inmiyor: cezanın
+     * birikip katı oynanamaz hâle getirmesi, dengelemek istediğimiz şeyden
+     * daha kötü olurdu.</p>
+     */
+    public double getFloorPatience() {
+        return Math.max(MIN_FLOOR_PATIENCE, FLOOR_PATIENCE - returns * PATIENCE_LOSS_PER_RETURN);
+    }
+
+    /** Kaç kez yukarı çıkıldı. */
+    public int getReturns() {
+        return returns;
     }
 
     /**
@@ -316,7 +355,6 @@ public class Game {
 
         // İnerken geldiğin yere, çıkarken indiğin merdivene varıyorsun.
         player.setTile(goingDown ? upStairs : stairs);
-        lastPickupTile = player.getTile();
         refreshVision();
     }
 
@@ -578,6 +616,34 @@ public class Game {
     }
 
     /**
+     * Bir büyünün sana kaça patlayacağı.
+     *
+     * <p>Üstünde taşıdığın büyü sayısına bağlı, o yüzden fiyatı oyunun durumunu
+     * bilen taraf soruyor; tezgâh ekranı da aynı yerden okuyor, yoksa yazan
+     * fiyatla kesilen para ayrı düşerdi.</p>
+     */
+    public int enchantPrice(Enchantment enchantment) {
+        return Forge.enchantCost(enchantment, carriedEnchantments());
+    }
+
+    /**
+     * Silahında ve zırhında hâlihazırda duran büyü sayısı.
+     *
+     * <p>İkisi birlikte sayılıyor: pahalı olması gereken şey tek bir parçayı
+     * büyülemek değil, tam takım büyülü dolaşmak.</p>
+     */
+    private int carriedEnchantments() {
+        int carried = 0;
+        if (player.getEquippedWeapon() != null) {
+            carried += player.getEquippedWeapon().getEnchantments().size();
+        }
+        if (player.getEquippedArmor() != null) {
+            carried += player.getEquippedArmor().getEnchantments().size();
+        }
+        return carried;
+    }
+
+    /**
      * Parçaya büyü basar.
      *
      * <p>Bir parçada bir büyü duruyor: yenisi eskisinin yerine geçiyor ve tam
@@ -600,7 +666,8 @@ public class Game {
             return;
         }
 
-        if (!spendGold(enchantment.getCost())) {
+        int cost = enchantPrice(enchantment);
+        if (!spendGold(cost)) {
             return;
         }
 
@@ -609,10 +676,10 @@ public class Game {
 
         if (replaced == null) {
             messageLog.add(item.getDisplayName() + " artık " + enchantment.getLabel()
-                    + " taşıyor (-" + enchantment.getCost() + " altın).");
+                    + " taşıyor (-" + cost + " altın).");
         } else {
             messageLog.add(replaced.getLabel() + " silindi, yerine " + enchantment.getLabel()
-                    + " basıldı (-" + enchantment.getCost() + " altın).");
+                    + " basıldı (-" + cost + " altın).");
         }
     }
 
@@ -678,14 +745,6 @@ public class Game {
         player.update(this, delta);
         refreshVision();
 
-        // Toplama yalnızca yeni bir kareye <em>girildiğinde</em> deneniyor.
-        // Her karede denemek iki soruna yol açıyordu: yere bıraktığın eşya
-        // anında geri alınıyordu ve çanta doluyken mesaj kaydı akıyordu.
-        if (!player.getTile().equals(lastPickupTile)) {
-            lastPickupTile = player.getTile();
-            pickUpItems();
-        }
-
         // Kopya üzerinde geziyoruz: bir düşman hamlesi sırasında ölüp listeden düşebilir.
         for (Enemy enemy : List.copyOf(enemies)) {
             enemy.update(this, delta);
@@ -711,7 +770,7 @@ public class Game {
         }
 
         floorSeconds += delta;
-        if (floorSeconds < FLOOR_PATIENCE) {
+        if (floorSeconds < getFloorPatience()) {
             return;
         }
 
@@ -835,21 +894,53 @@ public class Game {
     // ---------------------------------------------------------------- eşya
 
     /**
-     * Oyuncunun bastığı karedeki eşyaları toplar.
+     * Ayağının altındaki eşyaları toplar; F tuşunun yaptığı iş.
      *
-     * <p>Ayrı bir "al" tuşu yok: üstüne basmak yetiyor. Çanta doluysa eşya
-     * yerde kalır — ama altın çantaya girmediği için her hâlükârda alınır.</p>
+     * <p>Eskiden üstüne basmak yetiyordu ve bu, oyuncunun eline ne geçtiğine
+     * <em>karar veremediği</em> anlamına geliyordu: kaçarken üstünden geçtiğin
+     * kötü zırh çantayı dolduruyor, sakladığın iyi parçanın üstünden geçmek
+     * onu geri alıyordu. Toplama bir tuşa bağlanınca çanta yönetimi oyuncunun
+     * işi oluyor — yerde bıraktığın şey orada kalıyor.</p>
+     *
+     * <p>Altın da tuşa bağlı: kuralın "bazı eşyalar kendiliğinden alınır" diye
+     * bir istisnası olsaydı, oyuncu hangisinin hangisi olduğunu ezberlemek
+     * zorunda kalırdı.</p>
+     *
+     * @return elini bir şey doldurduysa {@code true}
      */
-    private void pickUpItems() {
-        pickUpItemsExcept(null);
+    public boolean pickUp() {
+        if (isFrozen()) {
+            return false;
+        }
+
+        if (itemsUnderfoot().isEmpty()) {
+            messageLog.item("Ayağının altında bir şey yok.");
+            return false;
+        }
+
+        return pickUpItemsExcept(null);
+    }
+
+    /** Oyuncunun bastığı karedeki eşyalar; ekran "F: al" ipucunu buna göre gösteriyor. */
+    public List<Item> itemsUnderfoot() {
+        List<Item> here = new ArrayList<>();
+        for (Item item : groundItems) {
+            if (item.getTile().equals(player.getTile())) {
+                here.add(item);
+            }
+        }
+        return here;
     }
 
     /**
      * Ayağının altındakileri toplar; verilen parçayı atlar.
      *
      * @param skipped az önce yere bırakılan parça; {@code null} olabilir
+     * @return en az bir eşya alındıysa {@code true}
      */
-    private void pickUpItemsExcept(Item skipped) {
+    private boolean pickUpItemsExcept(Item skipped) {
+        boolean took = false;
+
         for (Item item : List.copyOf(groundItems)) {
             if (item == skipped || !item.getTile().equals(player.getTile())) {
                 continue;
@@ -857,16 +948,18 @@ public class Game {
 
             if (item.goesToInventory()) {
                 if (!inventory.add(item)) {
-                    messageLog.add("Çantan dolu: " + item.getName() + " yerde kaldı.");
+                    messageLog.importantItem("Çantan dolu: " + item.getName() + " yerde kaldı.");
                     continue;
                 }
-                messageLog.add(item.getName() + " aldın.");
+                messageLog.item(item.getName() + " aldın.");
                 sounds.play(SoundEffect.PICKUP);
             }
 
             item.onPickup(this);
             groundItems.remove(item);
+            took = true;
         }
+        return took;
     }
 
     /**
@@ -917,9 +1010,8 @@ public class Game {
         item.setTile(player.getTile());
         item.onDrop(this);
         addGroundItem(item);
-        messageLog.add(item.getName() + " yere bıraktın.");
+        messageLog.item(item.getName() + " yere bıraktın.");
 
-        lastPickupTile = player.getTile();
 
         // Bıraktığın anda ayağının altındakini alıyorsun: çanta doluyken
         // takas etmek için kareden çıkıp geri gelmek gerekiyordu. Yeni
@@ -974,7 +1066,6 @@ public class Game {
         }
 
         player.setTile(stairs);
-        lastPickupTile = player.getTile();
         refreshVision();
         sounds.play(SoundEffect.STAIRS);
         messageLog.add("Kaçış iksiri: merdivenin başındasın.");
@@ -988,9 +1079,6 @@ public class Game {
      * katta doluyordu — oysa geri dönüp kötü zırhı giymek diye bir şey yok.
      * Yere bırakmak hem çantayı açıyor hem de fikrini değiştirirsen parça hâlâ
      * orada duruyor.</p>
-     *
-     * <p>Bırakılan kare {@code lastPickupTile} olarak işaretleniyor: yoksa aynı
-     * karede durduğun için parçayı anında geri toplardın.</p>
      */
     public void discardToGround(Item item) {
         if (item == null || !inventory.remove(item)) {
@@ -999,8 +1087,7 @@ public class Game {
 
         item.setTile(player.getTile());
         addGroundItem(item);
-        lastPickupTile = player.getTile();
-        messageLog.add(item.getName() + " yere bırakıldı.");
+        messageLog.item(item.getName() + " yere bırakıldı.");
     }
 
     // ---------------------------------------------------------------- savaş
@@ -1024,7 +1111,7 @@ public class Game {
         sounds.play(SoundEffect.SWING);
 
         if (targets.isEmpty()) {
-            messageLog.add("Kılıcın boşluğu kesti.");
+            messageLog.combat("Kılıcın boşluğu kesti.");
             return;
         }
 
@@ -1034,7 +1121,7 @@ public class Game {
         for (Enemy enemy : targets) {
             int damage = resolveDamage(player, enemy);
             enemy.takeDamage(damage);
-            messageLog.add(enemy.getName() + " " + damage + " hasar aldı.");
+            messageLog.combat(enemy.getName() + " " + damage + " hasar aldı.");
 
             if (!enemy.isAlive()) {
                 buryEnemy(enemy);
@@ -1052,7 +1139,7 @@ public class Game {
      */
     private void buryEnemy(Enemy enemy) {
         removeEnemy(enemy);
-        messageLog.add(enemy.getName() + " yere serildi.");
+        messageLog.combat(enemy.getName() + " yere serildi.");
         sounds.play(SoundEffect.KILL);
 
         // Ganimeti düşman kendi bırakıyor; burada tür kontrolü yok.
@@ -1070,7 +1157,7 @@ public class Game {
         }
 
         player.heal(VAMPIRISM_HEAL);
-        messageLog.add("Vampirlik " + VAMPIRISM_HEAL + " can emdi.");
+        messageLog.combat("Vampirlik " + VAMPIRISM_HEAL + " can emdi.");
     }
 
     /**
@@ -1080,7 +1167,7 @@ public class Game {
     public void enemyAttacksPlayer(Enemy enemy) {
         int damage = resolveDamage(enemy, player);
         player.takeDamage(damage);
-        messageLog.add(enemy.getName() + " sana " + damage + " hasar vurdu.");
+        messageLog.combat(enemy.getName() + " sana " + damage + " hasar vurdu.");
         sounds.play(SoundEffect.HURT);
         wearGear(player.getEquippedArmor(), "Zırhın");
         reflectThorns(enemy);
@@ -1104,7 +1191,7 @@ public class Game {
         }
 
         enemy.takeDamage(THORNS_DAMAGE);
-        messageLog.add("Diken " + enemy.getName() + " üstünde " + THORNS_DAMAGE + " hasar açtı.");
+        messageLog.combat("Diken " + enemy.getName() + " üstünde " + THORNS_DAMAGE + " hasar açtı.");
 
         if (!enemy.isAlive()) {
             buryEnemy(enemy);
@@ -1196,7 +1283,7 @@ public class Game {
                 player.getTileX(), player.getTileY(), player.getHp(), player.getMaxHp(),
                 inventory.slotOf(player.getEquippedWeapon()),
                 inventory.slotOf(player.getEquippedArmor()),
-                vision.exportRemembered(),
+                returns, vision.exportRemembered(),
                 savedInventory, savedGround, describeAll(enemies),
                 captureVisitedFloors());
     }
@@ -1254,6 +1341,10 @@ public class Game {
         gold = data.gold();
         elapsedSeconds = data.elapsedSeconds();
 
+        // Zindanın biriken öfkesi de kayıttan geliyor: yoksa kaydedip yüklemek
+        // sabrı sıfırlar ve geri dönüşün bedelini silerdi.
+        returns = data.returns();
+
         // Yalnızca döşeme kuruluyor: düşmanlar ve eşyalar kayıttan geliyor.
         // Aynı tohum aynı haritayı, merdiveni ve büyücüyü verdiği için bunlar
         // kayıt dosyasında saklanmak zorunda değil.
@@ -1286,7 +1377,6 @@ public class Game {
         // bulmak zorunda kalmıyor, ama görmediği yerler hâlâ karanlık.
         vision.importRemembered(data.visionMask());
 
-        lastPickupTile = player.getTile();
         messageLog.add(depth + ". kattaki kayıt yüklendi.");
     }
 
@@ -1504,6 +1594,7 @@ public class Game {
         depth = 1;
         won = false;
         visited.clear();
+        returns = 0;
         elapsedSeconds = 0;
         enemies.clear();
         groundItems.clear();
@@ -1546,7 +1637,6 @@ public class Game {
 
         upStairs = floor.spawn();
         player.setTile(floor.spawn());
-        lastPickupTile = player.getTile();
 
         // Yeni kat baştan karanlık: bir önceki katın hatırladıkları buraya
         // taşınmamalı.
