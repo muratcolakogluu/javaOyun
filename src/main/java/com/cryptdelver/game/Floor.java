@@ -4,6 +4,7 @@ import com.cryptdelver.entity.Boss;
 import com.cryptdelver.entity.Enemy;
 import com.cryptdelver.entity.Item;
 import com.cryptdelver.entity.Merchant;
+import com.cryptdelver.entity.Shrine;
 import com.cryptdelver.entity.Wizard;
 import com.cryptdelver.world.Dungeon;
 import com.cryptdelver.world.Position;
@@ -27,6 +28,7 @@ import java.util.List;
  * @param boss merdiveni tutan boss; boss katı değilse {@code null}
  * @param wizard kattaki büyücü; yoksa {@code null}
  * @param merchant kattaki gezgin satıcı; yoksa {@code null}
+ * @param shrine kattaki kader taşı; yoksa {@code null}
  */
 public record Floor(long seed,
                     Dungeon dungeon,
@@ -34,6 +36,7 @@ public record Floor(long seed,
                     Position stairs,
                     Wizard wizard,
                     Merchant merchant,
+                    Shrine shrine,
                     Boss boss,
                     List<Enemy> enemies,
                     List<Item> groundItems) {
@@ -45,6 +48,7 @@ public record Floor(long seed,
 
     /** Döşemeye boss, düşman ve eşya ekleyip dolu katı verir. */
     Floor filledWith(Boss boss, List<Enemy> enemies, List<Item> groundItems) {
-        return new Floor(seed, dungeon, spawn, stairs, wizard, merchant, boss, enemies, groundItems);
+        return new Floor(seed, dungeon, spawn, stairs, wizard, merchant, shrine, boss,
+                enemies, groundItems);
     }
 }

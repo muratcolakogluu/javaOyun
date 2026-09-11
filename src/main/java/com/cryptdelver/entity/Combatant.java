@@ -77,6 +77,18 @@ public abstract class Combatant extends Entity {
         maxHp += extra;
     }
 
+    /**
+     * Azami canı küçültür; mevcut can yeni tavanı aşarsa oraya çekilir.
+     *
+     * <p>Kader taşı bunu kullanıyor: verilen şeyin bedeli canın <em>tavanı</em>,
+     * o anki canın değil. Yalnızca canını düşürseydi bir iksirle geri
+     * alınabilir olurdu ve bedel diye bir şey kalmazdı.</p>
+     */
+    protected void lowerMaxHp(int less) {
+        maxHp = Math.max(1, maxHp - less);
+        hp = Math.min(hp, maxHp);
+    }
+
     /** Canı tamamen doldurur. */
     protected void restoreFullHealth() {
         hp = maxHp;

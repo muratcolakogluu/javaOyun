@@ -18,6 +18,7 @@ import com.cryptdelver.entity.Merchant;
 import com.cryptdelver.entity.Orc;
 import com.cryptdelver.entity.Potion;
 import com.cryptdelver.entity.Saman;
+import com.cryptdelver.entity.Shrine;
 import com.cryptdelver.entity.Skeleton;
 import com.cryptdelver.entity.Wizard;
 import com.cryptdelver.entity.Zombi;
@@ -149,6 +150,18 @@ public class FloorBuilder {
 
     /** Tezgâh doğulan yerden en az bu kadar adım uzağa kurulur. */
     private static final int MERCHANT_MIN_DISTANCE = 4;
+
+    /**
+     * Kader taşının sıklığı ve zarı.
+     *
+     * <p>Satıcıyla aynı oran ama ayrı zar: aynı sayıyla atsaydık taş ve
+     * satıcı ya hep birlikte çıkar ya hep birlikte çıkmazdı.</p>
+     */
+    private static final double SHRINE_CHANCE = 0.30;
+    private static final long SHRINE_ROLL_SALT = 0x2545F491L;
+
+    /** Taş girişten biraz daha uzağa kuruluyor; bulunması da işin parçası. */
+    private static final int SHRINE_MIN_DISTANCE = 6;
 
     /**
      * Nadir eşyalar için kat başına kaç zar, hangi olasılıkla.
@@ -298,7 +311,18 @@ public class FloorBuilder {
                         spot -> Merchant.stocked(spot, seed ^ MERCHANT_ROLL_SALT))
                 : null;
 
-        return new Floor(seed, dungeon, spawn, stairs, wizard, merchant, null, List.of(), List.of());
+        // Taş ikisinden de uzağa kuruluyor: üç tezgâhın da kendi köşesi
+        // olmalı, yoksa F tuşunun hangisini açacağı belirsiz kalır.
+        Set<Position> busy = new HashSet<>(around(wizard));
+        busy.addAll(around(merchant));
+
+        Shrine shrine = hasShrine(depth, seed)
+                ? placeAt(dungeon, spawn, stairs, SHRINE_MIN_DISTANCE, busy,
+                        spot -> Shrine.seeded(spot, seed ^ SHRINE_ROLL_SALT))
+                : null;
+
+        return new Floor(seed, dungeon, spawn, stairs, wizard, merchant, shrine, null,
+                List.of(), List.of());
     }
 
     /** Döşemeyi kurup üstüne boss, düşman ve eşyaları dağıtır. */
@@ -336,6 +360,18 @@ public class FloorBuilder {
      * sayısıyla: aynı tohumu aynı şekilde kullansaydık iki zar birbirinin
      * kopyası çıkardı.</p>
      */
+    /**
+     * Bu katta kader taşı var mı.
+     *
+     * <p>Satıcı gibi yalnızca boss dışı katlarda ve aynı sıklıkta. İkisi aynı
+     * kata düşebiliyor — biri altın istiyor, diğeri can; yan yana durmaları
+     * "neyi neyle ödeyeceksin" sorusunu en keskin hâline getiriyor.</p>
+     */
+    private boolean hasShrine(int depth, long seed) {
+        return !isBossFloor(depth)
+                && new Random(seed ^ SHRINE_ROLL_SALT).nextDouble() < SHRINE_CHANCE;
+    }
+
     private boolean hasMerchant(int depth, long seed) {
         return !isBossFloor(depth)
                 && new Random(seed ^ MERCHANT_ROLL_SALT).nextDouble() < MERCHANT_CHANCE;
@@ -443,6 +479,9 @@ public class FloorBuilder {
         }
         if (floor.merchant() != null) {
             used.add(floor.merchant().getTile());
+        }
+        if (floor.shrine() != null) {
+            used.add(floor.shrine().getTile());
         }
 
         List<Enemy> enemies = new ArrayList<>();

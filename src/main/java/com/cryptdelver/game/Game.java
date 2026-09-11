@@ -21,6 +21,7 @@ import com.cryptdelver.entity.Orc;
 import com.cryptdelver.entity.Player;
 import com.cryptdelver.entity.Potion;
 import com.cryptdelver.entity.Projectile;
+import com.cryptdelver.entity.Shrine;
 import com.cryptdelver.entity.Saman;
 import com.cryptdelver.entity.Skeleton;
 import com.cryptdelver.entity.Weapon;
@@ -167,6 +168,7 @@ public class Game {
     private Boss boss;
     private Wizard wizard;
     private Merchant merchant;
+    private Shrine shrine;
 
     /**
      * Kendiliğinden toplamanın en son denendiği kare.
@@ -440,8 +442,8 @@ public class Game {
 
     /** O anki katı, bırakıldığı hâliyle bir değere çevirir. */
     private Floor snapshot() {
-        return new Floor(currentSeed, dungeon, upStairs, stairs, wizard, merchant, boss,
-                enemies, groundItems);
+        return new Floor(currentSeed, dungeon, upStairs, stairs, wizard, merchant, shrine,
+                boss, enemies, groundItems);
     }
 
     /** Daha önce gezilmiş bir katı bırakıldığı hâliyle geri yükler. */
@@ -455,6 +457,7 @@ public class Game {
         stairs = floor.stairs();
         wizard = floor.wizard();
         merchant = floor.merchant();
+        shrine = floor.shrine();
         boss = floor.boss();
 
         enemies.clear();
@@ -716,6 +719,44 @@ public class Game {
         runLog.recordPurchase();
         sounds.play(SoundEffect.PICKUP);
         messageLog.importantItem(Text.MSG_BOUGHT.get(offer.item().getName(), offer.price()));
+        return true;
+    }
+
+    // ----------------------------------------------------------- kader taşı
+
+    /** Bu kattaki kader taşı; yoksa {@code null}. */
+    public Shrine getShrine() {
+        return shrine;
+    }
+
+    /** Oyuncu taşa dokunacak kadar yakın mı. */
+    public boolean isNearShrine() {
+        return shrine != null && shrine.tileDistanceTo(player) <= 1;
+    }
+
+    /**
+     * Taşın teklifini kabul eder.
+     *
+     * <p>Onay ekranı yok. Taşın üstünde ne verdiği ve neye mal olduğu zaten
+     * yazılı ve yanına gitmek zaten bir karar; ikinci bir "emin misin"
+     * penceresi, verilmiş bir kararı iki kere sormak olurdu. Tezgâhlardan
+     * farkı da bu — orada bir liste var, burada tek bir cümle.</p>
+     *
+     * @return takas olduysa {@code true}
+     */
+    public boolean touchShrine() {
+        if (isFrozen() || shrine == null || !isNearShrine()) {
+            return false;
+        }
+
+        Shrine.Boon boon = shrine.accept(this);
+        if (boon == null) {
+            messageLog.add(Text.MSG_SHRINE_SPENT.get());
+            return false;
+        }
+
+        sounds.play(SoundEffect.EQUIP);
+        messageLog.addImportant(Text.MSG_SHRINE_TAKEN.get(boon.getLabel(), boon.getCost()));
         return true;
     }
 
@@ -1053,6 +1094,9 @@ public class Game {
         if (merchant != null) {
             taken.add(merchant.getTile());
         }
+        if (shrine != null) {
+            taken.add(shrine.getTile());
+        }
 
         Position spot = floors.findSpawnAwayFrom(dungeon, player.getTile(), taken);
         if (spot == null) {
@@ -1136,6 +1180,9 @@ public class Game {
         if (merchant != null && merchant != ignored && merchant.occupies(x, y)) {
             return false;
         }
+        if (shrine != null && shrine != ignored && shrine.occupies(x, y)) {
+            return false;
+        }
 
         for (Enemy enemy : enemies) {
             if (enemy != ignored && enemy.occupies(x, y)) {
@@ -1179,6 +1226,10 @@ public class Game {
         if (isNearMerchant()) {
             toggleShop();
             return true;
+        }
+
+        if (isNearShrine()) {
+            return touchShrine();
         }
 
         messageLog.item(Text.MSG_NOTHING_HERE.get());
@@ -1676,6 +1727,7 @@ public class Game {
         stairs = floor.stairs();
         wizard = floor.wizard();
         merchant = floor.merchant();
+        shrine = floor.shrine();
         boss = floor.boss();
 
         enemies.clear();

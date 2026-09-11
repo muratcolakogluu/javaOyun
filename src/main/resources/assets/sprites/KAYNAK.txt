@@ -168,3 +168,11 @@ cuppeli büyücüyle ayni ekranda duracak ve ikisi tek bakista ayrilmali.
 Cuce hem daha kisa ve genis, hem de sicak sari tonlarda -- yani uzaktan
 silueti bile farkli. Fener rengini de ona gore sectik: ocagin turuncusu
 degil, daha soguk bir sari.
+
+  shrine.png                          <- column
+
+Kader tasi bir sutun. Sunak ya da tapinak esyasi aramadik: sutun zaten
+zindanin kendi malzemesi, yani haritaya yamanmis gibi durmuyor. Isigi
+mor -- iki tezgah sicak renkte yaniyor cunku ikisi de altin istiyor, tas
+baska bir sey istiyor ve rengi de onu soyluyor. Verdikten sonra soluk
+griye donuyor: haritada hala gorunuyor ama artik cagirmiyor.

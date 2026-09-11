@@ -375,6 +375,16 @@ public class GameRenderer {
      * gövdeye bakmadan da anlaşılıyor.</p>
      */
     private static final Color LANTERN_GLOW = Color.web("#f2d16b");
+
+    /**
+     * Kader taşının ışığı: morumsu, ocağın ve fenerin sıcaklığından uzak.
+     *
+     * <p>İki tezgâh sıcak renkte yanıyor çünkü ikisi de altın istiyor. Taş
+     * başka bir şey istiyor ve rengi de onu söylüyor. Verdikten sonra soluk
+     * bir griye dönüyor: haritada hâlâ görünüyor ama artık çağırmıyor.</p>
+     */
+    private static final Color FATE_GLOW = Color.web("#9a7bff");
+    private static final Color SPENT_GLOW = Color.web("#4a4a58");
     private static final int FORGE_GLOW_RINGS = 3;
     private static final long FORGE_PULSE_MILLIS = 1600;
 
@@ -896,6 +906,16 @@ public class GameRenderer {
             drawEntity(gc, game.getWizard(), 1.0);
             drawNpcSign(gc, game.getWizard(), game.getWizard().greetingFor(game),
                     game.isNearWizard() && !game.isForgeOpen());
+        }
+
+        // Taş hatırlanıyor: kıpırdamıyor ve bir kez veriyor, yani karanlıkta
+        // kalsa da nerede durduğunu bilmen doğru. Eşyalarla aynı kural.
+        if (game.getShrine() != null
+                && vision.isRemembered(game.getShrine().getTileX(), game.getShrine().getTileY())) {
+            drawNpcGlow(gc, game.getShrine(), game.getShrine().isSpent() ? SPENT_GLOW : FATE_GLOW);
+            drawEntity(gc, game.getShrine(), 1.0);
+            drawNpcSign(gc, game.getShrine(), game.getShrine().greetingFor(game),
+                    game.isNearShrine());
         }
 
         if (game.getMerchant() != null && isSeen(vision, game.getMerchant())) {
@@ -2372,6 +2392,8 @@ public class GameRenderer {
             hint = Text.HINT_OPEN_BENCH.get();
         } else if (game.isNearMerchant()) {
             hint = Text.HINT_OPEN_SHOP.get();
+        } else if (game.isNearShrine() && !game.getShrine().isSpent()) {
+            hint = Text.HINT_TOUCH_SHRINE.get();
         } else {
             return;
         }

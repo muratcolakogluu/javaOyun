@@ -314,6 +314,21 @@ public enum Text {
     MERCHANT_SOLD_OUT("Tezgâh bitti. Aşağıda yine karşılaşırız.",
             "Stall's empty. We'll meet again further down."),
 
+    // ------------------------------------------------------------- kader taşı
+
+    SHRINE_NAME("Kader Taşı", "Stone of Fate"),
+    SHRINE_SIGN("KADER TAŞI", "STONE OF FATE"),
+    SHRINE_OFFER("%s — bedeli %d azami can", "%s — it costs %d max health"),
+    SHRINE_SILENT("Taş sustu.", "The stone has fallen silent."),
+    SHRINE_STEEL("Çeliğin büyür", "Your steel grows"),
+    SHRINE_SHELL("Kabuğun kalınlaşır", "Your shell thickens"),
+    SHRINE_SPELL("Takımına bir büyü basılır", "A spell is struck into your kit"),
+    SHRINE_BLADE("Eline bir kılıç verilir", "A blade is put in your hand"),
+    SHRINE_PURSE("Kesen dolar", "Your purse fills"),
+    HINT_TOUCH_SHRINE("F ile taşa dokun", "F to touch the stone"),
+    MSG_SHRINE_TAKEN("%s. Azami canından %d gitti.", "%s. It took %d max health."),
+    MSG_SHRINE_SPENT("Taş bir kez veriyor.", "The stone gives once."),
+
     // -------------------------------------------------------------------- dövüş
 
     MSG_ENEMY_HURT("%s %d hasar aldı.", "%s took %d damage."),

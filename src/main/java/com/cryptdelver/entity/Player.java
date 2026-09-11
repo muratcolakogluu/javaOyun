@@ -144,6 +144,17 @@ public class Player extends Combatant implements Actor {
         raiseMaxHp(extra);
     }
 
+    /**
+     * Azami candan verir; kader taşının aldığı bedel.
+     *
+     * <p>Oyuncunun kendi ömrünü bir para birimi olarak harcayabildiği tek
+     * yer. Altın gibi birikmiyor, geri kazanılması ancak bossla mümkün —
+     * yani bu takas gerçekten bir karar.</p>
+     */
+    public void spendMaxHp(int less) {
+        lowerMaxHp(less);
+    }
+
     /** Vuruş animasyonu şu an çizilmeli mi. */
     public boolean isSwinging() {
         return swingTimer > 0;
