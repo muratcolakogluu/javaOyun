@@ -3,6 +3,7 @@ package com.cryptdelver.ui;
 import com.cryptdelver.entity.Armor;
 import com.cryptdelver.entity.Bogucu;
 import com.cryptdelver.entity.Enchantment;
+import com.cryptdelver.entity.EliteTrait;
 import com.cryptdelver.entity.Enemy;
 import com.cryptdelver.entity.Entity;
 import com.cryptdelver.entity.Equipment;
@@ -206,6 +207,13 @@ public class GameRenderer {
      * iniyor. Sıfıra kadar daraltmak daha "tam" durur ama son anlar
      * görünmez kalırdı -- oysa en kritik an tam orası.</p>
      */
+    /** Elit halkasının renkleri, katman sayısı ve nefes süresi. */
+    private static final Color ELITE_ARMOURED = Color.web("#6ea8ff");
+    private static final Color ELITE_SWIFT = Color.web("#5fe08a");
+    private static final Color ELITE_BLOODY = Color.web("#ff5a5a");
+    private static final int ELITE_RINGS = 3;
+    private static final long ELITE_PULSE_MILLIS = 1400;
+
     /** Açık sırt işaretinin boyu, nefes payı ve nefes süresi. */
     private static final double OPENING_SIZE = 5;
     private static final double OPENING_LIFT = 3;
@@ -903,6 +911,12 @@ public class GameRenderer {
             }
             // Uyarı gövdenin altına: üstüne binen çizimlerin nasıl durduğunu
             // daha önce gördük.
+            // Elit halkası gövdenin altında, en altta: hem bossun kendi
+            // işaretlerinin hem de gövdenin arkasında kalıyor.
+            if (enemy.isElite()) {
+                drawEliteRing(gc, enemy);
+            }
+
             drawBossTells(gc, enemy);
             drawEntity(gc, enemy, 1.0);
             drawHealthBar(gc, enemy);
@@ -2100,6 +2114,46 @@ public class GameRenderer {
         if (enemy.isWindingUp()) {
             drawStrikeTell(gc, enemy);
         }
+    }
+
+    /**
+     * Elit düşmanın ayağının dibindeki renkli halka.
+     *
+     * <p>Renk hangi elit olduğunu söylüyor ve üçü de farklı bir cevap
+     * istiyor: mavi kabuk kalın (silahını yükselt ya da arkasına geç), yeşil
+     * hızlı (kaçamazsın, sıçra ya da bitir), kızıl bitmiyor (sabır ve iksir).
+     * Adı da dövüş kaydında zaten yazıyor — halka, kaydı okumadan
+     * <em>haritada</em> anlamanı sağlıyor.</p>
+     *
+     * <p>Yassı bir elips, daire değil: karakterin ayağına oturan bir ışık
+     * gibi duruyor, üstüne geçirilmiş bir çember gibi değil. Büyücünün ocak
+     * ışığında öğrendiğimiz aynı numara.</p>
+     */
+    private void drawEliteRing(GraphicsContext gc, Enemy enemy) {
+        Color tone = eliteColour(enemy.getElite());
+        double centerX = enemy.getRenderX() * TILE_SIZE;
+        double centerY = enemy.getRenderY() * TILE_SIZE + TILE_SIZE * 0.30;
+
+        double phase = (System.currentTimeMillis() % ELITE_PULSE_MILLIS)
+                / (double) ELITE_PULSE_MILLIS;
+        double breath = 0.5 + 0.5 * Math.sin(phase * 2 * Math.PI);
+
+        for (int ring = ELITE_RINGS; ring >= 1; ring--) {
+            double radius = TILE_SIZE * 0.30 * ring * (0.92 + 0.08 * breath);
+            double alpha = 0.22 / ring * (0.7 + 0.3 * breath);
+
+            gc.setFill(Color.color(tone.getRed(), tone.getGreen(), tone.getBlue(), alpha));
+            gc.fillOval(centerX - radius, centerY - radius * 0.42, radius * 2, radius * 0.84);
+        }
+    }
+
+    /** Elit özelliğinin rengi; üç özellik, üç ayrı cevap, üç ayrı renk. */
+    private static Color eliteColour(EliteTrait trait) {
+        return switch (trait) {
+            case ZIRHLI -> ELITE_ARMOURED;
+            case CEVIK -> ELITE_SWIFT;
+            case KANLI -> ELITE_BLOODY;
+        };
     }
 
     /**

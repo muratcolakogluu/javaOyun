@@ -279,6 +279,12 @@ public enum Text {
     ENEMY_ZOMBI("Zombi", "Zombie"),
     ENEMY_SAMAN("Şahin Şaman", "Hawk Shaman"),
     ENEMY_ARCHER("Okçu", "Archer"),
+
+    // --------------------------------------------------------------- elit sıfatlar
+
+    ELITE_ARMOURED("Zırhlı", "Armoured"),
+    ELITE_SWIFT("Çevik", "Swift"),
+    ELITE_BLOODY("Kanlı", "Bloody"),
     BOSS_BEKCI("Mahzen Bekçisi", "Vault Warden"),
     BOSS_BOGUCU("Sarnıç Boğucusu", "Cistern Choker"),
     BOSS_SEYTAN("Kor Şeytanı", "Ember Devil"),

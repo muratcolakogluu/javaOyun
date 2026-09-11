@@ -4,6 +4,7 @@ import com.cryptdelver.entity.Archer;
 import com.cryptdelver.entity.Bomb;
 import com.cryptdelver.entity.Boss;
 import com.cryptdelver.entity.Enemy;
+import com.cryptdelver.entity.EliteTrait;
 import com.cryptdelver.entity.Entity;
 import com.cryptdelver.entity.EscapePotion;
 import com.cryptdelver.entity.FuryPotion;
@@ -76,6 +77,20 @@ public class FloorBuilder {
      * hamleye güvenmeyi öğrenmiş olurdu.</p>
      */
     private static final int ARCHER_MIN_DEPTH = 3;
+
+    /**
+     * Elit düşmanlar 3. kattan itibaren, her on düşmandan kabaca birinde.
+     *
+     * <p>İlk iki kat oyunun temel dövüşünü öğretiyor ve elit tam o dersin
+     * istisnası — istisnayı kural öğrenilmeden göstermek öğretmiyor,
+     * şaşırtıyor.</p>
+     *
+     * <p>Oran sabit, derinlikle artmıyor. Artsaydı derin katlar elit
+     * sürüsüne dönerdi ve elit "bu farklı" demeyi bırakırdı: bir şeyin özel
+     * olması için seyrek kalması gerekiyor.</p>
+     */
+    private static final int ELITE_MIN_DEPTH = 3;
+    private static final double ELITE_CHANCE = 0.10;
 
     /**
      * Zombi ve şaman bölge sınırlarında giriyor: zombi Sarnıçta, şaman Korlukta.
@@ -489,6 +504,14 @@ public class FloorBuilder {
     public Enemy createEnemyForDepth(Position spot, int depth, Difficulty difficulty) {
         Enemy enemy = rollEnemyKind(spot, depth);
         applyDepthBonus(enemy, depth, difficulty);
+
+        // Elitlik en sona: derinlik bonusu sıradan değerlerin üstüne biniyor,
+        // elit sıfatı da onun üstüne. Sıra ters olsaydı "zırhlı" bir düşman
+        // derin katlarda sıradan bir düşmandan ayırt edilemez hâle gelirdi.
+        if (depth >= ELITE_MIN_DEPTH && random.nextDouble() < ELITE_CHANCE) {
+            EliteTrait[] traits = EliteTrait.values();
+            enemy.makeElite(traits[random.nextInt(traits.length)]);
+        }
         return enemy;
     }
 

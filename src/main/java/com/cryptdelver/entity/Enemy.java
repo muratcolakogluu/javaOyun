@@ -38,6 +38,9 @@ public abstract class Enemy extends Combatant implements Actor {
      */
     private double windupLeft;
 
+    /** Bu düşmanı elit yapan özellik; sıradansa {@code null}. */
+    private EliteTrait elite;
+
     protected Enemy(int tileX, int tileY, Text name, EnemyStats stats, Pathfinder pathfinder) {
         super(tileX, tileY, name, stats.maxHp());
         this.stats = stats;
@@ -81,7 +84,7 @@ public abstract class Enemy extends Combatant implements Actor {
      * öfkelenme kodu yazılabilir ama hiçbir etkisi olmazdı.</p>
      */
     public double getSpeed() {
-        return stats.speed();
+        return elite == null ? stats.speed() : elite.scaleSpeed(stats.speed());
     }
 
     /**
@@ -91,11 +94,46 @@ public abstract class Enemy extends Combatant implements Actor {
      * hızlı yürüyüp aynı tempoda vurması yarım bir değişiklik olurdu.</p>
      */
     public double getAttackCooldown() {
-        return stats.attackCooldown();
+        return elite == null
+                ? stats.attackCooldown()
+                : elite.scaleCooldown(stats.attackCooldown());
     }
 
     public Pathfinder getPathfinder() {
         return pathfinder;
+    }
+
+    /**
+     * Bu düşmanı elit yapar.
+     *
+     * <p>Doğarken bir kez çağrılıyor ve geri alınmıyor: elitlik bir durum
+     * değil, o yaratığın <em>ne olduğu</em>. Dövüşün ortasında elitleşen bir
+     * düşman, oyuncunun okuduğu her şeyi geçersiz kılardı.</p>
+     */
+    public void makeElite(EliteTrait trait) {
+        this.elite = trait;
+        trait.strengthen(this);
+    }
+
+    public boolean isElite() {
+        return elite != null;
+    }
+
+    /** Elitlik özelliği; ekran aurasının rengini buradan seçiyor. */
+    public EliteTrait getElite() {
+        return elite;
+    }
+
+    /**
+     * Adı; elitse önünde sıfatı var.
+     *
+     * <p>"Zırhlı Ork" ile "Ork" dövüş kaydında yan yana göründüğünde hangi
+     * vuruşun hangisine indiği karışmıyor. Ad üretimi burada çünkü sıfat
+     * düşmanın kendi bilgisi.</p>
+     */
+    @Override
+    public String getName() {
+        return elite == null ? super.getName() : elite.getLabel() + " " + super.getName();
     }
 
     /**
@@ -317,6 +355,11 @@ public abstract class Enemy extends Combatant implements Actor {
      * düşmanın kendisi biliyor.</p>
      */
     public void onDeath(Game game) {
-        // Sıradan düşmanlar ganimet bırakmaz.
+        // Sıradan düşmanlar ganimet bırakmaz; elit olan kesesini bırakıyor.
+        // Elit bir ceza değil bir fırsat olmalı: kaçmak da bir cevap ama
+        // kalıp devirmenin bir karşılığı var.
+        if (elite != null) {
+            game.addGroundItem(new Gold(getTileX(), getTileY(), elite.getGold()));
+        }
     }
 }
