@@ -229,6 +229,18 @@ public class GameRenderer {
 
     /** Cercevenin kose centiklerinin boyu. */
     private static final double CORNER_TICK = 16;
+
+    /**
+     * Duvara isaret konma olasiligi.
+     *
+     * <p>Yirmide bir: bir odada bir ya da iki tane cikiyor. Daha sik olsaydi
+     * sus olmaktan cikip duvarin deseni olurdu.</p>
+     */
+    private static final double WALL_MARK_CHANCE = 0.05;
+
+    /** Ayni kareden farkli sorulara farkli cevaplar almak icin karistirici. */
+    private static final int WALL_MARK_SALT = 1013;
+    private static final int FLOOR_VARIANT_SALT = 7717;
     private static final double MENU_ROW_WIDTH = 460;
     private static final double MENU_ROW_HEIGHT = 34;
 
@@ -704,7 +716,7 @@ public class GameRenderer {
 
         Player player = game.getPlayer();
         Vision vision = game.getVision();
-        drawDungeon(gc, dungeon, vision, game.isStairsLocked());
+        drawDungeon(gc, dungeon, vision, game.isStairsLocked(), game.getTheme());
         drawThemeWash(gc, game.getTheme(), game.isCaveFloor(), mapWidth, mapHeight);
         // Eşyalar gölgeden önce çiziliyor, çünkü onlar da hatırlanıyor: yerdeki
         // eşya kıpırdamıyor, dolayısıyla gördüğün zırhın nerede kaldığını
@@ -930,10 +942,32 @@ public class GameRenderer {
         return vision.isVisible(entity.getTileX(), entity.getTileY());
     }
 
+    /**
+     * Karenin konumundan türeyen 0..1 arası sabit bir sayı.
+     *
+     * <p>Rastgelelik <em>yok</em>: aynı kare her karede aynı sayıyı veriyor,
+     * yoksa zemin deseni her çerçevede titrerdi. Konumu karıştırıp birkaç kez
+     * kaydırmak, komşu karelerin aynı sonuca düşmesini de engelliyor —
+     * {@code (x + y) % 3} gibi basit bir hesap köşegen çizgiler bırakıyordu.</p>
+     */
+    private double scatter(int x, int y, int salt) {
+        int hash = x * 73856093 ^ y * 19349663 ^ salt * 83492791;
+        hash ^= hash >>> 13;
+        hash *= 0x5bd1e995;
+        hash ^= hash >>> 15;
+        return (hash & 0xffffff) / (double) 0xffffff;
+    }
+
+    /** Zemin çeşitlerinden hangisi bu kareye düşüyor. */
+    private int variantFor(int x, int y, int count) {
+        return (int) (scatter(x, y, FLOOR_VARIANT_SALT) * count) % count;
+    }
+
     private void drawDungeon(GraphicsContext gc, Dungeon dungeon, Vision vision,
-                             boolean stairsLocked) {
-        Sprite floor = sprites.get("floor");
-        Sprite wall = sprites.get("wall");
+                             boolean stairsLocked, FloorTheme theme) {
+        String[] floorNames = theme.getFloorSprites();
+        String[] wallNames = theme.getWallSprites();
+        Sprite wallMark = sprites.get(theme.getWallMarkSprite());
         Sprite stairs = sprites.get("stairs");
 
         for (int x = 0; x < dungeon.getWidth(); x++) {
@@ -949,9 +983,17 @@ public class GameRenderer {
 
                 Tile tile = dungeon.getTile(x, y);
                 if (tile == Tile.WALL) {
-                    wall.draw(gc, cx, cy, TILE_SIZE);
+                    sprites.get(wallNames[variantFor(x, y, wallNames.length)])
+                            .draw(gc, cx, cy, TILE_SIZE);
+
+                    // İşaret duvarın üstüne biniyor, yerine geçmiyor: altındaki
+                    // taş görünmeye devam edince duvara asılmış gibi duruyor.
+                    if (scatter(x, y, WALL_MARK_SALT) < WALL_MARK_CHANCE) {
+                        wallMark.draw(gc, cx, cy, TILE_SIZE);
+                    }
                 } else {
-                    floor.draw(gc, cx, cy, TILE_SIZE);
+                    sprites.get(floorNames[variantFor(x, y, floorNames.length)])
+                            .draw(gc, cx, cy, TILE_SIZE);
                     if (tile == Tile.STAIRS_DOWN) {
                         stairs.draw(gc, cx, cy, TILE_SIZE);
                         drawStairsFrame(gc, cx, cy, stairsLocked);

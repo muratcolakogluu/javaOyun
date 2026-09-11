@@ -1,5 +1,7 @@
 package com.cryptdelver.ui;
 
+import com.cryptdelver.game.FloorTheme;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -49,10 +51,16 @@ public class SpriteRegistry {
     private final Sprite unknown = ShapeSprites.unknown();
 
     public SpriteRegistry() {
-        // Zindanın kendisi de sprite: hazır bir tileset gelince duvar ve zemin
-        // de dosyadan çizilebilsin diye.
-        register("floor", ShapeSprites.floorTile());
-        register("wall", ShapeSprites.wallTile());
+        // Zindanın karoları bölgeye göre değişiyor; her birinin şekil yedeği
+        // de kayıtlı, yani resim paketi olmadan da oynanabiliyor.
+        for (FloorTheme theme : FloorTheme.values()) {
+            for (String floor : theme.getFloorSprites()) {
+                register(floor, ShapeSprites.floorTile());
+            }
+            for (String wall : theme.getWallSprites()) {
+                register(wall, ShapeSprites.wallTile());
+            }
+        }
         register("stairs", ShapeSprites.stairsTile());
 
         registerCharacter("player", ShapeSprites.player());

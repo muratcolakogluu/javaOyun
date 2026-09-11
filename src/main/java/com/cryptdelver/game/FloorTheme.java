@@ -20,16 +20,24 @@ package com.cryptdelver.game;
 public enum FloorTheme {
 
     /** 1-5: giriş katları. Kuru taş, soğuk ve nötr. */
-    MAHZEN(Text.REGION_MAHZEN, "#3a4a6b", 0.10, "#243044", 0.20),
+    MAHZEN(Text.REGION_MAHZEN, "#3a4a6b", 0.10, "#243044", 0.20,
+            new String[] {"floor_mahzen_a", "floor_mahzen_b", "floor_mahzen_c"},
+            new String[] {"wall_mahzen"}, "wallmark_mahzen"),
 
     /** 6-10: su sızmış, yosun tutmuş katlar. */
-    SARNIC(Text.REGION_SARNIC, "#2f6b57", 0.14, "#155a6b", 0.24),
+    SARNIC(Text.REGION_SARNIC, "#2f6b57", 0.14, "#155a6b", 0.24,
+            new String[] {"floor_sarnic_a", "floor_sarnic_b", "floor_sarnic_c"},
+            new String[] {"wall_sarnic", "wall_mahzen"}, "wallmark_sarnic"),
 
     /** 11-15: derindeki sıcak damarlar. */
-    KORLUK(Text.REGION_KORLUK, "#8a3a22", 0.16, "#6b2438", 0.26),
+    KORLUK(Text.REGION_KORLUK, "#8a3a22", 0.16, "#6b2438", 0.26,
+            new String[] {"floor_korluk_a", "floor_korluk_b", "floor_korluk_c"},
+            new String[] {"wall_korluk", "wall_korluk_b", "wall_mahzen"}, "wallmark_korluk"),
 
     /** 16-20: Kript Lordunun kendi katları. */
-    KRIPT(Text.REGION_KRIPT, "#5a2f7a", 0.20, "#33245e", 0.30);
+    KRIPT(Text.REGION_KRIPT, "#5a2f7a", 0.20, "#33245e", 0.30,
+            new String[] {"floor_kript_a", "floor_kript_b", "floor_kript_c"},
+            new String[] {"wall_kript"}, "wallmark_kript");
 
     /** Kaç katta bir bölge değişir. */
     public static final int FLOORS_PER_THEME = 5;
@@ -42,14 +50,21 @@ public enum FloorTheme {
     private final double roomAlpha;
     private final String caveTint;
     private final double caveAlpha;
+    private final String[] floorSprites;
+    private final String[] wallSprites;
+    private final String wallMarkSprite;
 
     FloorTheme(Text label, String roomTint, double roomAlpha,
-               String caveTint, double caveAlpha) {
+               String caveTint, double caveAlpha,
+               String[] floorSprites, String[] wallSprites, String wallMarkSprite) {
         this.label = label;
         this.roomTint = roomTint;
         this.roomAlpha = roomAlpha;
         this.caveTint = caveTint;
         this.caveAlpha = caveAlpha;
+        this.floorSprites = floorSprites;
+        this.wallSprites = wallSprites;
+        this.wallMarkSprite = wallMarkSprite;
     }
 
     public String getLabel() {
@@ -79,6 +94,50 @@ public enum FloorTheme {
      */
     public double getTintAlpha(boolean cave) {
         return cave ? caveAlpha : roomAlpha;
+    }
+
+    /**
+     * Bölgenin zemin karoları.
+     *
+     * <p>Tek bir karo değil birkaçı: aynı resmi kırk kere yan yana koymak
+     * zemini duvar kâğıdına çeviriyordu, göz tekrarı hemen yakalıyor. Üç
+     * çeşidi karıştırmak aynı taşı düzensiz döşenmiş gibi gösteriyor.</p>
+     *
+     * <p>Çeşitler bölgeye göre seçildi: Mahzen'de düzgün taş, Sarnıç'ta
+     * çatlamış ve oyulmuş, Korluk'ta molozlu, Kript'te yine düzgün — son
+     * bölge yapılmış bir yer, çökmüş değil.</p>
+     */
+    public String[] getFloorSprites() {
+        return floorSprites.clone();
+    }
+
+    /**
+     * Bölgenin duvar karosu.
+     *
+     * <p>Asıl kimliği bu taşıyor. Renk perdesi tek başına yetmiyordu: dört
+     * bölge de aynı tuğla duvarı farklı renkte gösteriyordu, yani "başka bir
+     * yerdeyim" hissi yalnızca renkten geliyordu. Sarnıç'ta duvar yosun
+     * akıtıyor, Korluk'ta delik deşik — ikisi de bakışta anlaşılıyor.</p>
+     *
+     * <p>Bölgenin kaç çeşidi olduğu da bir şey anlatıyor: Mahzen ve Kript tek
+     * bir düzgün duvar (yapılmış, bakımlı yerler), Korluk üç çeşit (çökmüş bir
+     * yer, her duvarı başka türlü yıkılmış).</p>
+     */
+    public String[] getWallSprites() {
+        return wallSprites.clone();
+    }
+
+    /**
+     * Arada bir duvara konan işaret: sancak, çeşme, kaynak.
+     *
+     * <p>Seyrek olması önemli — her duvarda olsa süs değil desen olurdu.
+     * Duvarın <em>üstünde</em> durduğu için yanıltmıyor: zaten geçilemeyen bir
+     * kareye bir şey eklemek oyuncuya yanlış bir şey vaat etmiyor. Zeminlere
+     * sütun ya da sandık koymayı denemedik; yürünebilen bir kareye engel gibi
+     * duran bir şey koymak tam da o yanlış vaat olurdu.</p>
+     */
+    public String getWallMarkSprite() {
+        return wallMarkSprite;
     }
 
     /** Bu bölgenin son katı; boss orada bekliyor. */

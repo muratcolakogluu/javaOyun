@@ -61,14 +61,42 @@ class FloorOrderTest {
         return names;
     }
 
+    /**
+     * Katin sekli artik bolgenin kimligi.
+     *
+     * <p>Once tek/cift diye degisiyordu ve bu hicbir sey anlatmiyordu --
+     * yalnizca ayni goruntude ust uste inmeni engelliyordu. Kural derinligin
+     * saf bir fonksiyonu oldugu icin dogrudan sinaniyor: yirmi kat inmek
+     * ayni seyi cok daha yavas dogrulardi.</p>
+     */
     @Test
-    @DisplayName("Tek katlar odali, cift katlar magara")
-    void floorsAlternateByDepth() {
-        List<String> names = generatorNamesDownTo(4);
+    @DisplayName("Katin sekli bolgesine gore")
+    void floorShapeFollowsTheRegion() {
+        FloorBuilder builder = new FloorBuilder(
+                List.of(new BspGenerator(), new RandomWalkGenerator()), WIDTH, HEIGHT);
 
-        assertEquals(names.get(0), names.get(2), "1. ve 3. kat ayni bicimde olmali");
-        assertEquals(names.get(1), names.get(3), "2. ve 4. kat ayni bicimde olmali");
-        assertTrue(!names.get(0).equals(names.get(1)), "Ust uste ayni bicim gelmemeli");
+        // Mahzen orulmus odalar, Kript yine yapilmis salonlar.
+        for (int depth : new int[] {1, 2, 3, 4, 16, 17, 18, 19}) {
+            assertEquals(0, builder.generatorForDepth(depth), depth + ". kat odali olmali");
+        }
+
+        // Sarnic bastan sona oyulmus magara.
+        for (int depth : new int[] {6, 7, 8, 9}) {
+            assertEquals(1, builder.generatorForDepth(depth), depth + ". kat magara olmali");
+        }
+    }
+
+    /** Korluk cokmekte olan bir yer: bazi katlari hala oda, bazilari magara. */
+    @Test
+    @DisplayName("Korluk iki sekli birden tasiyor")
+    void theEmbersMixBothShapes() {
+        FloorBuilder builder = new FloorBuilder(
+                List.of(new BspGenerator(), new RandomWalkGenerator()), WIDTH, HEIGHT);
+
+        assertEquals(0, builder.generatorForDepth(11));
+        assertEquals(1, builder.generatorForDepth(12));
+        assertEquals(0, builder.generatorForDepth(13));
+        assertEquals(1, builder.generatorForDepth(14));
     }
 
     /**

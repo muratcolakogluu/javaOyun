@@ -11,8 +11,6 @@ Lisans: itch.io sayfasında CC-0 (kamu malı) olarak duyuruluyor.
 Bu klasördeki dosyalar, paketin "frames" klasöründen alınıp oyunun beklediği
 adlarla kopyalandı:
 
-  floor.png        <- floor_1.png
-  wall.png         <- wall_mid.png
   stairs.png       <- floor_ladder.png
   player.png       <- knight_m_idle_anim_f0.png
   imp.png          <- imp_idle_anim_f0.png
@@ -129,3 +127,37 @@ gri, imp kahve), yani kalabaligin icinde bir bakista secilyor.
 
 Kimligi gorselden degil davranistan geliyor: duran, ok atan, yaklasinca
 kacan tek dusman o.
+
+--------------------------------------------------------------------
+Bolge karolari
+--------------------------------------------------------------------
+
+Once butun katlar ayni floor_1 ve wall_mid karosunu kullaniyordu; bolgeler
+arasinda yalnizca renk perdesi degisiyordu. Dort bolge de ayni tugla duvari
+farkli renkte gosterdigi icin "baska bir yerdeyim" hissi tamamen renkten
+geliyordu. Artik her bolgenin kendi tasi var.
+
+  Mahzen   floor_1, floor_5, floor_6        duzgun tas
+           wall_mid                          orulmus duvar
+           wall_banner_blue                  sancak
+
+  Sarnic   floor_2, floor_3, floor_4        catlamis, oyulmus
+           wall_goo, wall_mid                yosun akitan duvar
+           wall_fountain_mid_blue            su kaynagi (animasyonlu)
+
+  Korluk   floor_7, floor_8, floor_3        molozlu
+           wall_hole_1, wall_hole_2, wall_mid   delik desik, uc cesit
+           wall_fountain_mid_red             kor damari (animasyonlu)
+
+  Kript    floor_1, floor_6, floor_5        yine duzgun: yapilmis bir yer
+           wall_mid                          orulmus duvar
+           wall_banner_red                   sancak
+
+Zemin tek karo degil birkaci: ayni resmi kirk kere yan yana koymak zemini
+duvar kagidina ceviriyordu, goz tekrari hemen yakaliyor. Hangi karenin hangi
+cesidi aldigini konumdan tureyen sabit bir sayi belirliyor -- rastgele degil,
+yoksa desen her cerceve titrerdi.
+
+Duvar isaretleri seyrek (yirmide bir) ve duvarin ustune biniyor, yerine
+gecmiyor. Zeminlere sutun ya da sandik koymayi denemedik: yurunebilen bir
+kareye engel gibi duran bir sey koymak oyuncuya yanlis bir sey vaat ederdi.

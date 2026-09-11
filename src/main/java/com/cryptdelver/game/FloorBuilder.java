@@ -44,6 +44,10 @@ import java.util.Set;
  */
 public class FloorBuilder {
 
+    /** Uretici sirasindaki yerleri: 0 odali, 1 magara. */
+    private static final int ROOMS = 0;
+    private static final int CAVES = 1;
+
     /** Kaç katta bir boss çıkar. */
     private static final int FLOORS_PER_BOSS = 5;
 
@@ -188,15 +192,29 @@ public class FloorBuilder {
      *   <li><b>Boss katları hep odalı.</b> Boss yavaş ama durmak bilmez;
      *       vurup geri çekilerek dövüşmek için alan gerekiyor. Mağara
      *       koridorlarında sıkışıp kalıyordun.</li>
-     *   <li><b>Diğer katlar sırayla değişiyor:</b> tek katlar odalı, çift
-     *       katlar mağara. Aynı görüntüde üst üste inmiyorsun.</li>
+     *   <li><b>Kalan katların şekli bölgenin kendi kimliği.</b> Önce tek/çift
+     *       diye değişiyordu ve bu hiçbir şey anlatmıyordu — yalnızca aynı
+     *       görüntüde üst üste inmeni engelliyordu. Artık şekil de bölgeyi
+     *       anlatıyor: Mahzen örülmüş odalar, Sarnıç oyulmuş mağaralar,
+     *       Korluk ikisinin arasında çökmüş bir yer, Kript yine yapılmış
+     *       salonlar. Yani bölge değiştiğinde yalnızca renk ve taş değil,
+     *       <em>katın şekli</em> de değişiyor.</li>
      * </ul>
      */
     public int generatorForDepth(int depth) {
         if (generators.size() < 2 || isBossFloor(depth)) {
             return 0;
         }
-        return depth % 2 == 0 ? 1 : 0;
+
+        return switch (FloorTheme.forDepth(depth)) {
+            case MAHZEN, KRIPT -> ROOMS;
+            case SARNIC -> CAVES;
+
+            // Korluk çökmekte olan bir yer: bazı katları hâlâ oda, bazıları
+            // artık mağara. Tek bölgede iki şekil, "burada bir şey yıkılmış"
+            // hissini haritanın kendisine yazıyor.
+            case KORLUK -> depth % 2 == 0 ? CAVES : ROOMS;
+        };
     }
 
     /** Sıradaki üreticinin kendisi; ekran adını göstermek için soruyor. */
