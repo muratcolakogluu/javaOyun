@@ -116,8 +116,6 @@ public enum Text {
     HUD_BAG_HINT("F ekipmanı alır · 1-8 kullanır · Shift+1-8 bırakır",
             "F takes gear · 1-8 uses · Shift+1-8 drops"),
     HUD_ESC_HINT("ESC: durdur, ayarlar ve tuşlar", "ESC: pause, settings and keys"),
-    GEAR_SLOT_ARMOR("Z", "A"),
-    GEAR_SLOT_WEAPON("S", "W"),
     GEAR_BROKEN("KIRIK", "BROKEN"),
 
     // ---------------------------------------------------------------- ipuçları

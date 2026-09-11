@@ -54,16 +54,15 @@ public class GameRenderer {
     /** Bir tile'ın piksel cinsinden kenar uzunluğu. */
     public static final int TILE_SIZE = 32;
 
-    /** Haritanın altındaki bilgi ve çanta şeridinin yüksekliği. */
     /**
-     * Bilgi şeridinin yüksekliği.
+     * Haritanın altındaki bilgi ve çanta şeridinin yüksekliği.
      *
      * <p>96 idi ve 13 puntoya göre ölçülmüştü. Yazı büyüyünce üç şey birden
      * yer istedi: durum sayıları iki yerine üç satıra yayıldı, mesajlar satır
-     * kırmaya başladı, ipuçları da büyüdü. Şerit 124'e çıkınca pencere
-     * 704+124 = 828 piksel oluyor — ekranın alt kenarına dayanmadan sığıyor.</p>
+     * kırmaya başladı, ipuçları da büyüdü. Şerit 130'a çıkınca pencere
+     * 704+130 = 834 piksel oluyor — ekranın alt kenarına dayanmadan sığıyor.</p>
      */
-    public static final int HUD_HEIGHT = 124;
+    public static final int HUD_HEIGHT = 130;
 
     /** Yerdeki eşyalar biraz küçük çiziliyor ki karakterlerden ayırt edilsin. */
     private static final double GROUND_ITEM_SCALE = 1.0;
@@ -100,7 +99,22 @@ public class GameRenderer {
     private static final int SLOT_GAP = 4;
 
     /** Kuşanılan parçanın yuvası; çanta slotundan bilerek büyük. */
-    private static final int GEAR_SLOT_SIZE = 38;
+    private static final int GEAR_SLOT_SIZE = 42;
+
+    /**
+     * Karakter panelinin dikey ritmi, şeridin üstünden itibaren.
+     *
+     * <p>Sayıları tek yerde topluyorum çünkü birbirlerine bağlılar: yuvalar
+     * aşağı inerse durum tablosu da inmek zorunda, yoksa üst üste binerler.
+     * Dağınık hâlde her birini ayrı ayrı denemek gerekiyordu.</p>
+     */
+    private static final double GEAR_SLOT_TOP = 20;
+    private static final double HEART_LINE = 36;
+    private static final double VITALS_LINE = 56;
+    private static final double STAT_FIRST_LINE = 78;
+
+    /** Boş yuvadaki siluetin soluklugu. */
+    private static final double EMPTY_SLOT_ALPHA = 0.16;
 
     /**
      * Bir kalp kaç can.
@@ -111,8 +125,8 @@ public class GameRenderer {
      * okunabiliyor.</p>
      */
     private static final int HP_PER_HEART = 4;
-    private static final double HEART_SIZE = 11;
-    private static final double HEART_STEP = 13;
+    private static final double HEART_SIZE = 12;
+    private static final double HEART_STEP = 14;
 
     /** Panel ayraçlarının solunda bıraktığımız boşluk. */
     private static final double PANEL_GAP = 14;
@@ -203,7 +217,7 @@ public class GameRenderer {
     /** Ok gövdesi ve arkasindaki iz. */
     /** Kacis adiminin izi ve hazir olma halkasi. */
     private static final Color DASH_TRAIL = Color.web("#9ad9ff");
-    private static final double DASH_GAUGE = 22;
+    private static final double DASH_GAUGE = 26;
 
     private static final Color ARROW_COLOR = Color.web("#e8d8a8");
     private static final Color ARROW_TRAIL = Color.web("#e8d8a8", 0.28);
@@ -1446,22 +1460,28 @@ public class GameRenderer {
         drawPanelTitle(gc, Text.PANEL_CHARACTER.get(), CHARACTER_PANEL_X, mapHeight);
 
         Player player = game.getPlayer();
-        double slotTop = mapHeight + 22;
+        double slotTop = mapHeight + GEAR_SLOT_TOP;
 
-        drawGearSlot(gc, player.getEquippedArmor(), "Z", CHARACTER_PANEL_X, slotTop);
-        drawGearSlot(gc, player.getEquippedWeapon(), "S",
+        drawGearSlot(gc, player.getEquippedArmor(), "armor_chain", CHARACTER_PANEL_X, slotTop);
+        drawGearSlot(gc, player.getEquippedWeapon(), "sword_steel",
                 CHARACTER_PANEL_X + GEAR_SLOT_SIZE + SLOT_GAP, slotTop);
 
-        double right = CHARACTER_PANEL_X + 2 * (GEAR_SLOT_SIZE + SLOT_GAP) + 8;
-        drawHearts(gc, player, right, slotTop + 12);
+        // Kalpler yuvaların sağında, kendi satırında. Altındaki satırda can
+        // sayısı, kaçış adımı ve iksir rozetleri: hepsi "şu an ne
+        // durumdayım" sorusunun cevabı, o yüzden aynı hizada duruyorlar.
+        double right = CHARACTER_PANEL_X + 2 * (GEAR_SLOT_SIZE + SLOT_GAP) + 10;
+        drawHearts(gc, player, right, mapHeight + HEART_LINE);
 
-        // Kalplerin altinda ayri bir satir acmak seride sigmiyordu.
-        // Once kacis adimi gostergesi, sonra iksir rozetleri: ikisi de "su an
-        // elinde ne var" sorusunun cevabi, ayni satirda duruyorlar.
-        drawDashGauge(gc, player, right + 52, slotTop + 28);
-        drawActiveEffects(gc, player, right + 88, slotTop + 28);
+        double statusLine = mapHeight + VITALS_LINE;
+        gc.setFont(hudFont);
+        gc.setTextAlign(TextAlignment.LEFT);
+        gc.setFill(player.getHp() <= player.getMaxHp() / 4 ? HP_TEXT : HUD_BRIGHT);
+        gc.fillText(player.getHp() + " / " + player.getMaxHp(), right, statusLine);
 
-        double line = mapHeight + 76;
+        drawDashGauge(gc, player, right + 74, statusLine);
+        drawActiveEffects(gc, player, right + 110, statusLine);
+
+        double line = mapHeight + STAT_FIRST_LINE;
 
         drawStat(gc, Text.STAT_ATTACK.get(), String.valueOf(player.getAttackPower()),
                 0, line, HUD_BRIGHT);
@@ -1501,7 +1521,7 @@ public class GameRenderer {
      * bir şey <em>olması gerektiğini</em> söylüyor. Boşluğu hiç göstermeseydik
      * zırhsız dolaşan oyuncu eksiği fark etmezdi.</p>
      */
-    private void drawGearSlot(GraphicsContext gc, Equipment item, String letter,
+    private void drawGearSlot(GraphicsContext gc, Equipment item, String emptyHint,
                               double x, double top) {
         gc.setFill(SLOT_BACKGROUND);
         gc.fillRoundRect(x, top, GEAR_SLOT_SIZE, GEAR_SLOT_SIZE, 5, 5);
@@ -1522,13 +1542,17 @@ public class GameRenderer {
             tooltipY = top;
         }
 
-        gc.setFont(slotFont);
-        gc.setTextAlign(TextAlignment.LEFT);
-        gc.setFill(SLOT_NUMBER);
-        gc.fillText(letter, x + 3, top + 7);
-        gc.setFont(hudFont);
-
         if (item == null) {
+            // Boş yuvanın içine neyin geldiğini soluk bir siluet söylüyor.
+            // Önce köşesinde küçük bir "Z" ya da "S" duruyordu ve harf boş
+            // bir kutuda gürültüden başka bir şey değildi: hangi harfin ne
+            // demek olduğunu ezberlemen gerekiyordu. Kılıcın şekli
+            // ezberletmiyor, gösteriyor.
+            gc.setGlobalAlpha(EMPTY_SLOT_ALPHA);
+            sprites.get(emptyHint)
+                    .draw(gc, x + GEAR_SLOT_SIZE / 2.0, top + GEAR_SLOT_SIZE / 2.0,
+                            GEAR_SLOT_SIZE * 0.62);
+            gc.setGlobalAlpha(1);
             return;
         }
 
@@ -1579,12 +1603,6 @@ public class GameRenderer {
                     (player.getHp() - i * (double) HP_PER_HEART) / HP_PER_HEART));
             drawHeart(gc, left + i * HEART_STEP, centerY, filled);
         }
-
-        gc.setFont(slotFont);
-        gc.setTextAlign(TextAlignment.LEFT);
-        gc.setFill(MESSAGE_TEXT);
-        gc.fillText(player.getHp() + " / " + player.getMaxHp(), left, centerY + 16);
-        gc.setFont(hudFont);
     }
 
     /** Tek bir kalp; {@code filled} 0 boş, 1 dolu, arası yarım. */
@@ -2131,7 +2149,10 @@ public class GameRenderer {
         gc.strokeArc(x, centerY - DASH_GAUGE / 2, DASH_GAUGE, DASH_GAUGE,
                 90, -360 * readiness, javafx.scene.shape.ArcType.OPEN);
 
-        gc.setFont(slotFont);
+        // Harf halkanın kendisi kadar okunur olmalı: küçük punto halkanın
+        // içinde bir leke gibi duruyordu ve "Q" olduğu ancak bilerek bakınca
+        // anlaşılıyordu.
+        gc.setFont(hudFont);
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setFill(ready ? GOLD_TEXT : HUD_TEXT);
         gc.fillText("Q", x + DASH_GAUGE / 2, centerY);
