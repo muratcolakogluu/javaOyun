@@ -69,10 +69,10 @@ public enum Text {
     KEY_ATTACK("Boşluk", "Space"),
     KEY_ATTACK_WHAT("vur", "attack"),
     KEY_DASH("Q", "Q"),
-    KEY_DASH_WHAT("kacis adimi: baktigin yone sicra", "dash: leap the way you face"),
+    KEY_DASH_WHAT("kaçış adımı: baktığın yöne sıçra", "dash: leap the way you face"),
     KEY_TAKE("F", "F"),
-    KEY_TAKE_WHAT("yerdeki ekipmanı al ya da tezgâhtakiyle konuş",
-            "pick up gear or talk to whoever keeps a bench"),
+    KEY_TAKE_WHAT("yerdekini al ya da tezgâhla konuş",
+            "take what is there, or talk at a bench"),
     KEY_STAIRS("E", "E"),
     KEY_STAIRS_WHAT("merdivende in ya da çık", "go down or up at stairs"),
     KEY_FORGE("T", "T"),
@@ -87,10 +87,10 @@ public enum Text {
     KEY_RESTART_WHAT("ölünce yeniden başla", "restart after death"),
     KEY_PAUSE("ESC", "ESC"),
     KEY_PAUSE_WHAT("devam et", "resume"),
-    KEY_TELL_NOTE("kızıl halka kapanıyorsa ağır bir vuruş geliyor: bir adım geri",
-            "a closing red ring means a heavy blow: step back"),
+    KEY_TELL_NOTE("kızıl halka kapanıyorsa bir adım geri",
+            "a closing red ring: step back"),
     KEY_AUTOPICK_NOTE("iksir ve altın kendiliğinden alınır",
-            "potions and gold are picked up automatically"),
+            "potions and gold are picked up for you"),
 
     // -------------------------------------------------------------- bilgi şeridi
 
@@ -99,12 +99,19 @@ public enum Text {
     PANEL_COMBAT("SAVAŞ", "COMBAT"),
     PANEL_ITEM("EŞYA", "ITEMS"),
     PANEL_STATUS("DURUM", "STATUS"),
-    HUD_ATTACK("Vuruş %d", "Attack %d"),
-    HUD_DEFENSE("Zırh %d", "Armor %d"),
-    HUD_GOLD("Altın %d", "Gold %d"),
-    HUD_DEPTH("Kat %d/%d", "Floor %d/%d"),
-    HUD_TIME("Süre %.0fs", "Time %.0fs"),
-    HUD_ENEMIES("Düşman %d", "Enemies %d"),
+    // Etiket ve sayı ayrı duruyor. Önce "Vuruş %d" gibi tek parçaydılar ve
+    // şeritteki satır "etiket sayı etiket sayı" diye akıyordu; sayılar hiçbir
+    // yerde alt alta gelmediği için göz her birini ayrı ayrı aramak zorundaydı.
+    // Ayrılınca etiket sola, sayı sağa yaslanıyor ve sütun gerçek bir tabloya
+    // dönüşüyor.
+    STAT_ATTACK("Vuruş", "Attack"),
+    STAT_ARMOR("Zırh", "Armor"),
+    STAT_GOLD("Altın", "Gold"),
+    STAT_FLOOR("Kat", "Floor"),
+    STAT_TIME("Süre", "Time"),
+    STAT_ENEMIES("Düşman", "Enemies"),
+    STAT_FLOOR_VALUE("%d/%d", "%d/%d"),
+    STAT_TIME_VALUE("%.0fs", "%.0fs"),
     HUD_DUNGEON_AWAKE("ZİNDAN UYANDI", "THE DUNGEON IS AWAKE"),
     HUD_BAG_HINT("F ekipmanı alır · 1-8 kullanır · Shift+1-8 bırakır",
             "F takes gear · 1-8 uses · Shift+1-8 drops"),

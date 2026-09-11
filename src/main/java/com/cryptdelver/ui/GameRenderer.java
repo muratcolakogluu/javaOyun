@@ -25,6 +25,7 @@ import com.cryptdelver.world.Dungeon;
 import com.cryptdelver.world.DungeonGenerator;
 import com.cryptdelver.world.Tile;
 import com.cryptdelver.world.Vision;
+import java.util.ArrayList;
 import java.util.List;
 import javafx.geometry.VPos;
 import javafx.scene.canvas.GraphicsContext;
@@ -54,15 +55,33 @@ public class GameRenderer {
     public static final int TILE_SIZE = 32;
 
     /** Haritanın altındaki bilgi ve çanta şeridinin yüksekliği. */
-    public static final int HUD_HEIGHT = 96;
+    /**
+     * Bilgi şeridinin yüksekliği.
+     *
+     * <p>96 idi ve 13 puntoya göre ölçülmüştü. Yazı büyüyünce üç şey birden
+     * yer istedi: durum sayıları iki yerine üç satıra yayıldı, mesajlar satır
+     * kırmaya başladı, ipuçları da büyüdü. Şerit 124'e çıkınca pencere
+     * 704+124 = 828 piksel oluyor — ekranın alt kenarına dayanmadan sığıyor.</p>
+     */
+    public static final int HUD_HEIGHT = 124;
 
     /** Yerdeki eşyalar biraz küçük çiziliyor ki karakterlerden ayırt edilsin. */
     private static final double GROUND_ITEM_SCALE = 1.0;
 
     private static final double SWING_RADIUS = 1.1;
 
-    /** Bilgi seridinde gosterilen olay satiri sayisi. */
-    private static final int MESSAGE_LINES = 3;
+    /**
+     * Bir olay sütununda kaç <em>satır</em> gösterilir.
+     *
+     * <p>Mesaj sayısı değil satır sayısı: uzun bir mesaj iki satır kaplıyor ve
+     * arkasındaki daha eski mesajı dışarı itiyor. Roguelike kayıtları hep
+     * böyle çalışır — sütunun yüksekliği sabit, içine ne sığarsa.</p>
+     */
+    private static final int MESSAGE_LINES = 4;
+
+    /** Olay satırlarının arası ve sütunun ilk satırının şeride uzaklığı. */
+    private static final double MESSAGE_LINE_STEP = 19;
+    private static final double MESSAGE_TOP = 38;
 
     /** Elde tutulan silah, yerdekinden biraz küçük çiziliyor. */
     private static final double HELD_WEAPON_SCALE = 0.85;
@@ -99,6 +118,18 @@ public class GameRenderer {
     private static final double PANEL_GAP = 14;
 
     /**
+     * Durum tablosunun ölçüleri: iki sütun, üç satır.
+     *
+     * <p>Karakter paneli 244 piksel geniş. Sütun 118, yani iki sütun 236 —
+     * sağ kenarda 8 piksel nefes payı kalıyor. En uzun göz İngilizce
+     * "Enemies 12": etiket 58, sayı 17, arası 33. Sığıyor.</p>
+     */
+    private static final int STAT_COLUMNS = 2;
+    private static final double STAT_COLUMN_WIDTH = 118;
+    private static final double STAT_VALUE_RIGHT = 106;
+    private static final double STAT_LINE_STEP = 19;
+
+    /**
      * Panellerin sol kenarları.
      *
      * <p>Harita 40 kare, yani 1280 piksel geniş. Şerit beş sütuna bölündü:
@@ -130,6 +161,15 @@ public class GameRenderer {
     private static final Color HINT_BACKGROUND = Color.web("#15151d", 0.9);
     private static final Color HUD_BACKGROUND = Color.web("#15151d");
     private static final Color HUD_TEXT = Color.web("#7c7c92");
+
+    /**
+     * Durum tablosundaki sayıların rengi.
+     *
+     * <p>Etiketten bir ton açık. Aynı renkte olsalardı tablo tek bir gri
+     * bulanıklık olurdu; sayıyı öne çıkarmak, okunması gereken şeyin sayı
+     * olduğunu söylüyor.</p>
+     */
+    private static final Color HUD_BRIGHT = Color.web("#c6c6d8");
     private static final Color HUD_ACCENT = Color.web("#9a8fc0");
     private static final Color HP_TEXT = Color.web("#c9564f");
     private static final Color GOLD_TEXT = Color.web("#e8c46a");
@@ -205,7 +245,7 @@ public class GameRenderer {
     private static final double LIGHT_CORE = 0.65;
 
     /** Menü çerçevesinin ve satırlarının genişliği. */
-    private static final double MENU_FRAME_WIDTH = 660;
+    private static final double MENU_FRAME_WIDTH = 720;
 
     /** Cerceve tuvalin dort kenarindan bu kadar iceride; boylece kendisi ortali. */
     private static final double MENU_MARGIN = 44;
@@ -330,8 +370,20 @@ public class GameRenderer {
 
     /** Kırık parçanın soluk görünümü: rengi çekilmiş ve kararmış. */
     private final ColorAdjust brokenEffect = new ColorAdjust(0, -0.85, -0.35, 0);
-    private final Font hudFont = Font.font("Consolas", 13);
-    private final Font slotFont = Font.font("Consolas", 10);
+    /**
+     * Şeridin ve perdelerin yazı boyu.
+     *
+     * <p>Uzun süre 13 punto idi ve şerit gözle okunacak bir bilgi paneli
+     * olmaktan çok bir dipnot gibi duruyordu: dövüşün ortasında canına ve
+     * altınına bakman gerekiyor ama bakmak için eğilmen gerekiyordu. 15 punto
+     * aynı bilgiyi bir metre uzaktan okunur yapıyor.</p>
+     *
+     * <p>Puntoyu büyütmek tek başına bir tercih değil, bir <em>sonuç zinciri</em>:
+     * sütunlara sığmayan yazı komşu panelin üstüne biner. O yüzden aynı adımda
+     * şerit yükseldi, durum sayıları tabloya döndü ve mesajlar satır kırıyor.</p>
+     */
+    private final Font hudFont = Font.font("Consolas", 15);
+    private final Font slotFont = Font.font("Consolas", 11);
     private final Font titleFont = Font.font("Consolas", 46);
     private final Font menuFont = Font.font("Consolas", 20);
 
@@ -1316,11 +1368,11 @@ public class GameRenderer {
         drawInventoryPanel(gc, game, mapHeight);
 
         drawMessageColumn(gc, game, MessageLog.Channel.COMBAT, Text.PANEL_COMBAT.get(),
-                COMBAT_PANEL_X, mapHeight);
+                COMBAT_PANEL_X, mapWidth, mapHeight);
         drawMessageColumn(gc, game, MessageLog.Channel.ITEM, Text.PANEL_ITEM.get(),
-                ITEM_PANEL_X, mapHeight);
+                ITEM_PANEL_X, mapWidth, mapHeight);
         drawMessageColumn(gc, game, MessageLog.Channel.STATUS, Text.PANEL_STATUS.get(),
-                STATUS_PANEL_X, mapHeight);
+                STATUS_PANEL_X, mapWidth, mapHeight);
         drawFooter(gc, game, mapWidth, mapHeight);
 
         drawPanelDivider(gc, INVENTORY_PANEL_X - PANEL_GAP, mapHeight);
@@ -1329,6 +1381,36 @@ public class GameRenderer {
         drawPanelDivider(gc, STATUS_PANEL_X - PANEL_GAP, mapHeight);
 
         drawSlotTooltip(gc);
+    }
+
+    /**
+     * Durum tablosunda tek bir göz: solda etiket, sağda sayı.
+     *
+     * <p>İki sütun, üç satır. Önce üç sütun iki satırdı ve Türkçede kıl payı
+     * sığıyordu; İngilizcede "Floor 12/20" komşusunun üstüne biniyordu. Sütun
+     * sayısını düşürüp satır eklemek, iki dilde de aynı yerleşimin çalışması
+     * demek — yerleşimi dile göre ayarlamak iki ayrı yerleşim bakmak
+     * olurdu.</p>
+     *
+     * <p>Sayı sağa yaslı: gözde tek bir sayı sütunu oluşuyor ve "kaç altınım
+     * var" sorusu aranarak değil bakılarak yanıtlanıyor.</p>
+     *
+     * @param cell soldan sağa, yukarıdan aşağıya gözün sırası
+     * @param valueColor sayının rengi; etiket her zaman soluk
+     */
+    private void drawStat(GraphicsContext gc, String label, String value, int cell,
+                          double firstLine, Color valueColor) {
+        double x = CHARACTER_PANEL_X + (cell % STAT_COLUMNS) * STAT_COLUMN_WIDTH;
+        double y = firstLine + (cell / STAT_COLUMNS) * STAT_LINE_STEP;
+
+        gc.setFont(hudFont);
+        gc.setTextAlign(TextAlignment.LEFT);
+        gc.setFill(HUD_TEXT);
+        gc.fillText(label, x, y);
+
+        gc.setTextAlign(TextAlignment.RIGHT);
+        gc.setFill(valueColor);
+        gc.fillText(value, x + STAT_VALUE_RIGHT, y);
     }
 
     /** Panelleri birbirinden ayıran dikey çizgi. */
@@ -1379,23 +1461,27 @@ public class GameRenderer {
         drawDashGauge(gc, player, right + 52, slotTop + 28);
         drawActiveEffects(gc, player, right + 88, slotTop + 28);
 
-        gc.setTextAlign(TextAlignment.LEFT);
-        double line = mapHeight + 72;
+        double line = mapHeight + 76;
 
-        gc.setFill(HUD_TEXT);
-        gc.fillText(Text.HUD_ATTACK.get(player.getAttackPower()), CHARACTER_PANEL_X, line);
-        gc.fillText(Text.HUD_DEFENSE.get(player.getDefense()), CHARACTER_PANEL_X + 76, line);
+        drawStat(gc, Text.STAT_ATTACK.get(), String.valueOf(player.getAttackPower()),
+                0, line, HUD_BRIGHT);
+        drawStat(gc, Text.STAT_ARMOR.get(), String.valueOf(player.getDefense()),
+                1, line, HUD_BRIGHT);
 
-        gc.setFill(GOLD_TEXT);
-        gc.fillText(Text.HUD_GOLD.get(game.getGold()), CHARACTER_PANEL_X + 136, line);
+        // Sayının rengi altın, etiketinki değil. Önce bütün satır altın
+        // renkteydi ve komşularının yanında iki punto büyük görünüyordu --
+        // parlak renk göze daha kalın geliyor. Vurgu artık yalnızca okunması
+        // gereken yerde.
+        drawStat(gc, Text.STAT_GOLD.get(), String.valueOf(game.getGold()),
+                2, line, GOLD_TEXT);
+        drawStat(gc, Text.STAT_FLOOR.get(),
+                Text.STAT_FLOOR_VALUE.get(game.getDepth(), FloorTheme.MAX_DEPTH),
+                3, line, HUD_ACCENT);
 
-        gc.setFill(HUD_ACCENT);
-        gc.fillText(Text.HUD_DEPTH.get(game.getDepth(), FloorTheme.MAX_DEPTH),
-                CHARACTER_PANEL_X, line + 16);
-        gc.setFill(HUD_TEXT);
-        gc.fillText(Text.HUD_TIME.get(game.getElapsedSeconds()),
-                CHARACTER_PANEL_X + 76, line + 16);
-        gc.fillText(Text.HUD_ENEMIES.get(game.getEnemies().size()), CHARACTER_PANEL_X + 156, line + 16);
+        drawStat(gc, Text.STAT_TIME.get(), Text.STAT_TIME_VALUE.get(game.getElapsedSeconds()),
+                4, line, HUD_BRIGHT);
+        drawStat(gc, Text.STAT_ENEMIES.get(), String.valueOf(game.getEnemies().size()),
+                5, line, HUD_BRIGHT);
 
         // Zindan uyandıysa kalıcı bir uyarı: takviyeler gelirken oyuncu
         // "neden birden kalabalıklaştı" diye düşünmesin.
@@ -1584,13 +1670,23 @@ public class GameRenderer {
         drawPanelTitle(gc, Text.PANEL_BAG.get(), INVENTORY_PANEL_X, mapHeight);
         drawInventory(gc, game, INVENTORY_PANEL_X, mapHeight + 28);
 
-        // Slotların altındaki tek satır: toplama tuşa bağlandığından beri
+        // Slotların altındaki ipucu: toplama tuşa bağlandığından beri
         // "eşyayla ne yapabilirim" sorusunun cevabı sürekli göz önünde dursun.
+        //
+        // Bu da satır kırıyor. Tek satırken Türkçesi çanta sütununu on birkaç
+        // piksel aşıyor ve savaş kaydının ilk harflerinin üstüne biniyordu —
+        // yazıyı kısaltmak ipucunu eksiltmek olurdu, ikinci satır ise bedava:
+        // şerit yükselince slotların altı zaten boş kaldı.
         gc.setFont(slotFont);
         gc.setTextAlign(TextAlignment.LEFT);
         gc.setFill(SLOT_NUMBER);
-        gc.fillText(Text.HUD_BAG_HINT.get(),
-                INVENTORY_PANEL_X, mapHeight + 76);
+
+        double hintY = mapHeight + 78;
+        for (String part : wrap(Text.HUD_BAG_HINT.get(),
+                COMBAT_PANEL_X - PANEL_GAP - INVENTORY_PANEL_X, slotFont)) {
+            gc.fillText(part, INVENTORY_PANEL_X, hintY);
+            hintY += 16;
+        }
         gc.setFont(hudFont);
     }
 
@@ -1651,14 +1747,17 @@ public class GameRenderer {
      * artık "Altın topladın"ı ekrandan itemiyor.</p>
      */
     private void drawMessageColumn(GraphicsContext gc, Game game, MessageLog.Channel channel,
-                                   String title, double x, double mapHeight) {
+                                   String title, double x, double mapWidth, double mapHeight) {
         drawPanelTitle(gc, title, x, mapHeight);
 
+        gc.setFont(hudFont);
         gc.setTextAlign(TextAlignment.LEFT);
         List<MessageLog.Entry> recent = game.getMessageLog().latestEntries(channel, MESSAGE_LINES);
-        double line = mapHeight + 36;
+        double width = columnWidth(x, mapWidth);
+        double line = mapHeight + MESSAGE_TOP;
+        int drawn = 0;
 
-        for (int i = 0; i < recent.size(); i++) {
+        for (int i = 0; i < recent.size() && drawn < MESSAGE_LINES; i++) {
             MessageLog.Entry entry = recent.get(i);
 
             // Önemli olaylar gürültünün arasında renkle ayrılıyor; sıradan
@@ -1668,8 +1767,72 @@ public class GameRenderer {
             } else {
                 gc.setFill(i == 0 ? MESSAGE_TEXT : MESSAGE_FADED);
             }
-            gc.fillText(entry.getDisplay(), x, line + i * 17);
+
+            List<String> parts = wrap(entry.getDisplay(), width, hudFont);
+
+            for (int part = 0; part < parts.size() && drawn < MESSAGE_LINES; part++) {
+                // Butceye sigmayan son satirin sonuna uc nokta: cumle burada
+                // bitmiyor demek. Once sigmayan mesaji hic cizmiyordum ama o
+                // zaman sutunun yarisi bos kaliyordu; kesilmis bir satir
+                // yaniltici, <em>isaretlenmis</em> kesik degil.
+                boolean last = drawn == MESSAGE_LINES - 1;
+                boolean more = last && part < parts.size() - 1;
+
+                gc.fillText(more ? parts.get(part) + "…" : parts.get(part),
+                        x, line + drawn * MESSAGE_LINE_STEP);
+                drawn++;
+            }
         }
+    }
+
+    /**
+     * Bir olay sütununun sağ kenarına kadar olan genişliği.
+     *
+     * <p>Sütunlar sabit yerlerde başlıyor; hangisinin nerede bittiğini
+     * sıradaki ayracın yeri söylüyor. En sağdaki sütun pencerenin kenarında
+     * bitiyor.</p>
+     */
+    private double columnWidth(double x, double mapWidth) {
+        if (x == COMBAT_PANEL_X) {
+            return ITEM_PANEL_X - PANEL_GAP - x;
+        }
+        if (x == ITEM_PANEL_X) {
+            return STATUS_PANEL_X - PANEL_GAP - x;
+        }
+        return mapWidth - 10 - x;
+    }
+
+    /**
+     * Yazıyı sütuna sığacak satırlara böler.
+     *
+     * <p>Uzun mesajlar şimdiye kadar sütunun sağından taşıp komşu panelin
+     * üstüne biniyordu — "Mahzen Bekçisi merdiveni tutuyor. Yavaş — vur ve
+     * geri çekil." 226 piksellik sütunda 429 piksel yer kaplıyor. Kırpmak
+     * kolay olurdu ama hasar sayısı cümlenin ortasında duruyor, yani kırpılan
+     * yer okunması gereken yer. Satır kırmak hiçbir şey kaybettirmiyor.</p>
+     *
+     * <p>Kırma noktası boşluk; sığmayan tek bir uzun kelime olursa kendi
+     * satırında taşmasına izin veriliyor — oyunda öyle bir kelime yok ve
+     * kelimeyi ortasından bölmek okunaklılığı taşmadan çok bozardı.</p>
+     */
+    private List<String> wrap(String text, double width, Font font) {
+        List<String> lines = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+
+        for (String word : text.split(" ")) {
+            String candidate = current.isEmpty() ? word : current + " " + word;
+            if (!current.isEmpty() && measure(candidate, font) > width) {
+                lines.add(current.toString());
+                current = new StringBuilder(word);
+            } else {
+                current = new StringBuilder(candidate);
+            }
+        }
+
+        if (!current.isEmpty()) {
+            lines.add(current.toString());
+        }
+        return lines;
     }
 
     /** Şeridin sağ alt köşesi: bulunduğun bölge ve tek satırlık yardım ipucu. */
@@ -2046,6 +2209,13 @@ public class GameRenderer {
         } else if (game.isNearMerchant()) {
             hint = Text.HINT_OPEN_SHOP.get();
         } else {
+            return;
+        }
+
+        // Tezgâh zaten açıksa "tezgâhı aç" demenin anlamı yok. Perde yarı
+        // saydam olduğu için ipucu altından soluk soluk görünüyordu: ekranda
+        // duran ama artık doğru olmayan bir yazı.
+        if (game.isForgeOpen() || game.isShopOpen()) {
             return;
         }
 
