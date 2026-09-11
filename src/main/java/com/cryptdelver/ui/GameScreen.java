@@ -5,6 +5,7 @@ import com.cryptdelver.entity.Merchant;
 import com.cryptdelver.game.Game;
 import com.cryptdelver.game.Records;
 import com.cryptdelver.game.Settings;
+import com.cryptdelver.game.StartPath;
 import com.cryptdelver.game.Text;
 import com.cryptdelver.persistence.RecordsFile;
 import com.cryptdelver.persistence.SettingsFile;
@@ -193,7 +194,8 @@ public class GameScreen {
      */
     private boolean isReachable(UiAction action) {
         if (menu.isOpen()) {
-            return action instanceof UiAction.Menu || action instanceof UiAction.Setting;
+            return action instanceof UiAction.Menu || action instanceof UiAction.Setting
+                    || action instanceof UiAction.Path;
         }
         if (game.isForgeOpen()) {
             return action instanceof UiAction.Forge || action instanceof UiAction.Enchant;
@@ -216,6 +218,10 @@ public class GameScreen {
             case UiAction.Menu(StartMenu.Option option) -> {
                 menu.select(option);
                 chooseFromMenu();
+            }
+            case UiAction.Path(StartPath path) -> {
+                menu.selectPath(path);
+                startPlaying(path);
             }
             case UiAction.Setting(StartMenu.SettingRow row, int step) -> {
                 menu.selectSetting(row);
@@ -444,6 +450,13 @@ public class GameScreen {
     }
 
     private void chooseFromMenu() {
+        // Yol sayfasında Enter seçimi onaylıyor ve koşu başlıyor: bu sayfanın
+        // tek işi bu.
+        if (menu.getPane() == StartMenu.Pane.PATHS) {
+            startPlaying(menu.getSelectedPath());
+            return;
+        }
+
         if (menu.getPane() != StartMenu.Pane.MAIN) {
             // Alt sayfalarda Enter yalnızca "Geri" satırında bir şey yapıyor;
             // değerler sağ/sol ile değişiyor.
@@ -457,7 +470,7 @@ public class GameScreen {
         }
 
         switch (menu.getSelected()) {
-            case NEW_GAME -> startPlaying();
+            case NEW_GAME -> menu.openPane(StartMenu.Pane.PATHS);
             case SETTINGS -> menu.openPane(StartMenu.Pane.SETTINGS);
             case HELP -> menu.openPane(StartMenu.Pane.HELP);
             case QUIT -> {
@@ -467,7 +480,17 @@ public class GameScreen {
         }
     }
 
-    private void startPlaying() {
+    /**
+     * Seçilen yolla koşuyu başlatır.
+     *
+     * <p>Her yeni koşu {@link Game#restart()} üzerinden geçiyor — menüden
+     * başlayan da ölümden sonra Enter'la başlayan da. İkinci bir "kur" yolu
+     * açsaydım ikisi zamanla ayrışırdı.</p>
+     */
+    private void startPlaying(StartPath path) {
+        game.setStartPath(path);
+        game.restart();
+        runRecorded = false;
         menu.close();
 
         // Menüde basılı kalan tuşlar oyuna sarkmasın.

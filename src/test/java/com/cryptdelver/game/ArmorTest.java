@@ -179,16 +179,23 @@ class ArmorTest {
         assertEquals(0, player.getFacingY());
     }
 
+    /**
+     * Yeniden baslamak <em>o kosunun</em> zirhini cikariyor. Yeni kosu
+     * kendi yolunun verdigiyle basliyor, o yuzden "zirhi yok" demek artik
+     * dogru degil; sorulmasi gereken sey eskisinin gidip gitmedigi.
+     */
     @Test
-    @DisplayName("Yeniden baslayinca zirh cikar")
+    @DisplayName("Yeniden baslayinca eski zirh gider")
     void restartRemovesArmor() {
-        game.getInventory().add(LootTable.armorForTier(1, 0, 0));
+        Armor worn = LootTable.armorForTier(LootTable.MAX_TIER, 0, 0);
+        game.getInventory().add(worn);
         game.useItem(0);
+        assertEquals(worn, player.getEquippedArmor());
 
         game.restart();
 
-        assertNull(player.getEquippedArmor());
-        assertEquals(0, player.getDefense());
+        assertNotEquals(worn, player.getEquippedArmor(), "Eski zirh ustunde kalmamali");
+        assertFalse(game.getInventory().getItems().contains(worn), "Cantada da kalmamali");
     }
 
     /**

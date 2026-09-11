@@ -20,6 +20,7 @@ import com.cryptdelver.game.MessageLog;
 import com.cryptdelver.game.Records;
 import com.cryptdelver.game.RunLog;
 import com.cryptdelver.game.Settings;
+import com.cryptdelver.game.StartPath;
 import com.cryptdelver.game.Text;
 import com.cryptdelver.world.Dungeon;
 import com.cryptdelver.world.DungeonGenerator;
@@ -259,6 +260,16 @@ public class GameRenderer {
     private static final double LIGHT_CORE = 0.65;
 
     /** Menü çerçevesinin ve satırlarının genişliği. */
+    /**
+     * Yol satırlarının ritmi.
+     *
+     * <p>Menü satırlarından seyrek: her satırın altında bir açıklama var ve
+     * ana menüdeki aralıkla yazılar birbirine giriyordu.</p>
+     */
+    private static final double PATH_ROW_SPACING = 74;
+    private static final double PATH_DESCRIPTION_GAP = 24;
+    private static final double PATH_TITLE_GAP = 44;
+
     private static final double MENU_FRAME_WIDTH = 720;
 
     /** Cerceve tuvalin dort kenarindan bu kadar iceride; boylece kendisi ortali. */
@@ -497,6 +508,7 @@ public class GameRenderer {
                     drawRecords(gc, records, centerX, hintY - FOOTER_GAP);
                 }
             }
+            case PATHS -> drawPathsPane(gc, menu, centerX, listTop, listBottom);
             case SETTINGS -> drawSettingsPane(gc, menu, game.getSettings(), centerX,
                     listTop, listBottom);
             case HELP -> drawHelpPane(gc, mapWidth, listTop, listBottom);
@@ -505,10 +517,11 @@ public class GameRenderer {
         gc.setFont(hudFont);
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setFill(HUD_TEXT);
-        gc.fillText(menu.getPane() == StartMenu.Pane.MAIN
-                        ? Text.MENU_HINT.get()
-                        : Text.SETTINGS_HINT.get(),
-                centerX, hintY);
+        gc.fillText(switch (menu.getPane()) {
+            case MAIN -> Text.MENU_HINT.get();
+            case PATHS -> Text.PATHS_HINT.get();
+            case SETTINGS, HELP -> Text.SETTINGS_HINT.get();
+        }, centerX, hintY);
     }
 
     /**
@@ -646,6 +659,39 @@ public class GameRenderer {
             boolean hovered = register(new UiAction.Menu(option), centerX, rowY);
 
             drawMenuRow(gc, option.getLabel(), centerX, rowY, hovered || i == menu.getIndex());
+        }
+    }
+
+    /**
+     * Başlangıç yolları sayfası: üç yol, her birinin altında ne verdiği.
+     *
+     * <p>Açıklama satırın <em>altında</em> ve seçili olmayanlarda da duruyor.
+     * Yalnızca seçili olanınkini göstermek daha temiz görünürdü ama o zaman
+     * karşılaştırmak için satırlar arasında gezinmen gerekirdi — oysa bu
+     * sayfanın tek işi üçünü yan yana koymak.</p>
+     */
+    private void drawPathsPane(GraphicsContext gc, StartMenu menu, double centerX,
+                               double top, double bottom) {
+        List<StartPath> paths = menu.getPaths();
+        double y = centeredListStart(top, bottom, paths.size(), PATH_ROW_SPACING);
+
+        gc.setFont(hudFont);
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setFill(HUD_ACCENT);
+        gc.fillText(Text.PATHS_TITLE.get(), centerX, y - PATH_TITLE_GAP);
+
+        for (int i = 0; i < paths.size(); i++) {
+            StartPath path = paths.get(i);
+            double rowY = y + i * PATH_ROW_SPACING;
+            boolean hovered = register(new UiAction.Path(path), centerX, rowY);
+            boolean selected = hovered || i == menu.getIndex();
+
+            drawMenuRow(gc, path.getLabel(), centerX, rowY, selected);
+
+            gc.setFont(hudFont);
+            gc.setTextAlign(TextAlignment.CENTER);
+            gc.setFill(selected ? MESSAGE_TEXT : MESSAGE_FADED);
+            gc.fillText(path.getDescription(), centerX, rowY + PATH_DESCRIPTION_GAP);
         }
     }
 

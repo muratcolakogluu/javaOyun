@@ -54,6 +54,15 @@ public sealed interface UiAction {
     record Buy(int index) implements UiAction {
     }
 
+    /**
+     * Başlangıç yolları sayfasında bir satır; tıklamak koşuyu başlatıyor.
+     *
+     * <p>Menü satırlarından ayrı bir kayıt, çünkü yaptığı iş farklı: menü
+     * satırı sayfa değiştiriyor, bu satır oyunu <em>kuruyor</em>.</p>
+     */
+    record Path(com.cryptdelver.game.StartPath path) implements UiAction {
+    }
+
     /** Çantadaki bir slot; tıklamak kullanıyor, Shift ile yere bırakıyor. */
 
     record Slot(int index) implements UiAction {

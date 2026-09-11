@@ -1,5 +1,6 @@
 package com.cryptdelver.ui;
 
+import com.cryptdelver.game.StartPath;
 import com.cryptdelver.game.Text;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +19,7 @@ import java.util.List;
 public class StartMenu {
 
     /** Menünün hangi sayfası açık. */
-    public enum Pane { MAIN, SETTINGS, HELP }
+    public enum Pane { MAIN, PATHS, SETTINGS, HELP }
 
     /** Ana sayfadaki satırlar. */
     public enum Option {
@@ -69,6 +70,7 @@ public class StartMenu {
     private Pane pane = Pane.MAIN;
     private int mainIndex;
     private int settingIndex;
+    private int pathIndex;
     private boolean open = true;
 
     public StartMenu() {
@@ -90,9 +92,31 @@ public class StartMenu {
         return List.of(SettingRow.values());
     }
 
+    /**
+     * Başlangıç yolları; koşuya nasıl indiğini seçtiğin sayfa.
+     *
+     * <p>Sıra {@link StartPath}'in kendi sırası: hangi yolun listenin başında
+     * duracağına oyunun kuralları karar veriyor, menü değil.</p>
+     */
+    public List<StartPath> getPaths() {
+        return List.of(StartPath.values());
+    }
+
+    public StartPath getSelectedPath() {
+        return StartPath.values()[pathIndex];
+    }
+
+    public void selectPath(StartPath path) {
+        pathIndex = path.ordinal();
+    }
+
     /** Açık sayfadaki seçili satırın sırası; çizim bunu vurguluyor. */
     public int getIndex() {
-        return pane == Pane.SETTINGS ? settingIndex : mainIndex;
+        return switch (pane) {
+            case SETTINGS -> settingIndex;
+            case PATHS -> pathIndex;
+            case MAIN, HELP -> mainIndex;
+        };
     }
 
     public Option getSelected() {
@@ -155,11 +179,17 @@ public class StartMenu {
     }
 
     private void move(int step) {
-        if (pane == Pane.SETTINGS) {
-            int count = SettingRow.values().length;
-            settingIndex = (settingIndex + step + count) % count;
-        } else {
-            mainIndex = (mainIndex + step + options.size()) % options.size();
+        switch (pane) {
+            case SETTINGS -> {
+                int count = SettingRow.values().length;
+                settingIndex = (settingIndex + step + count) % count;
+            }
+            case PATHS -> {
+                int count = StartPath.values().length;
+                pathIndex = (pathIndex + step + count) % count;
+            }
+            case MAIN, HELP ->
+                    mainIndex = (mainIndex + step + options.size()) % options.size();
         }
     }
 }

@@ -117,6 +117,23 @@ public class Game {
      * kurardı.</p>
      */
     private final RunLog runLog = new RunLog();
+
+    /**
+     * Bu koşuya hangi yolla başlandığı.
+     *
+     * <p>Seçim koşu boyunca duruyor ve ölünce de duruyor: Enter'a basınca
+     * aynı yolla yeniden başlıyorsun. Ölümün seçimini sessizce sıfırlaması,
+     * "bir daha deneyeyim" demenin en doğal anında oyuncuyu menüye geri
+     * yollamak olurdu.</p>
+     *
+     * <p>Donatma yalnızca {@link #restart()} içinde; kurucu oyuncuyu çıplak
+     * bırakıyor. Sebebi şu: oyun kurulduğunda menü açık ve arkadaki kat
+     * yalnızca bir fon — oynanan koşu her zaman menüden bir yol seçilerek,
+     * yani {@code restart()} üzerinden başlıyor. Kurucuda da donatsaydım
+     * hiç oynanmayan bir takım kurulur, sonra hemen üstüne yenisi
+     * yazılırdı.</p>
+     */
+    private StartPath startPath = StartPath.MUHAFIZ;
     private final List<Enemy> enemies = new ArrayList<>();
     private final List<Item> groundItems = new ArrayList<>();
 
@@ -252,6 +269,22 @@ public class Game {
     /** Bu koşunun defteri; ölüm ekranı buradan okuyor. */
     public RunLog getRunLog() {
         return runLog;
+    }
+
+    /** Bu koşuya hangi yolla başlandı. */
+    public StartPath getStartPath() {
+        return startPath;
+    }
+
+    /**
+     * Bir sonraki koşunun yolunu belirler; menü seçimi buradan giriyor.
+     *
+     * <p>Tek başına hiçbir şey yapmıyor — donatma {@link #restart()} içinde.
+     * Böylece "yeni oyun" ile "ölünce yeniden başla" aynı yoldan geçiyor ve
+     * ikisinin ayrışması mümkün değil.</p>
+     */
+    public void setStartPath(StartPath path) {
+        this.startPath = path;
     }
 
     public void addGold(int amount) {
@@ -1552,13 +1585,19 @@ public class Game {
         visited.clear();
         returns = 0;
         elapsedSeconds = 0;
-        runLog.reset();
         enemies.clear();
         groundItems.clear();
         projectiles.clear();
         messageLog.clear();
         regenerateFloor();
-        messageLog.add(Text.MSG_RESTARTED.get());
+
+        startPath.outfit(this);
+
+        // Defter donatmadan SONRA açılıyor. Tüccarın kesesi "bu koşuda
+        // topladığın altın" değil, elinde indiğin sermaye; önce sıfırlasaydım
+        // ölüm ekranı daha ilk katta 150 altın toplamış gibi gösterirdi.
+        runLog.reset();
+        messageLog.add(Text.MSG_PATH_CHOSEN.get(startPath.getLabel()));
     }
 
     /**

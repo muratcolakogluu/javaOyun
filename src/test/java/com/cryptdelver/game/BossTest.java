@@ -101,18 +101,23 @@ class BossTest {
         @Test
         @DisplayName("Olunce bossdan kazanilan can gider")
         void deathTakesBackTheBossHealth() {
+            // Kosuyu menuden baslatilmis gibi kuruyoruz. Taban can artik
+            // baslangic yoluna bagli, yani "ciplak bir oyuncunun cani"
+            // dogru olcut degil; olcut, yeni bir kosunun neyle basladigi.
+            game.restart();
+            int runStart = player.getMaxHp();
+
             for (int i = 0; i < 4; i++) {
                 goDownOneFloor();
             }
-            int startingMax = new Player(0, 0).getMaxHp();
             killBoss();
-            assertTrue(player.getMaxHp() > startingMax, "Once kazanmis olmali");
+            assertTrue(player.getMaxHp() > runStart, "Once kazanmis olmali");
 
             player.takeDamage(player.getMaxHp());
             assertTrue(game.isOver());
             game.restart();
 
-            assertEquals(startingMax, player.getMaxHp(), "Yeni oyun taban canla baslamali");
+            assertEquals(runStart, player.getMaxHp(), "Kazanilan can mezarda kalmali");
         }
 
         @Test

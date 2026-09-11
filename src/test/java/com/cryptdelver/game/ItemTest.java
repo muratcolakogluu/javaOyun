@@ -221,17 +221,23 @@ class ItemTest {
         assertEquals(0, player.getHp());
     }
 
+    /**
+     * Yeni kosu kendi yolunun verdigiyle basliyor, dolayisiyla "canta bos"
+     * demek artik dogru degil. Sorulmasi gereken sey once kosudan hicbir
+     * seyin tasinmadigi.
+     */
     @Test
-    @DisplayName("Yeniden baslayinca canta ve kese sifirlanir")
+    @DisplayName("Yeniden baslayinca onceki kosudan bir sey kalmiyor")
     void restartClearsInventoryAndPurse() {
-        game.getInventory().add(new Potion(0, 0));
+        Potion carried = new Potion(0, 0);
+        game.getInventory().add(carried);
         game.addGold(30);
 
+        game.setStartPath(StartPath.HAYDUT);
         game.restart();
 
-        assertTrue(game.getInventory().isEmpty());
-        assertEquals(0, game.getGold());
-        assertNull(player.getEquippedWeapon());
+        assertFalse(game.getInventory().getItems().contains(carried), "Eski iksir gitmeli");
+        assertEquals(0, game.getGold(), "Haydutun kesesi bos");
         assertFalse(game.isOver());
     }
 }
