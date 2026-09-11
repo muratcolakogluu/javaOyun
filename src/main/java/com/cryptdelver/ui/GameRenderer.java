@@ -18,6 +18,7 @@ import com.cryptdelver.game.Game;
 import com.cryptdelver.game.Inventory;
 import com.cryptdelver.game.MessageLog;
 import com.cryptdelver.game.Records;
+import com.cryptdelver.game.RunLog;
 import com.cryptdelver.game.Settings;
 import com.cryptdelver.game.Text;
 import com.cryptdelver.world.Dungeon;
@@ -257,6 +258,11 @@ public class GameRenderer {
     private static final double ARROW_HIT = 30;
 
     /** Tezgâh satırının tıklanabilir alanı; satırın tamamını kaplıyor. */
+    /** Ölüm özetindeki satır sayısı, yüksekliği ve iki sütunun arası. */
+    private static final int SUMMARY_ROWS = 7;
+    private static final double SUMMARY_LINE = 24;
+    private static final double SUMMARY_GUTTER = 14;
+
     private static final double FORGE_ROW_WIDTH = 620;
     private static final double FORGE_ROW_HEIGHT = 26;
     private static final Color OVERLAY_TITLE = Color.web("#c9564f");
@@ -2500,23 +2506,101 @@ public class GameRenderer {
         gc.fillText(Text.GAME_OVER_HINT.get(), mapWidth / 2, mapHeight / 2 + 58);
     }
 
+    /**
+     * Ölüm perdesi ve koşunun özeti.
+     *
+     * <p>Eskiden burada iki sayı vardı: kaçıncı kat, kaç altın. Bir koşunun
+     * anlattığı şey bu değil. Ölen oyuncunun sorduğu ilk soru <b>"beni ne
+     * öldürdü"</b> ve o cevap ekranda hiç yoktu — mesaj kaydına dönüp bakman
+     * gerekiyordu, üstelik perde onun üstünü örtüyordu. Şimdi öldüren şeyin adı
+     * en üstte, başlığın hemen altında.</p>
+     *
+     * <p>Kalanlar bir sayaç listesi değil, koşunun şekli: ne kadar derine
+     * indin, kaç kez geri döndün, kaç düşman devirdin, altını buldun mu
+     * harcadın mı. Bunlar bir sonraki koşuda neyi başka türlü yapacağına dair
+     * bir fikir veriyor — "on beşte ölüyorum ve hiç altın harcamamışım" gibi.</p>
+     */
     private void drawGameOver(GraphicsContext gc, Game game, double mapWidth, double mapHeight) {
+        RunLog run = game.getRunLog();
+
         gc.setFill(OVERLAY);
         gc.fillRect(0, 0, mapWidth, mapHeight);
 
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setTextBaseline(VPos.CENTER);
 
+        // Özet yedi satır; blok ekranın ortasında dursun diye başlık yukarı
+        // çekiliyor. Sabit koordinat vermek, satır sayısı değişince perdeyi
+        // bir kenara yaslardı.
+        double top = mapHeight / 2.0 - SUMMARY_ROWS * SUMMARY_LINE / 2.0 - 56;
+
         gc.setFont(titleFont);
         gc.setFill(OVERLAY_TITLE);
-        gc.fillText(Text.GAME_OVER.get(), mapWidth / 2.0, mapHeight / 2.0 - 30);
+        gc.fillText(Text.GAME_OVER.get(), mapWidth / 2.0, top);
 
-        gc.setFont(hudFont);
-        gc.setFill(GOLD_TEXT);
-        gc.fillText(Text.GAME_OVER_LINE.get(game.getDepth(), game.getGold()),
-                mapWidth / 2.0, mapHeight / 2.0 + 8);
-
+        gc.setFont(menuFont);
         gc.setFill(MESSAGE_TEXT);
-        gc.fillText(Text.GAME_OVER_HINT.get(), mapWidth / 2.0, mapHeight / 2.0 + 32);
+        gc.fillText(run.hasKiller()
+                        ? Text.SUMMARY_KILLER.get(run.getKilledBy())
+                        : Text.SUMMARY_KILLER_UNKNOWN.get(),
+                mapWidth / 2.0, top + 40);
+
+        double y = top + 78;
+        y = drawSummaryRow(gc, mapWidth, y, Text.SUMMARY_DEPTH.get(),
+                String.valueOf(run.getDeepestFloor()));
+        y = drawSummaryRow(gc, mapWidth, y, Text.SUMMARY_KILLS.get(),
+                String.valueOf(run.getKills()));
+        y = drawSummaryRow(gc, mapWidth, y, Text.SUMMARY_GOLD.get(),
+                String.valueOf(run.getGoldFound()));
+        y = drawSummaryRow(gc, mapWidth, y, Text.SUMMARY_PURSE.get(),
+                String.valueOf(game.getGold()));
+        y = drawSummaryRow(gc, mapWidth, y, Text.SUMMARY_BOUGHT.get(),
+                String.valueOf(run.getPurchases()));
+        y = drawSummaryRow(gc, mapWidth, y, Text.SUMMARY_RETURNS.get(),
+                String.valueOf(run.getReturns()));
+        y = drawSummaryRow(gc, mapWidth, y, Text.SUMMARY_TIME.get(),
+                Text.SUMMARY_SECONDS.get(game.getElapsedSeconds()));
+
+        // Takım tek satırda: iki ayrı sayaç satırı olsaydı "elinde ne vardı"
+        // sorusu iki yere bölünürdü, oysa cevap tek bir resim.
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setFont(hudFont);
+        gc.setFill(MESSAGE_FADED);
+        gc.fillText(Text.SUMMARY_CARRIED.get(
+                        gearName(game.getPlayer().getEquippedWeapon(), Text.SUMMARY_BAREHANDED),
+                        gearName(game.getPlayer().getEquippedArmor(), Text.SUMMARY_UNARMORED)),
+                mapWidth / 2.0, y + 14);
+
+        gc.setFill(HUD_ACCENT);
+        gc.fillText(Text.GAME_OVER_HINT.get(), mapWidth / 2.0, y + 40);
+    }
+
+    /** Kuşanılmış parçanın adı; boşsa yerine geçen söz. */
+    private static String gearName(Equipment item, Text empty) {
+        return item == null ? empty.get() : item.getFullName();
+    }
+
+    /**
+     * Özette tek bir satır: solda ne, sağda kaç.
+     *
+     * <p>İki sütun tek bir ortadan hizalanıyor — etiketler sağa, sayılar sola
+     * yaslı. Böylece sayılar alt alta diziliyor ve göz onları tek bir sütun
+     * olarak okuyor; hepsini ortalasaydım her satır başka bir yerde başlardı.</p>
+     *
+     * @return bir sonraki satırın y'si
+     */
+    private double drawSummaryRow(GraphicsContext gc, double mapWidth, double y,
+                                  String label, String value) {
+        gc.setFont(hudFont);
+
+        gc.setTextAlign(TextAlignment.RIGHT);
+        gc.setFill(MESSAGE_FADED);
+        gc.fillText(label, mapWidth / 2.0 - SUMMARY_GUTTER, y);
+
+        gc.setTextAlign(TextAlignment.LEFT);
+        gc.setFill(GOLD_TEXT);
+        gc.fillText(value, mapWidth / 2.0 + SUMMARY_GUTTER, y);
+
+        return y + SUMMARY_LINE;
     }
 }

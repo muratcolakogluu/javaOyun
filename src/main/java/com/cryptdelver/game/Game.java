@@ -108,6 +108,15 @@ public class Game {
     private final Player player;
     private final Inventory inventory = new Inventory();
     private final MessageLog messageLog = new MessageLog();
+
+    /**
+     * Bu koşunun defteri: ölüm ekranının anlatacağı hikâye.
+     *
+     * <p>Sayaçları buradan besliyorum çünkü olayların ne zaman olduğunu bilen
+     * taraf oyunun kendisi. Defterin oyuna bakması iki yönlü bir bağ
+     * kurardı.</p>
+     */
+    private final RunLog runLog = new RunLog();
     private final List<Enemy> enemies = new ArrayList<>();
     private final List<Item> groundItems = new ArrayList<>();
 
@@ -240,8 +249,14 @@ public class Game {
         return gold;
     }
 
+    /** Bu koşunun defteri; ölüm ekranı buradan okuyor. */
+    public RunLog getRunLog() {
+        return runLog;
+    }
+
     public void addGold(int amount) {
         gold += amount;
+        runLog.recordGold(amount);
     }
 
     /** Oyunun başından beri geçen süre, saniye. */
@@ -308,6 +323,7 @@ public class Game {
         }
 
         travelTo(depth + 1);
+        runLog.reachedFloor(depth);
         messageLog.add(Text.MSG_DESCENDED.get(depth, getTheme().getLabel()));
         return true;
     }
@@ -338,6 +354,7 @@ public class Game {
         }
 
         returns++;
+        runLog.recordReturn();
         travelTo(depth - 1);
         messageLog.add(Text.MSG_ASCENDED.get(depth, getTheme().getLabel()));
         messageLog.addImportant(Text.MSG_DUNGEON_ANGRIER.get());
@@ -662,6 +679,7 @@ public class Game {
 
         merchant.take(offer);
         inventory.add(offer.item());
+        runLog.recordPurchase();
         sounds.play(SoundEffect.PICKUP);
         messageLog.importantItem(Text.MSG_BOUGHT.get(offer.item().getName(), offer.price()));
         return true;
@@ -1371,6 +1389,7 @@ public class Game {
      */
     private void buryEnemy(Enemy enemy) {
         removeEnemy(enemy);
+        runLog.recordKill();
         messageLog.combat(Text.MSG_ENEMY_DOWN.get(enemy.getName()));
         sounds.play(SoundEffect.KILL);
 
@@ -1403,7 +1422,7 @@ public class Game {
         sounds.play(SoundEffect.HURT);
         wearGear(player.getEquippedArmor(), Text.GEAR_YOUR_ARMOR.get());
         reflectThorns(enemy);
-        announceDeathIfFallen();
+        announceDeathIfFallen(enemy.getName());
     }
 
     /**
@@ -1422,13 +1441,20 @@ public class Game {
         messageLog.combat(Text.MSG_ARROW_HURT.get(shooter.getName(), damage));
         sounds.play(SoundEffect.HURT);
         wearGear(player.getEquippedArmor(), Text.GEAR_YOUR_ARMOR.get());
-        announceDeathIfFallen();
+        announceDeathIfFallen(shooter.getName());
     }
 
-    private void announceDeathIfFallen() {
+    /**
+     * Oyuncu düştüyse duyurur ve defteri kapatır.
+     *
+     *  killer son vuruşu indiren şeyin adı
+     */
+    private void announceDeathIfFallen(String killer) {
         if (player.isAlive()) {
             return;
         }
+
+        runLog.killedBy(killer);
 
         messageLog.addImportant(Text.MSG_DIED.get());
         sounds.play(SoundEffect.DEATH);
@@ -1526,6 +1552,7 @@ public class Game {
         visited.clear();
         returns = 0;
         elapsedSeconds = 0;
+        runLog.reset();
         enemies.clear();
         groundItems.clear();
         projectiles.clear();

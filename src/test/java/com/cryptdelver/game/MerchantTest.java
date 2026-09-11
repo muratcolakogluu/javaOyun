@@ -292,6 +292,8 @@ class MerchantTest {
                     "Alinan parca cantada olmali");
             assertNull(pedlar.offerAt(Merchant.STOCK_SIZE - 1),
                     "Tezgahta bir sira eksilmis olmali");
+            assertEquals(1, game.getRunLog().getPurchases(),
+                    "Alisveris kosu defterine de yazilmali");
         }
 
         @Test
