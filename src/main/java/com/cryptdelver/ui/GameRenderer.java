@@ -160,7 +160,14 @@ public class GameRenderer {
     private static final Color OVERLAY = Color.web("#0d0d12", 0.78);
 
     /** Menü perdesi oyun perdesinden daha kapalı: menü ön planda.  */
-    private static final Color MENU_BACKDROP = Color.web("#0b0b10", 0.92);
+    /**
+     * Menunun arkasindaki perde.
+     *
+     * <p>Tam opak degil: altta duran zindan hafif bir doku birakiyor. Ama 0.92
+     * fazla seffafti -- altta kalan oyun yazilari ("E ile bir ust kata cik")
+     * menunun icinden okunuyordu ve ekran kirli gorunuyordu.</p>
+     */
+    private static final Color MENU_BACKDROP = Color.web("#0b0b10", 0.965);
 
     /**
      * Hatırlanan ama görünmeyen karelerin üstündeki perde.
@@ -182,11 +189,34 @@ public class GameRenderer {
     private static final double LIGHT_CORE = 0.65;
 
     /** Menü çerçevesinin ve satırlarının genişliği. */
-    private static final double MENU_FRAME_WIDTH = 620;
+    private static final double MENU_FRAME_WIDTH = 660;
 
-    /** Baslik ve altindaki ayrac; kadro da ayracin ustunde duruyor. */
-    private static final double TITLE_Y = 120;
-    private static final double DIVIDER_Y = 180;
+    /** Cerceve tuvalin dort kenarindan bu kadar iceride; boylece kendisi ortali. */
+    private static final double MENU_MARGIN = 44;
+
+    /** Cerceve icindeki dikey ritim. */
+    private static final double TITLE_OFFSET = 76;
+    private static final double TAGLINE_OFFSET = 40;
+    private static final double DIVIDER_OFFSET = 64;
+    private static final double LIST_GAP = 28;
+    private static final double HINT_INSET = 28;
+    private static final double FOOTER_GAP = 34;
+
+    /** Gecmis blogunun kapladigi yukseklik: baslik ve iki satir. */
+    private static final double RECORDS_BLOCK = 96;
+
+    /** Gecmis bloğundaki satır aralığı. */
+    private static final double RECORDS_LINE = 22;
+
+    /** Menü ve ayar satırlarının dikey aralığı. */
+    private static final double MENU_ROW_SPACING = 44;
+
+    /** Ayarlar sayfasındaki zorluk ipucunun kapladığı satır. */
+    private static final double HINT_LINE = 26;
+
+    /** Tus listesindeki satir sayisi ve araligi; yerlesim hesabi buna dayaniyor. */
+    private static final int KEY_ROWS = 11;
+    private static final double KEY_ROW_SPACING = 21;
 
     /** Baslik isigi: mesale gibi nefes aliyor. */
     private static final Color TITLE_GLOW = Color.web("#ff9a3d");
@@ -310,35 +340,58 @@ public class GameRenderer {
      */
     private void drawStartMenu(GraphicsContext gc, StartMenu menu, Game game, Records records,
                                double mapWidth, double mapHeight) {
+        double totalHeight = mapHeight + HUD_HEIGHT;
+
         gc.setFill(MENU_BACKDROP);
-        gc.fillRect(0, 0, mapWidth, mapHeight + HUD_HEIGHT);
+        gc.fillRect(0, 0, mapWidth, totalHeight);
 
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setTextBaseline(VPos.CENTER);
 
         double centerX = mapWidth / 2;
-        drawMenuFrame(gc, centerX, mapHeight);
+        double frameTop = MENU_MARGIN;
+        double frameBottom = totalHeight - MENU_MARGIN;
+
+        drawMenuFrame(gc, centerX, frameTop, frameBottom);
+
+        double titleY = frameTop + TITLE_OFFSET;
+        double dividerY = titleY + DIVIDER_OFFSET;
 
         // Başlık bir meşale gibi yanıyor: menü, oyunun kendi ışığını taşısın.
-        drawTitleGlow(gc, centerX, TITLE_Y);
+        drawTitleGlow(gc, centerX, titleY);
+        drawMenuCast(gc, centerX, titleY);
 
         gc.setFont(titleFont);
         gc.setFill(GOLD_TEXT);
-        gc.fillText(Text.GAME_TITLE.get(), centerX, TITLE_Y);
+        gc.fillText(Text.GAME_TITLE.get(), centerX, titleY);
 
         gc.setFont(hudFont);
         gc.setFill(HUD_ACCENT);
-        gc.fillText(Text.GAME_TAGLINE.get(), centerX, 158);
+        gc.fillText(Text.GAME_TAGLINE.get(), centerX, titleY + TAGLINE_OFFSET);
 
-        drawMenuCast(gc, centerX);
+        drawMenuDivider(gc, centerX, dividerY);
+
+        // İpucu ve geçmiş alttan yukarı yerleşiyor, listeyse ikisinin arasında
+        // kalan boşluğa ortalanıyor. Sabit koordinatlarla yazılmışken liste
+        // üstte toplanıp altta kocaman bir boşluk bırakıyor, geçmiş de ipucuyla
+        // üst üste biniyordu.
+        double hintY = frameBottom - HINT_INSET;
+        boolean showRecords = menu.getPane() == StartMenu.Pane.MAIN
+                && records != null && records.hasAnyRun();
+
+        double listBottom = showRecords ? hintY - RECORDS_BLOCK : hintY - FOOTER_GAP;
+        double listTop = dividerY + LIST_GAP;
 
         switch (menu.getPane()) {
             case MAIN -> {
-                drawMainPane(gc, menu, centerX);
-                drawRecords(gc, records, centerX, mapHeight);
+                drawMainPane(gc, menu, centerX, listTop, listBottom);
+                if (showRecords) {
+                    drawRecords(gc, records, centerX, hintY - FOOTER_GAP);
+                }
             }
-            case SETTINGS -> drawSettingsPane(gc, menu, game.getSettings(), centerX);
-            case HELP -> drawHelpPane(gc, mapWidth);
+            case SETTINGS -> drawSettingsPane(gc, menu, game.getSettings(), centerX,
+                    listTop, listBottom);
+            case HELP -> drawHelpPane(gc, mapWidth, listTop, listBottom);
         }
 
         gc.setFont(hudFont);
@@ -347,7 +400,20 @@ public class GameRenderer {
         gc.fillText(menu.getPane() == StartMenu.Pane.MAIN
                         ? Text.MENU_HINT.get()
                         : Text.SETTINGS_HINT.get(),
-                centerX, mapHeight - 60);
+                centerX, hintY);
+    }
+
+    /**
+     * Satır listesinin ilk satırının y'si.
+     *
+     * <p>Liste, kendisine ayrılan boşluğa <em>ortalanıyor</em>. Böylece dört
+     * satırlık ana sayfa ile altı satırlık ayarlar sayfası aynı dengede
+     * duruyor; sabit bir başlangıç noktası ikisinden birini mutlaka yukarı
+     * yapıştırırdı.</p>
+     */
+    private double centeredListStart(double top, double bottom, int rows, double spacing) {
+        double height = (rows - 1) * spacing;
+        return top + (bottom - top - height) / 2;
     }
 
     /**
@@ -381,12 +447,9 @@ public class GameRenderer {
      * sprite'ları, ne oynayacağını daha ilk ekranda söylüyor. Hepsi canlı
      * çerçeveler olduğu için menü de kıpırdıyor.</p>
      */
-    private void drawMenuCast(GraphicsContext gc, double centerX) {
-        double y = DIVIDER_Y - 4;
-
-        sprites.get("player").draw(gc, centerX - CAST_SPREAD, y, CAST_SIZE);
-        sprites.get("imp").draw(gc, centerX + CAST_SPREAD - 46, y, CAST_SIZE * 0.8);
-        sprites.get("skeleton").draw(gc, centerX + CAST_SPREAD, y, CAST_SIZE * 0.85);
+    private void drawMenuCast(GraphicsContext gc, double centerX, double titleY) {
+        sprites.get("player").draw(gc, centerX - CAST_SPREAD, titleY, CAST_SIZE);
+        sprites.get("skeleton").draw(gc, centerX + CAST_SPREAD, titleY, CAST_SIZE);
     }
 
     /**
@@ -400,12 +463,10 @@ public class GameRenderer {
      * yeni oyuncuya bir şey söylemez, yalnızca ekranı doldururdu.</p>
      */
     private void drawRecords(GraphicsContext gc, Records records, double centerX,
-                             double mapHeight) {
-        if (records == null || !records.hasAnyRun()) {
-            return;
-        }
-
-        double y = mapHeight - 110;
+                             double bottom) {
+        // Blok alttan yukarı diziliyor: son satır verilen sınırda bitiyor, yani
+        // ipucuyla arasındaki boşluk her zaman aynı.
+        double y = bottom - 2 * RECORDS_LINE;
 
         gc.setFont(hudFont);
         gc.setTextAlign(TextAlignment.CENTER);
@@ -415,32 +476,35 @@ public class GameRenderer {
         gc.setFill(MESSAGE_TEXT);
         gc.fillText(Text.RECORDS_DEEPEST.get(records.getDeepestFloor())
                         + "   ·   " + Text.RECORDS_GOLD.get(records.getMostGold()),
-                centerX, y + 22);
+                centerX, y + RECORDS_LINE);
 
         gc.setFill(records.getWins() > 0 ? GOLD_TEXT : MESSAGE_FADED);
         gc.fillText(records.getWins() > 0
                         ? Text.RECORDS_RUNS.get(records.getRuns(), records.getWins())
                         : Text.RECORDS_NO_WIN.get(records.getRuns()),
-                centerX, y + 42);
+                centerX, y + 2 * RECORDS_LINE);
     }
 
     /** Menüyü çerçeveleyen ince altın hat; ekranı bir "sayfa" gibi topluyor. */
-    private void drawMenuFrame(GraphicsContext gc, double centerX, double mapHeight) {
+    private void drawMenuFrame(GraphicsContext gc, double centerX, double top, double bottom) {
         double width = MENU_FRAME_WIDTH;
-        double top = 60;
-        double height = mapHeight - 100;
+        double left = centerX - width / 2;
 
         gc.setStroke(SLOT_BORDER);
         gc.setLineWidth(1);
-        gc.strokeRoundRect(centerX - width / 2, top, width, height, 10, 10);
+        gc.strokeRoundRect(left, top, width, bottom - top, 10, 10);
 
         // Köşe çentikleri: düz bir dikdörtgen pencere gibi duruyordu, çentikler
         // onu duvara asılı bir levhaya çeviriyor.
-        drawFrameCorners(gc, centerX - width / 2, top, width, height);
+        drawFrameCorners(gc, left, top, width, bottom - top);
+    }
 
-        // Başlığın altındaki ayraç; başlıkla listeyi ayırıyor.
+    /** Başlıkla listeyi ayıran altın hat. */
+    private void drawMenuDivider(GraphicsContext gc, double centerX, double y) {
         gc.setStroke(HUD_ACCENT);
-        gc.strokeLine(centerX - width / 2 + 40, DIVIDER_Y, centerX + width / 2 - 40, DIVIDER_Y);
+        gc.setLineWidth(1);
+        gc.strokeLine(centerX - MENU_FRAME_WIDTH / 2 + 46, y,
+                centerX + MENU_FRAME_WIDTH / 2 - 46, y);
     }
 
     /** Çerçevenin dört köşesindeki kısa altın çentikler. */
@@ -463,16 +527,17 @@ public class GameRenderer {
         }
     }
 
-    private void drawMainPane(GraphicsContext gc, StartMenu menu, double centerX) {
+    private void drawMainPane(GraphicsContext gc, StartMenu menu, double centerX,
+                              double top, double bottom) {
         List<StartMenu.Option> options = menu.getOptions();
-        double y = 240;
+        double y = centeredListStart(top, bottom, options.size(), MENU_ROW_SPACING);
 
         for (int i = 0; i < options.size(); i++) {
             StartMenu.Option option = options.get(i);
-            boolean hovered = register(new UiAction.Menu(option), centerX, y + i * 44);
+            double rowY = y + i * MENU_ROW_SPACING;
+            boolean hovered = register(new UiAction.Menu(option), centerX, rowY);
 
-            drawMenuRow(gc, option.getLabel(), centerX, y + i * 44,
-                    hovered || i == menu.getIndex());
+            drawMenuRow(gc, option.getLabel(), centerX, rowY, hovered || i == menu.getIndex());
         }
     }
 
@@ -496,13 +561,16 @@ public class GameRenderer {
      * ve sağ/sol ile değiştikleri, ayrı bir açıklama yazmadan anlaşılıyor.</p>
      */
     private void drawSettingsPane(GraphicsContext gc, StartMenu menu, Settings settings,
-                                  double centerX) {
+                                  double centerX, double top, double bottom) {
         List<StartMenu.SettingRow> rows = menu.getSettingRows();
-        double y = 240;
+
+        // Zorluk ipucu da listeyle birlikte ortalanıyor: onu listenin dışında
+        // bıraksaydık liste yukarı kayar, altında boşluk kalırdı.
+        double y = centeredListStart(top, bottom - HINT_LINE, rows.size(), MENU_ROW_SPACING);
 
         for (int i = 0; i < rows.size(); i++) {
             StartMenu.SettingRow row = rows.get(i);
-            double rowY = y + i * 44 + (row == StartMenu.SettingRow.BACK ? 12 : 0);
+            double rowY = y + i * MENU_ROW_SPACING + (row == StartMenu.SettingRow.BACK ? 12 : 0);
             boolean hovered = register(new UiAction.Setting(row, 1), centerX, rowY);
             boolean selected = hovered || i == menu.getIndex();
 
@@ -517,7 +585,8 @@ public class GameRenderer {
         gc.setFont(hudFont);
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setFill(MESSAGE_FADED);
-        gc.fillText(difficultyHint(settings), centerX, y + rows.size() * 44 + 24);
+        gc.fillText(difficultyHint(settings), centerX,
+                y + rows.size() * MENU_ROW_SPACING + 20);
     }
 
     /** Seçili zorluğun ne yaptığını tek satırda anlatır. */
@@ -587,8 +656,10 @@ public class GameRenderer {
     }
 
     /** Yardım sayfası: duraklatma perdesindeki tuş listesinin aynısı. */
-    private void drawHelpPane(GraphicsContext gc, double mapWidth) {
-        drawKeyList(gc, mapWidth, 230);
+    private void drawHelpPane(GraphicsContext gc, double mapWidth, double top, double bottom) {
+        // Tuş listesi de kendi boşluğuna ortalanıyor; satır sayısı değişirse
+        // liste yine ortada kalıyor.
+        drawKeyList(gc, mapWidth, centeredListStart(top, bottom, KEY_ROWS + 1, KEY_ROW_SPACING));
     }
 
     /** Menüde tek satır; seçili olan çerçeveli ve parlak. */
@@ -829,7 +900,7 @@ public class GameRenderer {
         gc.setFill(HUD_ACCENT);
         gc.fillText(Text.KEYS_TITLE.get(), mapWidth / 2, top);
 
-        double y = top + 26;
+        double y = top + KEY_ROW_SPACING + 5;
         for (Text[] row : keys) {
             gc.setTextAlign(TextAlignment.RIGHT);
             gc.setFill(HUD_ACCENT);
@@ -838,7 +909,7 @@ public class GameRenderer {
             gc.setTextAlign(TextAlignment.LEFT);
             gc.setFill(MESSAGE_TEXT);
             gc.fillText(row[1].get(), mapWidth / 2 + 15, y);
-            y += 21;
+            y += KEY_ROW_SPACING;
         }
     }
 
