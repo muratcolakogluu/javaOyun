@@ -7,11 +7,11 @@ import com.cryptdelver.entity.Enemy;
 import com.cryptdelver.entity.Entity;
 import com.cryptdelver.entity.Equipment;
 import com.cryptdelver.entity.Item;
+import com.cryptdelver.entity.Merchant;
 import com.cryptdelver.entity.Player;
 import com.cryptdelver.entity.Projectile;
 import com.cryptdelver.entity.Seytan;
 import com.cryptdelver.entity.Weapon;
-import com.cryptdelver.entity.Wizard;
 import com.cryptdelver.game.FloorTheme;
 import com.cryptdelver.game.Forge;
 import com.cryptdelver.game.Game;
@@ -271,6 +271,15 @@ public class GameRenderer {
 
     /** Büyücünün ayağının dibindeki ocak ışığı. */
     private static final Color FORGE_GLOW = Color.web("#ff8a3d");
+
+    /**
+     * Satıcının fenerinin rengi.
+     *
+     * <p>Ocağınki turuncu, bunun sarısı daha soğuk. İkisi de sıcak bir halka
+     * ama yan yana konduklarında ayrı duruyorlar — uzaktan hangi tezgâh olduğu
+     * gövdeye bakmadan da anlaşılıyor.</p>
+     */
+    private static final Color LANTERN_GLOW = Color.web("#f2d16b");
     private static final int FORGE_GLOW_RINGS = 3;
     private static final long FORGE_PULSE_MILLIS = 1600;
 
@@ -741,9 +750,17 @@ public class GameRenderer {
         }
 
         if (game.getWizard() != null && isSeen(vision, game.getWizard())) {
-            drawForgeGlow(gc, game.getWizard());
+            drawNpcGlow(gc, game.getWizard(), FORGE_GLOW);
             drawEntity(gc, game.getWizard(), 1.0);
-            drawWizardSign(gc, game);
+            drawNpcSign(gc, game.getWizard(), game.getWizard().greetingFor(game),
+                    game.isNearWizard() && !game.isForgeOpen());
+        }
+
+        if (game.getMerchant() != null && isSeen(vision, game.getMerchant())) {
+            drawNpcGlow(gc, game.getMerchant(), LANTERN_GLOW);
+            drawEntity(gc, game.getMerchant(), 1.0);
+            drawNpcSign(gc, game.getMerchant(), game.getMerchant().greetingFor(game.getGold()),
+                    game.isNearMerchant() && !game.isShopOpen());
         }
 
         for (Enemy enemy : game.getEnemies()) {
@@ -784,6 +801,10 @@ public class GameRenderer {
 
         if (game.isForgeOpen()) {
             drawForgeScreen(gc, game, mapWidth, mapHeight);
+        }
+
+        if (game.isShopOpen()) {
+            drawShopScreen(gc, game, mapWidth, mapHeight);
         }
 
         if (game.isPaused()) {
@@ -1972,6 +1993,8 @@ public class GameRenderer {
             hint = Text.HINT_TAKE_MANY.get(here.size());
         } else if (game.isNearWizard()) {
             hint = Text.HINT_OPEN_BENCH.get();
+        } else if (game.isNearMerchant()) {
+            hint = Text.HINT_OPEN_SHOP.get();
         } else {
             return;
         }
@@ -2040,7 +2063,7 @@ public class GameRenderer {
      * <p>Işık gövdenin <em>altına</em> çiziliyor, üstüne değil. Daha önce
      * karakterin üstüne bindirilen çizimlerin nasıl durduğunu gördük.</p>
      */
-    private void drawForgeGlow(GraphicsContext gc, Entity smith) {
+    private void drawNpcGlow(GraphicsContext gc, Entity smith, Color glow) {
         double centerX = smith.getRenderX() * TILE_SIZE + TILE_SIZE / 2.0;
         double centerY = smith.getRenderY() * TILE_SIZE + TILE_SIZE * 0.72;
 
@@ -2052,8 +2075,7 @@ public class GameRenderer {
             double radius = TILE_SIZE * 0.34 * ring * (0.94 + 0.06 * breath);
             double alpha = 0.10 / ring * (0.75 + 0.25 * breath);
 
-            gc.setFill(Color.color(FORGE_GLOW.getRed(), FORGE_GLOW.getGreen(),
-                    FORGE_GLOW.getBlue(), alpha));
+            gc.setFill(Color.color(glow.getRed(), glow.getGreen(), glow.getBlue(), alpha));
             gc.fillOval(centerX - radius, centerY - radius * 0.55, radius * 2, radius * 1.1);
         }
     }
@@ -2066,18 +2088,17 @@ public class GameRenderer {
      * kendisi seçiyor — takımın kırıksa onu söylüyor, sağlamsa başka bir şey.
      * Böylece balon hem "bu bir büyücü" diyor hem de işe yarıyor.</p>
      */
-    private void drawWizardSign(GraphicsContext gc, Game game) {
-        Wizard smith = game.getWizard();
-        double x = smith.getRenderX() * TILE_SIZE + TILE_SIZE / 2.0;
-        double top = smith.getRenderY() * TILE_SIZE;
+    private void drawNpcSign(GraphicsContext gc, Entity npc, String greeting, boolean speaking) {
+        double x = npc.getRenderX() * TILE_SIZE + TILE_SIZE / 2.0;
+        double top = npc.getRenderY() * TILE_SIZE;
 
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setTextBaseline(VPos.CENTER);
 
-        drawNamePlate(gc, smith.getName(), x, top - 6);
+        drawNamePlate(gc, npc.getName(), x, top - 6);
 
-        if (game.isNearWizard() && !game.isForgeOpen()) {
-            drawSpeechBubble(gc, smith.greetingFor(game), x, top - 26);
+        if (speaking) {
+            drawSpeechBubble(gc, greeting, x, top - 26);
         }
     }
 
@@ -2324,6 +2345,104 @@ public class GameRenderer {
     private boolean registerForgeRow(UiAction action, double mapWidth, double y) {
         return clicks.add(action, mapWidth / 2 - FORGE_ROW_WIDTH / 2, y - FORGE_ROW_HEIGHT / 2,
                 FORGE_ROW_WIDTH, FORGE_ROW_HEIGHT);
+    }
+
+    /**
+     * Gezgin satıcının tezgâhı.
+     *
+     * <p>Büyücü ekranıyla aynı iskelet — aynı şerit genişliği, aynı rakam
+     * düzeni — çünkü ikisi de "altınını neye vereceksin" sorusunu soruyor ve
+     * oyuncunun iki ayrı yerleşim öğrenmesi için bir sebep yok. Farkı içeriği:
+     * burada takımını büyütmüyorsun, yolda hayatta kalmanı satın alıyorsun.</p>
+     *
+     * <p>Satılmış sıralar ekrandan <em>kalkmıyor</em>, soluklaşıp "satıldı"
+     * yazıyor. Kalksalardı kalan satırlar yukarı kayar ve tezgâhta neyin
+     * olduğunu hatırlamak zorlaşırdı; üstelik ne aldığını görmek de iyi.</p>
+     */
+    private void drawShopScreen(GraphicsContext gc, Game game, double mapWidth, double mapHeight) {
+        Merchant merchant = game.getMerchant();
+        if (merchant == null) {
+            return;
+        }
+
+        gc.setFill(OVERLAY);
+        gc.fillRect(0, 0, mapWidth, mapHeight);
+
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setTextBaseline(VPos.CENTER);
+        gc.setFont(titleFont);
+        gc.setFill(GOLD_TEXT);
+        gc.fillText(Text.MERCHANT_SIGN.get(), mapWidth / 2, mapHeight / 2 - 120);
+
+        gc.setFont(hudFont);
+        gc.setFill(HUD_TEXT);
+        gc.fillText(Text.SHOP_PURSE.get(game.getGold()), mapWidth / 2, mapHeight / 2 - 82);
+
+        List<Merchant.Offer> stock = merchant.getStock();
+        double y = mapHeight / 2 - 40;
+
+        // Sıra numarası tezgâhın kendi sırası: satılan parça listeden düşse de
+        // kalan satırların rakamı oynamasın diye bütün sıralar çiziliyor.
+        for (int i = 0; i < Merchant.STOCK_SIZE; i++) {
+            Merchant.Offer offer = i < stock.size() ? stock.get(i) : null;
+            y = drawShopRow(gc, game, mapWidth, y, i, offer);
+        }
+
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setFill(MESSAGE_FADED);
+        if (merchant.isSoldOut()) {
+            gc.fillText(Text.SHOP_EMPTY.get(), mapWidth / 2, y + 18);
+        } else {
+            gc.fillText(Text.SHOP_NOTE.get(), mapWidth / 2, y + 18);
+        }
+
+        gc.setFill(HUD_ACCENT);
+        gc.fillText(Text.SHOP_LEAVE.get(), mapWidth / 2, y + 40);
+    }
+
+    /**
+     * Tezgâhta tek bir sıra: rakam, resim, ad, ne işe yaradığı, fiyat.
+     *
+     * <p>Eşyanın resmi de çiziliyor. Adı zaten yazıyor ama oyuncu bu şeyleri
+     * yerde <em>resminden</em> tanıyor; tezgâhta aynı resmi görmek "bu o
+     * kırmızı şişe" demeyi tek bakışta hallediyor.</p>
+     *
+     * @param offer sıradaki parça; satılmışsa {@code null}
+     * @return bir sonraki satırın y'si
+     */
+    private double drawShopRow(GraphicsContext gc, Game game, double mapWidth, double y,
+                               int index, Merchant.Offer offer) {
+        boolean affordable = offer != null && game.getGold() >= offer.price();
+
+        if (offer != null && registerForgeRow(new UiAction.Buy(index), mapWidth, y)) {
+            drawForgeHighlight(gc, mapWidth, y);
+        }
+
+        gc.setFont(hudFont);
+        gc.setTextAlign(TextAlignment.RIGHT);
+        gc.setFill(offer == null ? SLOT_NUMBER : GOLD_TEXT);
+        gc.fillText(String.valueOf(index + 1), mapWidth / 2 - 300, y);
+
+        if (offer != null) {
+            sprites.get(offer.item().getSpriteName()).draw(gc, mapWidth / 2 - 268, y, 20);
+        }
+
+        gc.setTextAlign(TextAlignment.LEFT);
+        gc.setFill(offer == null ? MESSAGE_FADED : MESSAGE_TEXT);
+        gc.fillText(offer == null ? Text.SHOP_SOLD.get() : offer.item().getName(),
+                mapWidth / 2 - 250, y);
+
+        if (offer != null) {
+            gc.setFill(MESSAGE_FADED);
+            gc.fillText(offer.item().getDescription(), mapWidth / 2 - 60, y);
+        }
+
+        gc.setTextAlign(TextAlignment.RIGHT);
+        gc.setFill(affordable ? GOLD_TEXT : MESSAGE_FADED);
+        gc.fillText(offer == null ? Text.FORGE_NONE.get() : Text.FORGE_COST.get(offer.price()),
+                mapWidth / 2 + 300, y);
+
+        return y + 30;
     }
 
     /** Üstüne gelinen tezgâh satırının arkasındaki soluk şerit. */

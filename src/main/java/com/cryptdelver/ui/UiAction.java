@@ -43,7 +43,19 @@ public sealed interface UiAction {
     record Enchant(boolean onWeapon, Enchantment enchantment) implements UiAction {
     }
 
+    /**
+     * Satıcının tezgâhında bir sıra; tıklamak satın alıyor.
+     *
+     * <p>Sırayı numarayla tutuyorum, eşyayla değil: tezgâhtan bir parça
+     * satılınca kalanlar yukarı kayıyor ve ekran bir sonraki karede yeni
+     * bölgeleri kaydediyor. Nesneyi tutsaydım satılmış bir parçaya ait ölü bir
+     * tıklama bölgesi kalabilirdi.</p>
+     */
+    record Buy(int index) implements UiAction {
+    }
+
     /** Çantadaki bir slot; tıklamak kullanıyor, Shift ile yere bırakıyor. */
+
     record Slot(int index) implements UiAction {
     }
 

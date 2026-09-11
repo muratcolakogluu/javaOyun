@@ -126,6 +126,17 @@ public class Inventory {
         return stacks.size() >= CAPACITY;
     }
 
+    /**
+     * Bu eşya çantaya sığar mı.
+     *
+     * <p>{ #isFull()} tek başına yetmiyor: dolu bir çanta bile açık bir
+     * yığını olan iksiri kabul ediyor. Satın almada bunu <em>önceden</em>
+     * bilmek gerekiyor — altını alıp eşyayı veremediğimiz bir an olmamalı.</p>
+     */
+    public boolean hasRoomFor(Item item) {
+        return !isFull() || stackFor(item) != null;
+    }
+
     public boolean isEmpty() {
         return stacks.isEmpty();
     }

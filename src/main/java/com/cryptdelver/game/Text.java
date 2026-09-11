@@ -71,8 +71,8 @@ public enum Text {
     KEY_DASH("Q", "Q"),
     KEY_DASH_WHAT("kacis adimi: baktigin yone sicra", "dash: leap the way you face"),
     KEY_TAKE("F", "F"),
-    KEY_TAKE_WHAT("yerdeki ekipmanı al ya da büyücüyle konuş",
-            "pick up gear or talk to the wizard"),
+    KEY_TAKE_WHAT("yerdeki ekipmanı al ya da tezgâhtakiyle konuş",
+            "pick up gear or talk to whoever keeps a bench"),
     KEY_STAIRS("E", "E"),
     KEY_STAIRS_WHAT("merdivende in ya da çık", "go down or up at stairs"),
     KEY_FORGE("T", "T"),
@@ -116,11 +116,13 @@ public enum Text {
     HINT_TAKE_ONE("F ile %s al", "F to take %s"),
     HINT_TAKE_MANY("F ile %d eşyayı al", "F to take %d items"),
     HINT_OPEN_BENCH("F ile tezgâhı aç", "F to open the bench"),
+    HINT_OPEN_SHOP("F ile tezgâha bak", "F to browse the stall"),
     HINT_STAIRS_LOCKED("Merdiveni tutan şeyi önce yen", "Beat what guards the stairs first"),
     HINT_STAIRS_UP("E ile bir üst kata çık", "E to go up one floor"),
     HINT_STAIRS_DOWN("E ile bir alt kata in", "E to go down one floor"),
     HINT_STAIRS_EXIT("E ile kriptten çık", "E to leave the crypt"),
     WIZARD_SIGN("BÜYÜCÜ", "WIZARD"),
+    MERCHANT_SIGN("GEZGİN SATICI", "PEDLAR"),
 
     // ----------------------------------------------------------------- perdeler
 
@@ -162,6 +164,16 @@ public enum Text {
     FORGE_COST("%d altın", "%d gold"),
     FORGE_NONE("—", "—"),
     FORGE_SOUND("saglam", "sound"),
+
+    // ------------------------------------------------------------ satıcı tezgâhı
+
+    SHOP_PURSE("Kesende %d altın var.", "You carry %d gold."),
+    SHOP_SOLD("satıldı", "sold"),
+    SHOP_EMPTY("Tezgâh boşaldı. Bir sonraki satıcıya kadar bu kadar.",
+            "The stall is bare. That's it until the next pedlar."),
+    SHOP_NOTE("Satıcı boss katlarında çıkmaz; oradaki tezgâh büyücünün.",
+            "Pedlars keep off boss floors; that bench belongs to the wizard."),
+    SHOP_LEAVE("ESC ile tezgâhtan ayrıl", "ESC to leave the stall"),
     GEAR_WEAPON("Silah", "Weapon"),
     GEAR_ARMOR("Zırh", "Armor"),
     GEAR_YOUR_WEAPON("Kılıcın", "Your blade"),
@@ -234,6 +246,7 @@ public enum Text {
     BOSS_SEYTAN("Kor Şeytanı", "Ember Devil"),
     BOSS_LORT("Kript Lordu", "Crypt Lord"),
     WIZARD_NAME("Büyücü", "Wizard"),
+    MERCHANT_NAME("Gezgin Satıcı", "Pedlar"),
 
     // ----------------------------------------------------------------- büyücünün ağzı
 
@@ -247,6 +260,15 @@ public enum Text {
     WIZARD_BOSS("Aşağıdakine böyle gitme, bir düşün.",
             "Don't go to the thing below like that. Think."),
     WIZARD_IDLE("Ocak yanıyor, büyüler hazır.", "The forge is lit, the spells are ready."),
+
+    // ----------------------------------------------------------- satıcının ağzı
+
+    MERCHANT_IDLE("Aşağısı uzun yol. Yanına bir şey al.",
+            "It's a long way down. Take something with you."),
+    MERCHANT_BROKE("Kese boşsa bakmanın zararı yok, alamazsın ama.",
+            "Empty purse? Look all you like, you'll buy nothing."),
+    MERCHANT_SOLD_OUT("Tezgâh bitti. Aşağıda yine karşılaşırız.",
+            "Stall's empty. We'll meet again further down."),
 
     // -------------------------------------------------------------------- dövüş
 
@@ -304,6 +326,11 @@ public enum Text {
     MSG_NO_WIZARD("Yakında büyücü yok. Büyücüler boss katlarında.",
             "No wizard nearby. Wizards keep to boss floors."),
     MSG_GO_TO_WIZARD("Önce büyücüye git.", "Go to the wizard first."),
+    MSG_NO_MERCHANT("Yakında satıcı yok. Satıcılar boss aralarında dolaşır.",
+            "No pedlar nearby. They wander the floors between bosses."),
+    MSG_GO_TO_MERCHANT("Önce satıcıya git.", "Go to the pedlar first."),
+    MSG_BOUGHT("%s satın aldın (-%d altın).", "You bought %s (-%d gold)."),
+    MSG_BAG_FULL_SHOP("Çantan dolu; önce yer aç.", "Your bag is full; make room first."),
     MSG_NOT_ENOUGH_GOLD("Altın yetmiyor: %d gerekiyor, %d var.",
             "Not enough gold: %d needed, you have %d."),
     MSG_NOTHING_EQUIPPED("%s kuşanmadın.", "You have no %s equipped."),

@@ -4,12 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.cryptdelver.entity.Item;
 import com.cryptdelver.entity.Player;
 import com.cryptdelver.entity.Potion;
 import com.cryptdelver.world.BspGenerator;
+import com.cryptdelver.world.Dungeon;
 import com.cryptdelver.world.Position;
 import com.cryptdelver.world.Tile;
 import java.util.ArrayDeque;
@@ -119,15 +121,22 @@ class DescentTest {
         assertEquals(1, game.getDepth());
     }
 
+    /**
+     * Once bu sinav merdivenin <em>koordinatinin</em> degismesine bakiyordu ve
+     * arada bir kendiliginden patliyordu: merdiven dogulan yerden en uzak kare
+     * oluyor, iki ayri kat da pekala ayni koseyi secebiliyor. Sorulmak istenen
+     * sey zaten o degildi -- <b>yeni bir harita kuruldu mu</b>. Onu dogrudan
+     * soruyoruz.
+     */
     @Test
     @DisplayName("Inince derinlik artar ve yeni bir kat uretilir")
     void descendingBuildsANewFloor() {
-        Position oldStairs = game.getStairs();
+        Dungeon oldFloor = game.getDungeon();
 
         goDownOneFloor();
 
         assertEquals(2, game.getDepth());
-        assertNotEquals(oldStairs, game.getStairs(), "Yeni katin merdiveni yeni yerde olmali");
+        assertNotSame(oldFloor, game.getDungeon(), "Yeni kat yeni bir harita olmali");
         assertFalse(game.getEnemies().isEmpty(), "Yeni kat da dusmanlarla dolmali");
     }
 

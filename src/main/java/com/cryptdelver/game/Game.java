@@ -24,6 +24,7 @@ import com.cryptdelver.entity.Projectile;
 import com.cryptdelver.entity.Saman;
 import com.cryptdelver.entity.Skeleton;
 import com.cryptdelver.entity.Weapon;
+import com.cryptdelver.entity.Merchant;
 import com.cryptdelver.entity.Wizard;
 import com.cryptdelver.entity.Zombi;
 import com.cryptdelver.world.Dungeon;
@@ -139,6 +140,7 @@ public class Game {
     private Position stairs;
     private Boss boss;
     private Wizard wizard;
+    private Merchant merchant;
 
     /**
      * Kendiliğinden toplamanın en son denendiği kare.
@@ -149,6 +151,15 @@ public class Game {
     private Position lastPickupTile;
     private boolean paused;
     private boolean forgeOpen;
+
+    /**
+     * Satıcının tezgâhı açık mı.
+     *
+     * <p>Büyücü ekranından ayrı bir bayrak: ikisi aynı anda açılamaz ama aynı
+     * şey de değiller. Tek bir "ekran açık" bayrağı tutsaydım hangi ekranın
+     * açık olduğunu çizim tarafında yeniden çıkarmak gerekirdi.</p>
+     */
+    private boolean shopOpen;
     private boolean won;
     private double regenTimer;
     private Vision vision;
@@ -379,7 +390,7 @@ public class Game {
 
     /** O anki katı, bırakıldığı hâliyle bir değere çevirir. */
     private Floor snapshot() {
-        return new Floor(currentSeed, dungeon, upStairs, stairs, wizard, boss,
+        return new Floor(currentSeed, dungeon, upStairs, stairs, wizard, merchant, boss,
                 enemies, groundItems);
     }
 
@@ -393,6 +404,7 @@ public class Game {
         upStairs = floor.spawn();
         stairs = floor.stairs();
         wizard = floor.wizard();
+        merchant = floor.merchant();
         boss = floor.boss();
 
         enemies.clear();
@@ -505,9 +517,10 @@ public class Game {
      * ilerletmeden dönüyor. Oyun bittiyse duraklatmanın anlamı yok.</p>
      */
     public void togglePause() {
-        // Büyücü ekranı açıksa ESC önce onu kapatıyor: tek "geri" tuşu.
-        if (forgeOpen) {
+        // Bir tezgâh açıksa ESC önce onu kapatıyor: tek "geri" tuşu.
+        if (forgeOpen || shopOpen) {
             forgeOpen = false;
+            shopOpen = false;
             return;
         }
 
@@ -524,7 +537,7 @@ public class Game {
      * birlikte bir koşul daha biriktirirdi.</p>
      */
     public boolean isFrozen() {
-        return paused || forgeOpen || won;
+        return paused || forgeOpen || shopOpen || won;
     }
 
     // -------------------------------------------------------------- büyücü
@@ -573,7 +586,91 @@ public class Game {
         forgeOpen = true;
     }
 
+    // -------------------------------------------------------------- satıcı
+
+    /** Bu kattaki gezgin satıcı; yoksa {@code null}. */
+    public Merchant getMerchant() {
+        return merchant;
+    }
+
+    /** Satıcının tezgâhı açık mı. */
+    public boolean isShopOpen() {
+        return shopOpen;
+    }
+
+    /** Oyuncu satıcıyla konuşacak kadar yakın mı. */
+    public boolean isNearMerchant() {
+        return merchant != null && merchant.tileDistanceTo(player) <= 1;
+    }
+
+    /**
+     * Satıcının tezgâhını açıp kapatır.
+     *
+     * <p>Büyücü tezgâhıyla aynı kural: yanına gitmek işin parçası. Açılırken
+     * diğer ekranın kapanması gerekmiyor, çünkü ikisi bir arada
+     * <em>duramıyor</em> — satıcı büyücünün komşu karelerine hiç konmuyor.</p>
+     */
+    public void toggleShop() {
+        if (shopOpen) {
+            shopOpen = false;
+            return;
+        }
+
+        if (isOver() || paused) {
+            return;
+        }
+
+        if (!isNearMerchant()) {
+            messageLog.add(Text.MSG_NO_MERCHANT.get());
+            return;
+        }
+
+        shopOpen = true;
+    }
+
+    /**
+     * Tezgâhtaki bir parçayı satın alır.
+     *
+     * <p>Sıra önemli: <b>önce yer, sonra altın.</b> Tersi olsaydı çantası dolu
+     * bir oyuncu parasını ödeyip eline hiçbir şey geçmediğini görebilirdi —
+     * geri alınamayan bir kayıp, üstelik oyuncunun hatası bile değil.</p>
+     *
+     * <p>Satılan parça tezgâhtan düşüyor ve geri gelmiyor: aynı satıcıdan
+     * sınırsız iksir almak, altını bir karar olmaktan çıkarırdı.</p>
+     *
+     * @param index tezgâhtaki sıra, 0'dan başlayarak
+     * @return alışveriş olduysa {@code true}
+     */
+    public boolean buy(int index) {
+        if (!shopOpen || merchant == null) {
+            messageLog.add(Text.MSG_GO_TO_MERCHANT.get());
+            return false;
+        }
+
+        Merchant.Offer offer = merchant.offerAt(index);
+        if (offer == null) {
+            return false;
+        }
+
+        if (!inventory.hasRoomFor(offer.item())) {
+            messageLog.item(Text.MSG_BAG_FULL_SHOP.get());
+            return false;
+        }
+        if (!spendGold(offer.price())) {
+            return false;
+        }
+
+        merchant.take(offer);
+        inventory.add(offer.item());
+        sounds.play(SoundEffect.PICKUP);
+        messageLog.importantItem(Text.MSG_BOUGHT.get(offer.item().getName(), offer.price()));
+        return true;
+    }
+
+    // -------------------------------------------------------- büyücü tezgâhı
+
     public void repairWeapon() {
+
         repair(player.getEquippedWeapon(), Text.GEAR_WEAPON.get());
     }
 
@@ -879,6 +976,9 @@ public class Game {
         if (wizard != null) {
             taken.add(wizard.getTile());
         }
+        if (merchant != null) {
+            taken.add(merchant.getTile());
+        }
 
         Position spot = floors.findSpawnAwayFrom(dungeon, player.getTile(), taken);
         if (spot == null) {
@@ -959,6 +1059,9 @@ public class Game {
         if (wizard != null && wizard != ignored && wizard.occupies(x, y)) {
             return false;
         }
+        if (merchant != null && merchant != ignored && merchant.occupies(x, y)) {
+            return false;
+        }
 
         for (Enemy enemy : enemies) {
             if (enemy != ignored && enemy.occupies(x, y)) {
@@ -996,6 +1099,11 @@ public class Game {
 
         if (isNearWizard()) {
             toggleForge();
+            return true;
+        }
+
+        if (isNearMerchant()) {
+            toggleShop();
             return true;
         }
 
@@ -1450,6 +1558,7 @@ public class Game {
         dungeon = floor.dungeon();
         stairs = floor.stairs();
         wizard = floor.wizard();
+        merchant = floor.merchant();
         boss = floor.boss();
 
         enemies.clear();

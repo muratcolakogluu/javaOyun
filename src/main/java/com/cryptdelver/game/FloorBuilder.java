@@ -4,6 +4,7 @@ import com.cryptdelver.entity.Archer;
 import com.cryptdelver.entity.Bomb;
 import com.cryptdelver.entity.Boss;
 import com.cryptdelver.entity.Enemy;
+import com.cryptdelver.entity.Entity;
 import com.cryptdelver.entity.EscapePotion;
 import com.cryptdelver.entity.FuryPotion;
 import com.cryptdelver.entity.Goblin;
@@ -12,6 +13,7 @@ import com.cryptdelver.entity.HastePotion;
 import com.cryptdelver.entity.Imp;
 import com.cryptdelver.entity.Item;
 import com.cryptdelver.entity.LegendWeapon;
+import com.cryptdelver.entity.Merchant;
 import com.cryptdelver.entity.Orc;
 import com.cryptdelver.entity.Potion;
 import com.cryptdelver.entity.Saman;
@@ -29,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * Bir katın nasıl kurulduğu: harita, merdiven, büyücü, boss, düşmanlar, eşyalar.
@@ -111,6 +114,26 @@ public class FloorBuilder {
      * ilişkili çıkardı; karıştırmak ikisini bağımsızlaştırıyor.</p>
      */
     private static final long WIZARD_ROLL_SALT = 0x5DEECE66DL;
+
+    /**
+     * Sıradan bir katta gezgin satıcıya rastlama olasılığı.
+     *
+     * <p>Büyücünün tam tersi bir takvim: büyücü boss katlarında sabit duruyor,
+     * satıcı yalnızca aradaki katlarda çıkıyor. Böylece kese hiçbir zaman çok
+     * uzun süre ölü kalmıyor ama ikisi de aynı katta üst üste binmiyor.</p>
+     *
+     * <p>Üçte bir: dört katlık bir aralıkta satıcıyı hiç görmeme ihtimali
+     * kabaca beşte bir. Yani "bir sonrakinde çıkar" diye biriktirmek makul bir
+     * bahis, ama garanti değil — o yüzden elindeki altını harcamak da bir
+     * karar.</p>
+     */
+    private static final double MERCHANT_CHANCE = 0.35;
+
+    /** Satıcı zarını hem tohumdan hem büyücünün zarından ayıran sayı. */
+    private static final long MERCHANT_ROLL_SALT = 0x7F4A7C15L;
+
+    /** Tezgâh doğulan yerden en az bu kadar adım uzağa kurulur. */
+    private static final int MERCHANT_MIN_DISTANCE = 4;
 
     /**
      * Nadir eşyalar için kat başına kaç zar, hangi olasılıkla.
@@ -247,9 +270,20 @@ public class FloorBuilder {
         // kuran tarafın değil oyunun kararı.
         dungeon.setTile(spawn.x(), spawn.y(), Tile.STAIRS_UP);
 
-        Wizard wizard = hasWizard(depth, seed) ? placeWizard(dungeon, spawn, stairs) : null;
+        Wizard wizard = hasWizard(depth, seed)
+                ? placeAt(dungeon, spawn, stairs, WIZARD_MIN_DISTANCE, Set.of(),
+                        spot -> new Wizard(spot.x(), spot.y()))
+                : null;
 
-        return new Floor(seed, dungeon, spawn, stairs, wizard, null, List.of(), List.of());
+        // Satıcı büyücünün karesini ve komşularını dışlıyor: F tuşu "burada ne
+        // var" sorusunu tek cevapla yanıtlıyor ve yan yana duran iki tezgâh o
+        // cevabı belirsiz yapardı.
+        Merchant merchant = hasMerchant(depth, seed)
+                ? placeAt(dungeon, spawn, stairs, MERCHANT_MIN_DISTANCE, around(wizard),
+                        spot -> Merchant.stocked(spot, seed ^ MERCHANT_ROLL_SALT))
+                : null;
+
+        return new Floor(seed, dungeon, spawn, stairs, wizard, merchant, null, List.of(), List.of());
     }
 
     /** Döşemeyi kurup üstüne boss, düşman ve eşyaları dağıtır. */
@@ -276,31 +310,80 @@ public class FloorBuilder {
     }
 
     /**
-     * Büyücüyü doğulan yerin yakınına koyar.
+     * Bu katta gezgin satıcı var mı.
      *
-     * <p>Merdivenin yanına koymak cazipti ama orada boss duruyor: büyücüyü
+     * <p>Boss katlarında <em>hiç yok</em>. Orada zaten büyücü duruyor ve iki
+     * tezgâhı aynı kata koymak ikisini de sıradanlaştırırdı: boss katı
+     * "büyük hazırlık", aradaki katlar "yolda ne bulursan". Ayrımı koruyan şey
+     * bu.</p>
+     *
+     * <p>Zar yine katın tohumundan, ama büyücününkinden farklı bir karıştırma
+     * sayısıyla: aynı tohumu aynı şekilde kullansaydık iki zar birbirinin
+     * kopyası çıkardı.</p>
+     */
+    private boolean hasMerchant(int depth, long seed) {
+        return !isBossFloor(depth)
+                && new Random(seed ^ MERCHANT_ROLL_SALT).nextDouble() < MERCHANT_CHANCE;
+    }
+
+    /**
+     * Bir varlığın karesi ve çevresindeki sekiz kare.
+     *
+     * <p>"Aynı kareye konmasın" yetmiyordu: komşu karede duran iki tezgâh da
+     * tek bir F tuşunun neyi açacağını belirsiz bırakıyor. Varlık yoksa küme
+     * boş — o zaman dışlanacak bir şey de yok.</p>
+     */
+    private static Set<Position> around(Entity entity) {
+        if (entity == null) {
+            return Set.of();
+        }
+
+        Set<Position> ring = new HashSet<>();
+        for (int dy = -1; dy <= 1; dy++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                ring.add(entity.getTile().offset(dx, dy));
+            }
+        }
+        return ring;
+    }
+
+    /**
+     * Dövüşmeyen bir varlığı doğulan yerin yakınına koyar.
+     *
+     * <p>Merdivenin yanına koymak cazipti ama orada boss duruyor: tezgâhı
      * dövüşün ortasına yerleştirmiş olurduk. Girişin dibinde olması daha doğru
      * — kata inip önce hazırlanıyor, sonra bossa yürüyorsun.</p>
      *
      * <p>Yerleştirme <em>rastgele değil</em>: doğulan yerden yayılan BFS'in
      * sırasında ilk uygun kare seçiliyor, yani en yakını. Merdiven gibi bu da
      * katın sabit döşemesi.</p>
+     *
+     * <p>Hem büyücü hem satıcı buradan geçiyor. İkisi aynı kuralı istiyor
+     * (girişe yakın, merdivenin üstünde değil, katı ikiye bölmeyen bir kare)
+     * ve farkları yalnızca kaç adım uzakta durdukları — o yüzden kuralı iki
+     * kere yazmak yerine tek yerde tutuyorum.</p>
+     *
+     * @param minDistance doğulan yerden en az kaç adım uzağa
+     * @param taken kullanılmaması gereken kareler
+     * @param create seçilen kareden varlığı üreten işlev
      */
-    private Wizard placeWizard(Dungeon dungeon, Position spawn, Position stairs) {
+    private <T> T placeAt(Dungeon dungeon, Position spawn, Position stairs, int minDistance,
+                          Set<Position> taken, Function<Position, T> create) {
         Map<Position, Integer> distances = dungeon.walkableDistancesFrom(spawn);
 
         // BFS sırası yakından uzağa; ilk uyan kare en yakın uygun kare oluyor.
         for (Map.Entry<Position, Integer> candidate : distances.entrySet()) {
             Position spot = candidate.getKey();
 
-            if (candidate.getValue() < WIZARD_MIN_DISTANCE || spot.equals(stairs)) {
+            if (candidate.getValue() < minDistance || spot.equals(stairs)
+                    || taken.contains(spot)) {
                 continue;
             }
             if (wouldSealTheFloor(dungeon, spot, spawn, stairs)) {
                 continue;
             }
 
-            return new Wizard(spot.x(), spot.y());
+            return create.apply(spot);
         }
 
         return null;
@@ -342,6 +425,9 @@ public class FloorBuilder {
         }
         if (floor.wizard() != null) {
             used.add(floor.wizard().getTile());
+        }
+        if (floor.merchant() != null) {
+            used.add(floor.merchant().getTile());
         }
 
         List<Enemy> enemies = new ArrayList<>();

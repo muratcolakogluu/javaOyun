@@ -83,6 +83,7 @@ Her karakterin duruş ve yürüyüş animasyonu 4'er kare, 0x72 paketinden:
   orc_*                               <- orc_warrior_idle / orc_warrior_run
   boss_*                              <- big_demon_idle / big_demon_run
   wizard_f0..f3                       <- wizzard_m_idle
+  merchant_f0..f3                     <- dwarf_f_idle
   zombi_* / zombi_run_*                <- tiny_zombie_idle / tiny_zombie_run
   saman_* / saman_run_*                <- orc_shaman_idle / orc_shaman_run
   boss_bekci_*                         <- ogre_idle / ogre_run
@@ -161,3 +162,9 @@ yoksa desen her cerceve titrerdi.
 Duvar isaretleri seyrek (yirmide bir) ve duvarin ustune biniyor, yerine
 gecmiyor. Zeminlere sutun ya da sandik koymayi denemedik: yurunebilen bir
 kareye engel gibi duran bir sey koymak oyuncuya yanlis bir sey vaat ederdi.
+
+Gezgin satici altin sakalli cuce (dwarf_f). Secim rastgele degil: mor
+cuppeli büyücüyle ayni ekranda duracak ve ikisi tek bakista ayrilmali.
+Cuce hem daha kisa ve genis, hem de sicak sari tonlarda -- yani uzaktan
+silueti bile farkli. Fener rengini de ona gore sectik: ocagin turuncusu
+degil, daha soguk bir sari.

@@ -1,6 +1,7 @@
 package com.cryptdelver.ui;
 
 import com.cryptdelver.entity.Enchantment;
+import com.cryptdelver.entity.Merchant;
 import com.cryptdelver.game.Game;
 import com.cryptdelver.game.Records;
 import com.cryptdelver.game.Settings;
@@ -197,6 +198,9 @@ public class GameScreen {
         if (game.isForgeOpen()) {
             return action instanceof UiAction.Forge || action instanceof UiAction.Enchant;
         }
+        if (game.isShopOpen()) {
+            return action instanceof UiAction.Buy;
+        }
         return action instanceof UiAction.Slot && !game.isFrozen();
     }
 
@@ -229,6 +233,7 @@ public class GameScreen {
                     game.enchantArmor(enchantment);
                 }
             }
+            case UiAction.Buy(int index) -> game.buy(index);
             case UiAction.Slot(int index) -> {
                 // Çantada tıklama kullanıyor, Shift ile yere bırakıyor; tuş
                 // takımındaki 1-8 ve Shift+1-8 ile aynı kural.
@@ -386,13 +391,21 @@ public class GameScreen {
             case F -> {
                 if (game.isForgeOpen()) {
                     handleForgeCommand(code);
+                } else if (game.isShopOpen()) {
+                    // Tezgâhı açan tuş kapatıyor da: satıcı ekranında F'nin
+                    // başka bir işi yok ve "açtığım tuş kapatır" en kısa yol.
+                    game.toggleShop();
                 } else {
                     game.interact();
                 }
             }
             // Tezgâhın kendi tuşu da duruyor: ayağının dibinde bir parça varken
             // F onu alıyor, büyücüye T ile ulaşıyorsun.
-            case T -> game.toggleForge();
+            case T -> {
+                if (!game.isShopOpen()) {
+                    game.toggleForge();
+                }
+            }
             // Q tezgahta bir buyu tusu, disinda kacis adimi -- F ile ayni kural.
             // WASD'in hemen yaninda ve oyunda baska bir isi yok.
             case Q -> {
@@ -519,9 +532,13 @@ public class GameScreen {
 
     /** Yalnızca oyun akarken işleyen tek seferlik komutlar. */
     private void handlePlayCommand(KeyCode code, KeyEvent event) {
-        // Büyücü ekranı açıkken rakamlar çantayı değil tezgâhı yönetiyor.
+        // Bir tezgâh açıkken rakamlar çantayı değil tezgâhı yönetiyor.
         if (game.isForgeOpen()) {
             handleForgeCommand(code);
+            return;
+        }
+        if (game.isShopOpen()) {
+            handleShopCommand(code);
             return;
         }
 
@@ -594,6 +611,20 @@ public class GameScreen {
             default -> {
                 // Diğer tuşlar tezgâhta bir şey yapmıyor.
             }
+        }
+    }
+
+    /**
+     * Satıcı tezgâhının tuşları.
+     *
+     * <p>Üç rakam, üç sıra. Büyücü tezgâhıyla aynı mantık: ekranda hangi
+     * rakamın neyi aldığı yazılı olduğu için ayrı bir tuş takımı ezberlemek
+     * gerekmiyor.</p>
+     */
+    private void handleShopCommand(KeyCode code) {
+        int row = slotOf(code);
+        if (row >= 0 && row < Merchant.STOCK_SIZE) {
+            game.buy(row);
         }
     }
 

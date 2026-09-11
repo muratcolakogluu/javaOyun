@@ -45,11 +45,27 @@ class WizardTest {
             assertTrue(game.descend(), "Inis calismali");
         }
 
+        /**
+         * Gezgin büyücü geldiginden beri "siradan katta büyücü <em>yok</em>"
+         * artik dogru degil: yirmide bir cikiyor. Sinav da o yuzden tek kata
+         * bakmiyordu -- bakarsa yirmi kosudan birinde bosuna patlar. Kuralin
+         * kendisi bir <em>oran</em>, o yuzden orani olcuyoruz: siradan katlar
+         * ezici cogunlukla büyücüsüz.
+         */
         @Test
-        @DisplayName("Siradan katlarda büyücü yok")
-        void ordinaryFloorsHaveNoWizard() {
+        @DisplayName("Siradan katlarda büyücü nadir")
+        void ordinaryFloorsRarelyHaveAWizard() {
             assertFalse(game.isBossFloor());
-            assertNull(game.getWizard());
+
+            int seen = 0;
+            for (int attempt = 0; attempt < 40; attempt++) {
+                if (game.getWizard() != null) {
+                    seen++;
+                }
+                game.regenerateFloor();
+            }
+
+            assertTrue(seen < 20, "Siradan kat büyücü tezgahi olmamali, bulundu: " + seen);
         }
 
         @Test
