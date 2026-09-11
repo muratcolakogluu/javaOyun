@@ -30,6 +30,14 @@ public abstract class Enemy extends Combatant implements Actor {
     private double attackCooldown;
     private double idleTimer;
 
+    /**
+     * Başlamış bir vuruşun kalan hazırlık süresi.
+     *
+     * <p>Sıfırsa düşman ya vuruyor ya yürüyor; sıfırdan büyükse kolunu
+     * kaldırmış, inmesini bekliyor.</p>
+     */
+    private double windupLeft;
+
     protected Enemy(int tileX, int tileY, Text name, EnemyStats stats, Pathfinder pathfinder) {
         super(tileX, tileY, name, stats.maxHp());
         this.stats = stats;
@@ -91,6 +99,34 @@ public abstract class Enemy extends Combatant implements Actor {
     }
 
     /**
+     * Vuruştan önceki hazırlık süresi, saniye; 0 ise işaret yok.
+     *
+     * <p>{@link #getSpeed()} gibi tür değerinden okunuyor ama alt sınıfın
+     * değiştirmesine açık: dövüşün ortasında işareti kısaltan bir yetenek
+     * yazılabilsin diye.</p>
+     */
+    public double getWindup() {
+        return stats.windup();
+    }
+
+    /**
+     * Şu an vuruşa hazırlanıyor mu.
+     *
+     * <p>Ekran bunu okuyup işareti çiziyor. Uyarının <em>görülmesi</em>
+     * mekaniğin kendisi kadar önemli — görünmeyen bir hazırlık, oyuncu için
+     * yalnızca gecikmiş bir vuruş olurdu.</p>
+     */
+    public boolean isWindingUp() {
+        return windupLeft > 0;
+    }
+
+    /** Hazırlığın ne kadarının geçtiği: 0 kolun kalktığı an, 1 vuruş anı. */
+    public double getWindupProgress() {
+        double windup = getWindup();
+        return windupLeft <= 0 || windup <= 0 ? 0 : 1 - windupLeft / windup;
+    }
+
+    /**
      * Türün kısa etiketi ({@code "IMP"}, {@code "SKELETON"}...).
      *
      * <p>{@link Item#getKind()} ile aynı gerekçe: türü soran kod
@@ -119,6 +155,17 @@ public abstract class Enemy extends Combatant implements Actor {
         }
 
         onUpdate(game, delta);
+
+        // Başlamış vuruş her şeyin önünde: kol kalktıysa iniyor. Kaçsan da
+        // iniyor -- ama boşluğa. Kaçınmanın anlamı bu.
+        if (windupLeft > 0) {
+            windupLeft -= delta;
+            if (windupLeft <= 0) {
+                releaseSwing(game, player);
+            }
+            return;
+        }
+
         Stance stance = stanceTowards(game);
 
         // Kaçan düşman vurmaz; canını kurtarmaya çalışır. Duran düşman ise
@@ -126,8 +173,7 @@ public abstract class Enemy extends Combatant implements Actor {
         // kendi seçmek.
         if (!isMoving() && isAdjacentTo(player) && stance != Stance.FLEE) {
             if (attackCooldown <= 0) {
-                game.enemyAttacksPlayer(this);
-                attackCooldown = getAttackCooldown();
+                beginSwing(game);
             }
             return;
         }
@@ -139,6 +185,43 @@ public abstract class Enemy extends Combatant implements Actor {
                 break;
             }
             budget = advance(budget);
+        }
+    }
+
+    /**
+     * Vuruşu başlatır: işareti olan bekler, olmayan hemen vurur.
+     *
+     * <p>Ağır vuranlara işaret koymanın sebebi, dövüşü bir <em>ritme</em>
+     * çevirmek. İşaretsiz haliyle orkun yanında durmak saf bir hesaptı:
+     * canın yetiyorsa vuruşurdun, yetmiyorsa ölürdün ve arada verilecek bir
+     * karar yoktu. Kalkan kol, o kararı geri veriyor — bir adım geri çekil,
+     * vuruş boşa gitsin, sonra geri gir.</p>
+     *
+     * <p>Bedelsiz değil: işaretli vuruş daha sert. Yani "sürekli geri çekil"
+     * de bir çözüm değil, zamanlamayı tutturmak gerekiyor.</p>
+     */
+    private void beginSwing(Game game) {
+        if (getWindup() <= 0) {
+            game.enemyAttacksPlayer(this);
+            attackCooldown = getAttackCooldown();
+            return;
+        }
+
+        windupLeft = getWindup();
+    }
+
+    /**
+     * Hazırlığı biten vuruşu indirir.
+     *
+     * <p>Oyuncu hâlâ yanındaysa isabet, değilse boşluk. İkisinde de bekleme
+     * başlıyor: boşa giden vuruş düşmanı <em>açık</em> bırakıyor ve karşılık
+     * vermenin penceresi bu.</p>
+     */
+    private void releaseSwing(Game game, Player player) {
+        attackCooldown = getAttackCooldown();
+
+        if (player.isAlive() && isAdjacentTo(player)) {
+            game.enemyAttacksPlayer(this);
         }
     }
 

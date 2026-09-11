@@ -144,6 +144,17 @@ public class GameRenderer {
     private static final Color HP_BAR_BACKGROUND = Color.web("#000000", 0.55);
     private static final Color HP_BAR_FILL = Color.web("#b64b45");
     /** Boss uyarilari: Bogucunun salvo bandi, Seytanin ofke halkasi. */
+    /**
+     * Kalkan kolun halkası: başlangıç ve bitiş yarıçapı (kare boyunun katı).
+     *
+     * <p>Bitiş yarıçapı gövdenin kenarı: halka oraya vardığında vuruş
+     * iniyor. Sıfıra kadar daraltmak daha "tam" durur ama son anlar
+     * görünmez kalırdı -- oysa en kritik an tam orası.</p>
+     */
+    private static final double STRIKE_TELL_START = 0.95;
+    private static final double STRIKE_TELL_END = 0.42;
+    private static final Color STRIKE_TELL = Color.web("#ff6a4d");
+
     private static final Color VOLLEY_TELL = Color.web("#c9564f");
     private static final Color ENRAGE_GLOW = Color.web("#ff5a3d");
     private static final int ENRAGE_RINGS = 3;
@@ -220,7 +231,7 @@ public class GameRenderer {
     private static final double HINT_LINE = 26;
 
     /** Tus listesindeki satir sayisi ve araligi; yerlesim hesabi buna dayaniyor. */
-    private static final int KEY_ROWS = 12;
+    private static final int KEY_ROWS = 13;
     private static final double KEY_ROW_SPACING = 21;
 
     /** Baslik isigi: mesale gibi nefes aliyor. */
@@ -936,6 +947,7 @@ public class GameRenderer {
                 {Text.KEY_TAKE, Text.KEY_TAKE_WHAT},
                 {Text.KEY_STAIRS, Text.KEY_STAIRS_WHAT},
                 {Text.KEY_FORGE, Text.KEY_FORGE_WHAT},
+                {null, Text.KEY_TELL_NOTE},
                 {null, Text.KEY_AUTOPICK_NOTE},
                 {Text.KEY_VOLUME, Text.KEY_VOLUME_WHAT},
                 {Text.KEY_RESTART, Text.KEY_RESTART_WHAT},
@@ -1840,6 +1852,38 @@ public class GameRenderer {
         if (enemy instanceof Seytan devil && devil.isEnraged()) {
             drawEnrageAura(gc, devil);
         }
+
+        // Sıradan düşmanların kalkan kolu. Tür sorulmuyor: işareti olan
+        // herkes aynı halkayı çiziyor, yani yeni bir ağır vuran eklemek
+        // çizim tarafına hiç dokunmuyor.
+        if (enemy.isWindingUp()) {
+            drawStrikeTell(gc, enemy);
+        }
+    }
+
+    /**
+     * Kalkan kolun işareti: gövdeye doğru kapanan kızıl halka.
+     *
+     * <p>Halka <em>daralıyor</em>, büyümüyor. Büyüyen bir halka "bir şey
+     * yayılıyor" der; daralan halka "bir şey bana doğru geliyor" der ve
+     * ihtiyacımız olan ikincisi. Gövdeye değdiği an vuruş iniyor, yani
+     * zamanlamayı sayı okumadan, tek bakışta görüyorsun.</p>
+     *
+     * <p>Gövdenin <em>altına</em> çiziliyor: karakterin üstüne binen
+     * çizimlerin nasıl durduğunu daha önce gördük.</p>
+     */
+    private void drawStrikeTell(GraphicsContext gc, Enemy enemy) {
+        double progress = enemy.getWindupProgress();
+        double centerX = enemy.getRenderX() * TILE_SIZE;
+        double centerY = enemy.getRenderY() * TILE_SIZE;
+
+        double radius = TILE_SIZE * (STRIKE_TELL_START
+                - (STRIKE_TELL_START - STRIKE_TELL_END) * progress);
+
+        gc.setStroke(Color.color(STRIKE_TELL.getRed(), STRIKE_TELL.getGreen(),
+                STRIKE_TELL.getBlue(), 0.35 + 0.45 * progress));
+        gc.setLineWidth(1.5 + 2.5 * progress);
+        gc.strokeOval(centerX - radius, centerY - radius, radius * 2, radius * 2);
     }
 
     /**

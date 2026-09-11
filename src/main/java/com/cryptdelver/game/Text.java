@@ -87,6 +87,8 @@ public enum Text {
     KEY_RESTART_WHAT("ölünce yeniden başla", "restart after death"),
     KEY_PAUSE("ESC", "ESC"),
     KEY_PAUSE_WHAT("devam et", "resume"),
+    KEY_TELL_NOTE("kızıl halka kapanıyorsa ağır bir vuruş geliyor: bir adım geri",
+            "a closing red ring means a heavy blow: step back"),
     KEY_AUTOPICK_NOTE("iksir ve altın kendiliğinden alınır",
             "potions and gold are picked up automatically"),
 
