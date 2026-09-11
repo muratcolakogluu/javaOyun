@@ -1,8 +1,7 @@
 package com.cryptdelver.entity;
 
-import com.cryptdelver.game.Text;
-
 import com.cryptdelver.game.Game;
+import com.cryptdelver.game.Text;
 
 /**
  * Oyuncunun yönettiği karakter.
@@ -42,6 +41,31 @@ public class Player extends Combatant implements Actor {
      */
     private static final double SWING_DURATION = 0.18;
 
+    /**
+     * Kacis adiminin kac kare goturdugu.
+     *
+     * <p>Uc kare: bir okun hattindan cikmaya, Bogucunun salvo kolundan koseye
+     * kaymaya ve yan yana gelmis iki dusmanin arasindan siyrilmaya yetiyor.
+     * Daha uzunu haritayi kucultur, daha kisasi kacis degil adim olurdu.</p>
+     */
+    private static final int DASH_TILES = 3;
+
+    /**
+     * Iki kacis adimi arasindaki bekleme, saniye.
+     *
+     * <p>Bekleme suresi mekanigin kendisi kadar onemli: serbest olsaydi
+     * kacis adimi yurumenin yerine gecer ve konum bir karar olmaktan cikardi.
+     * Iki buçuk saniye, bir dovusun icinde bir ya da iki kez kullanabilecegin
+     * kadar -- yani "simdi mi harcayayim" sorusu gercek.</p>
+     */
+    private static final double DASH_COOLDOWN = 2.5;
+
+    /** Ceviklik buyusu beklemeyi bu orana indiriyor. */
+    private static final double SWIFT_DASH_SCALE = 0.65;
+
+    /** Sicrama izinin ekranda kalma suresi. */
+    private static final double DASH_TRAIL_DURATION = 0.22;
+
     /** Tek karede işlenecek azami adım; takılma durumunda sonsuz döngüyü keser. */
     private static final int MAX_STEPS_PER_FRAME = 8;
 
@@ -57,9 +81,14 @@ public class Player extends Combatant implements Actor {
     private double swingTimer;
     private double hasteTimer;
     private double furyTimer;
+    private boolean dashRequested;
+    private double dashCooldown;
+    private double dashTrail;
+    private int dashFromX;
+    private int dashFromY;
 
     public Player(int tileX, int tileY) {
-        super(tileX, tileY, "Kaşif", STARTING_HP);
+        super(tileX, tileY, Text.PLAYER_NAME, STARTING_HP);
     }
 
     /** Çıplak elle vuruş gücü, üstüne kuşanılan silahın bonusu. */
@@ -174,6 +203,101 @@ public class Player extends Combatant implements Actor {
     }
 
     /**
+     * Kaçış adımı tuşuna basıldığını bildirir.
+     *
+     * <p>Oyuncunun <b>ikinci fiili</b>. Yirmi kat boyunca elindeki tek şey
+     * "yürü ve vur"du: düşman tarafı zenginleşse de her dövüşün cevabı aynı
+     * kalıyordu — menzile gir, boşluğa bas. Kaçış adımı konumu bir <em>karar</em>
+     * hâline getiriyor.</p>
+     *
+     * <p>Bekleme süresi de yeni bir kaynak: "şimdi mi harcayayım, sonra mı"
+     * diye düşündürüyor. Boğucunun salvosundan köşeye kaymak, Lort yanında
+     * belirdiğinde karşılık vermek, okçunun hattından çıkmak — hepsi artık
+     * yürümekten farklı bir hamle.</p>
+     */
+    public void requestDash() {
+        dashRequested = true;
+    }
+
+    /** Kaçış adımı şu an kullanılabilir mi; ekran göstergeyi buna göre çiziyor. */
+    public boolean canDash() {
+        return dashCooldown <= 0;
+    }
+
+    /** Bekleme süresinin ne kadarı geçti (0 yeni kullanıldı, 1 hazır). */
+    public double getDashReadiness() {
+        double total = getDashCooldown();
+        return total <= 0 ? 1 : Math.min(1, 1 - dashCooldown / total);
+    }
+
+    /**
+     * Kaçış adımı arası bekleme.
+     *
+     * <p>Çeviklik büyüsü burayı kısaltıyor: büyü zaten "daha hızlı yürüyorsun"
+     * diyordu, artık "daha sık sıçrıyorsun" da diyor. Aynı büyünün iki etkisi
+     * de aynı şeyi anlatıyor — yer değiştirmek senin için ucuz.</p>
+     */
+    public double getDashCooldown() {
+        return hasArmorEnchantment(Enchantment.CEVIKLIK)
+                ? DASH_COOLDOWN * SWIFT_DASH_SCALE
+                : DASH_COOLDOWN;
+    }
+
+    /**
+     * Kaçış adımını uygular: baktığın yönde boş olan son kareye sıçrarsın.
+     *
+     * <p>Kare kare ilerleyen bir hareket değil, anlık yer değiştirme. Hızlı bir
+     * yürüyüş olarak yapmayı denemek mantıklı görünüyor ama işe yaramazdı:
+     * uçan bir oktan kaçmak için <em>anlık</em> olması gerekiyor. Kript Lordu
+     * da ışınlanıyor, yani oyun bu dili zaten konuşuyor.</p>
+     *
+     * <p>Duvara ya da bir düşmana çarpınca son boş karede duruyorsun — içinden
+     * geçmek yok. Yoksa kaçış adımı bir kaçış değil, duvarları yok sayan bir
+     * hile olurdu.</p>
+     *
+     * @return gerçekten yer değiştirdiyse {@code true}
+     */
+    private boolean dash(Game game) {
+        int lastX = getTileX();
+        int lastY = getTileY();
+
+        for (int step = 1; step <= DASH_TILES; step++) {
+            int x = getTileX() + facingX * step;
+            int y = getTileY() + facingY * step;
+
+            if (!game.isTileFree(x, y, this)) {
+                break;
+            }
+            lastX = x;
+            lastY = y;
+        }
+
+        if (lastX == getTileX() && lastY == getTileY()) {
+            return false;
+        }
+
+        dashFromX = getTileX();
+        dashFromY = getTileY();
+        dashTrail = DASH_TRAIL_DURATION;
+        setTile(lastX, lastY);
+        return true;
+    }
+
+    /** Az önce sıçranan yer; ekran oradan buraya bir iz çiziyor. */
+    public int getDashFromX() {
+        return dashFromX;
+    }
+
+    public int getDashFromY() {
+        return dashFromY;
+    }
+
+    /** İzin ne kadarı kaldı (0 bitti, 1 yeni). */
+    public double getDashTrail() {
+        return dashTrail / DASH_TRAIL_DURATION;
+    }
+
+    /**
      * Yeni bir oyuna başlarken canı ve zamanlayıcıları tazeler.
      *
      * <p>Can tavanı da taban değere dönüyor: bosslardan kazanılan azami can
@@ -188,6 +312,9 @@ public class Player extends Combatant implements Actor {
         swingTimer = 0;
         hasteTimer = 0;
         furyTimer = 0;
+        dashCooldown = 0;
+        dashTrail = 0;
+        dashRequested = false;
         attackRequested = false;
         setMoveInput(0, 0);
         facingX = 1;
@@ -201,10 +328,20 @@ public class Player extends Combatant implements Actor {
         swingTimer = Math.max(0, swingTimer - delta);
         hasteTimer = Math.max(0, hasteTimer - delta);
         furyTimer = Math.max(0, furyTimer - delta);
+        dashCooldown = Math.max(0, dashCooldown - delta);
+        dashTrail = Math.max(0, dashTrail - delta);
 
         if (!isAlive()) {
             return;
         }
+
+        // Sicrama yurumeden once: ayni karede hem sicrayip hem adim atmak
+        // gidisi iki kat gosterirdi.
+        if (dashRequested && dashCooldown <= 0 && dash(game)) {
+            dashCooldown = getDashCooldown();
+            game.onPlayerDashed();
+        }
+        dashRequested = false;
 
         advanceSteps(game, getSpeed() * delta);
 

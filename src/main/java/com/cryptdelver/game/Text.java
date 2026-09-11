@@ -68,6 +68,8 @@ public enum Text {
     KEY_MOVE_WHAT("hareket", "move"),
     KEY_ATTACK("Boşluk", "Space"),
     KEY_ATTACK_WHAT("vur", "attack"),
+    KEY_DASH("Q", "Q"),
+    KEY_DASH_WHAT("kacis adimi: baktigin yone sicra", "dash: leap the way you face"),
     KEY_TAKE("F", "F"),
     KEY_TAKE_WHAT("yerdeki ekipmanı al ya da büyücüyle konuş",
             "pick up gear or talk to the wizard"),
@@ -319,8 +321,8 @@ public enum Text {
 
     // ------------------------------------------------------------------- zindan
 
-    MSG_WELCOME("Zindana indin. Boşluk vurur, F ekipman alır, 1-8 eşya kullanır.",
-            "You descend. Space strikes, F takes gear, 1-8 uses items."),
+    MSG_WELCOME("Zindana indin. Boşluk vurur, Q sıçrar, F ekipman alır.",
+            "You descend. Space strikes, Q dashes, F takes gear."),
     MSG_DESCENDED("%d. kata indin (%s).", "You went down to floor %d (%s)."),
     MSG_ASCENDED("%d. kata çıktın (%s).", "You climbed up to floor %d (%s)."),
     MSG_ESCAPED("Kriptten çıktın. Zindan arkanda kaldı.",

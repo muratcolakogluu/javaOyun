@@ -149,6 +149,10 @@ public class GameRenderer {
     private static final long ENRAGE_PULSE_MILLIS = 900;
 
     /** Ok gövdesi ve arkasindaki iz. */
+    /** Kacis adiminin izi ve hazir olma halkasi. */
+    private static final Color DASH_TRAIL = Color.web("#9ad9ff");
+    private static final double DASH_GAUGE = 22;
+
     private static final Color ARROW_COLOR = Color.web("#e8d8a8");
     private static final Color ARROW_TRAIL = Color.web("#e8d8a8", 0.28);
     private static final double ARROW_LENGTH = 9;
@@ -215,7 +219,7 @@ public class GameRenderer {
     private static final double HINT_LINE = 26;
 
     /** Tus listesindeki satir sayisi ve araligi; yerlesim hesabi buna dayaniyor. */
-    private static final int KEY_ROWS = 11;
+    private static final int KEY_ROWS = 12;
     private static final double KEY_ROW_SPACING = 21;
 
     /** Baslik isigi: mesale gibi nefes aliyor. */
@@ -752,6 +756,9 @@ public class GameRenderer {
             drawEntity(gc, enemy, 1.0);
             drawHealthBar(gc, enemy);
         }
+        // İz gövdenin altına: sıçramanın nereden geldiğini gösteriyor ama
+        // oyuncunun kendisini gölgelemiyor.
+        drawDashTrail(gc, player);
         drawPlayer(gc, player);
         drawEquipment(gc, player);
 
@@ -896,6 +903,7 @@ public class GameRenderer {
         Text[][] keys = {
                 {Text.KEY_MOVE, Text.KEY_MOVE_WHAT},
                 {Text.KEY_ATTACK, Text.KEY_ATTACK_WHAT},
+                {Text.KEY_DASH, Text.KEY_DASH_WHAT},
                 {Text.KEY_USE, Text.KEY_USE_WHAT},
                 {Text.KEY_DROP, Text.KEY_DROP_WHAT},
                 {Text.KEY_TAKE, Text.KEY_TAKE_WHAT},
@@ -1326,9 +1334,11 @@ public class GameRenderer {
         double right = CHARACTER_PANEL_X + 2 * (GEAR_SLOT_SIZE + SLOT_GAP) + 8;
         drawHearts(gc, player, right, slotTop + 12);
 
-        // Rozetler can sayisinin sagina siraliyor: kalplerin altinda ayri bir
-        // satir acmak seride sigmiyordu.
-        drawActiveEffects(gc, player, right + 62, slotTop + 28);
+        // Kalplerin altinda ayri bir satir acmak seride sigmiyordu.
+        // Once kacis adimi gostergesi, sonra iksir rozetleri: ikisi de "su an
+        // elinde ne var" sorusunun cevabi, ayni satirda duruyorlar.
+        drawDashGauge(gc, player, right + 52, slotTop + 28);
+        drawActiveEffects(gc, player, right + 88, slotTop + 28);
 
         gc.setTextAlign(TextAlignment.LEFT);
         double line = mapHeight + 72;
@@ -1842,6 +1852,56 @@ public class GameRenderer {
                     ENRAGE_GLOW.getBlue(), alpha));
             gc.fillOval(centerX - radius, centerY - radius * 0.6, radius * 2, radius * 1.2);
         }
+    }
+
+    /**
+     * Kaçış adımının arkasında bıraktığı iz.
+     *
+     * <p>Sıçrama anlık olduğu için izsiz bir "birden orada belirdin"e benziyor
+     * ve oyuncu ne olduğunu anlamıyor. Solan bir şerit, hareketi okunur
+     * kılıyor: nereden nereye gittiğin görünüyor.</p>
+     */
+    private void drawDashTrail(GraphicsContext gc, Player player) {
+        double life = player.getDashTrail();
+        if (life <= 0) {
+            return;
+        }
+
+        double fromX = (player.getDashFromX() + 0.5) * TILE_SIZE;
+        double fromY = (player.getDashFromY() + 0.5) * TILE_SIZE;
+        double toX = player.getRenderX() * TILE_SIZE;
+        double toY = player.getRenderY() * TILE_SIZE;
+
+        gc.setStroke(Color.color(DASH_TRAIL.getRed(), DASH_TRAIL.getGreen(),
+                DASH_TRAIL.getBlue(), 0.55 * life));
+        gc.setLineWidth(TILE_SIZE * 0.5 * life);
+        gc.strokeLine(fromX, fromY, toX, toY);
+    }
+
+    /**
+     * Kaçış adımının hazır olup olmadığını gösteren küçük halka.
+     *
+     * <p>Bekleme süresi bir kaynak; görünmeyen bir kaynak karar verdirmez.
+     * Halka dolarken "az kaldı" diyor, dolunca altın rengine geçiyor.</p>
+     */
+    private void drawDashGauge(GraphicsContext gc, Player player, double x, double centerY) {
+        double readiness = player.getDashReadiness();
+        boolean ready = player.canDash();
+
+        gc.setStroke(SLOT_BORDER);
+        gc.setLineWidth(3);
+        gc.strokeArc(x, centerY - DASH_GAUGE / 2, DASH_GAUGE, DASH_GAUGE, 90, 360,
+                javafx.scene.shape.ArcType.OPEN);
+
+        gc.setStroke(ready ? GOLD_TEXT : HASTE_BADGE);
+        gc.strokeArc(x, centerY - DASH_GAUGE / 2, DASH_GAUGE, DASH_GAUGE,
+                90, -360 * readiness, javafx.scene.shape.ArcType.OPEN);
+
+        gc.setFont(slotFont);
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setFill(ready ? GOLD_TEXT : HUD_TEXT);
+        gc.fillText("Q", x + DASH_GAUGE / 2, centerY);
+        gc.setFont(hudFont);
     }
 
     /**

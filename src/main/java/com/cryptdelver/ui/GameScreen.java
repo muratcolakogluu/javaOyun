@@ -393,6 +393,15 @@ public class GameScreen {
             // Tezgâhın kendi tuşu da duruyor: ayağının dibinde bir parça varken
             // F onu alıyor, büyücüye T ile ulaşıyorsun.
             case T -> game.toggleForge();
+            // Q tezgahta bir buyu tusu, disinda kacis adimi -- F ile ayni kural.
+            // WASD'in hemen yaninda ve oyunda baska bir isi yok.
+            case Q -> {
+                if (game.isForgeOpen()) {
+                    handleForgeCommand(code);
+                } else if (!game.isFrozen()) {
+                    game.getPlayer().requestDash();
+                }
+            }
             case MINUS, SUBTRACT -> changeVolume(-Settings.VOLUME_STEP);
             case PLUS, ADD, EQUALS -> changeVolume(Settings.VOLUME_STEP);
             case M -> toggleMute();

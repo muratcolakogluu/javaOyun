@@ -764,6 +764,16 @@ public class Game {
         groundItems.add(item);
     }
 
+    /**
+     * Oyuncu kacis adimi atti: ses ve iz.
+     *
+     * <p>Sicramanin duyulmasi onemli -- bekleme suresi bir kaynak ve harcandigi
+     * an geri bildirim almalisin.</p>
+     */
+    public void onPlayerDashed() {
+        sounds.play(SoundEffect.SWING);
+    }
+
     /** Havadaki oklar; ekran bunları çiziyor. */
     public List<Projectile> getProjectiles() {
         return List.copyOf(projectiles);
