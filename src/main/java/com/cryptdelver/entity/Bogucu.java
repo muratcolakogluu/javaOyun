@@ -1,5 +1,7 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
+
 import com.cryptdelver.game.Game;
 
 /**
@@ -37,7 +39,7 @@ public class Bogucu extends Boss {
     private double windupLeft;
 
     public Bogucu(int tileX, int tileY) {
-        super(tileX, tileY, "Sarnic Bogucusu", "boss_bogucu");
+        super(tileX, tileY, Text.BOSS_BOGUCU, "boss_bogucu");
     }
 
     /**
@@ -90,7 +92,7 @@ public class Bogucu extends Boss {
 
         volleyTimer = VOLLEY_INTERVAL;
         windupLeft = WINDUP;
-        game.getMessageLog().combat(getName() + " şişiyor — köşeye kay!");
+        game.getMessageLog().combat(Text.MSG_BOSS_WINDUP.get(getName()));
     }
 
     private void fireVolley(Game game) {

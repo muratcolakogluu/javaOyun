@@ -1,6 +1,7 @@
 package com.cryptdelver.persistence;
 
 import com.cryptdelver.game.Difficulty;
+import com.cryptdelver.game.Language;
 import com.cryptdelver.game.Settings;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -58,6 +59,7 @@ public class SettingsFile {
         lines.add("music|" + settings.getMusicVolume());
         lines.add("muted|" + settings.isMuted());
         lines.add("difficulty|" + settings.getDifficulty().name());
+        lines.add("language|" + settings.getLanguage().name());
 
         try {
             Path parent = path.getParent();
@@ -81,6 +83,7 @@ public class SettingsFile {
             case "music" -> settings.setMusicVolume(Double.parseDouble(parts[1]));
             case "muted" -> settings.setMuted(Boolean.parseBoolean(parts[1]));
             case "difficulty" -> settings.setDifficulty(parseDifficulty(parts[1]));
+            case "language" -> settings.setLanguage(parseLanguage(parts[1]));
             default -> {
                 // Tanımadığımız satırı yok sayıyoruz; ileride eklenen bir ayar
                 // eski sürümü çalıştırmayı engellemesin.
@@ -102,5 +105,15 @@ public class SettingsFile {
             }
         }
         return Difficulty.NORMAL;
+    }
+
+    /** Taninmayan dil adi varsayilana dusuyor; bozuk dosya oyunu acilmaz yapmasin. */
+    private Language parseLanguage(String value) {
+        for (Language candidate : Language.values()) {
+            if (candidate.name().equalsIgnoreCase(value)) {
+                return candidate;
+            }
+        }
+        return Language.TURKCE;
     }
 }

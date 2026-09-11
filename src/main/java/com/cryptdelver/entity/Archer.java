@@ -1,5 +1,7 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
+
 import com.cryptdelver.ai.AStarPathfinder;
 import com.cryptdelver.game.Game;
 
@@ -52,7 +54,7 @@ public class Archer extends Enemy {
     private double shotCooldown = DRAW_TIME;
 
     public Archer(int tileX, int tileY) {
-        super(tileX, tileY, "Okçu", STATS, new AStarPathfinder());
+        super(tileX, tileY, Text.ENEMY_ARCHER, STATS, new AStarPathfinder());
     }
 
     /**

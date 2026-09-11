@@ -1,5 +1,7 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
+
 import com.cryptdelver.game.Game;
 
 /**
@@ -13,7 +15,7 @@ public class Gold extends Item {
     private final int amount;
 
     public Gold(int tileX, int tileY, int amount) {
-        super(tileX, tileY, "Altın");
+        super(tileX, tileY, Text.ITEM_GOLD);
         if (amount <= 0) {
             throw new IllegalArgumentException("Altın miktarı pozitif olmalı: " + amount);
         }
@@ -38,7 +40,7 @@ public class Gold extends Item {
     @Override
     public void onPickup(Game game) {
         game.addGold(amount);
-        game.getMessageLog().item(amount + " altın topladın.");
+        game.getMessageLog().item(Text.MSG_GOLD_TAKEN.get(amount));
     }
 
     @Override

@@ -1,5 +1,7 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
+
 import com.cryptdelver.game.Game;
 
 /**
@@ -38,7 +40,7 @@ public class Projectile extends Entity {
      * @param range    kaç kare gittikten sonra düşeceği
      */
     public Projectile(int tileX, int tileY, int stepX, int stepY, Enemy shooter, int range) {
-        super(tileX, tileY, "Ok");
+        super(tileX, tileY, Text.ITEM_ARROW);
         this.stepX = stepX;
         this.stepY = stepY;
         this.shooter = shooter;

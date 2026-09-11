@@ -1,5 +1,7 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
+
 import com.cryptdelver.game.Game;
 
 /**
@@ -21,19 +23,19 @@ public class FuryPotion extends Item {
     public static final int ATTACK_BONUS = 4;
 
     public FuryPotion(int tileX, int tileY) {
-        super(tileX, tileY, "Öfke İksiri");
+        super(tileX, tileY, Text.ITEM_FURY);
     }
 
     @Override
     public boolean use(Game game) {
         game.getPlayer().applyFury(DURATION);
-        game.getMessageLog().add("Öfke iksiri: vuruşun sertleşti (+" + ATTACK_BONUS + ").");
+        game.getMessageLog().add(Text.MSG_FURY.get(ATTACK_BONUS));
         return true;
     }
 
     @Override
     public String getDescription() {
-        return (int) DURATION + " saniye +" + ATTACK_BONUS + " vurus";
+        return Text.ITEM_FURY_INFO.get((int) DURATION, ATTACK_BONUS);
     }
 
     /** Tek slotta yigildigi icin cantani sikistirmaz: uzerine basmak yeter. */

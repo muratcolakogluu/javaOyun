@@ -1,5 +1,7 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
+
 import com.cryptdelver.game.Game;
 import java.util.Random;
 
@@ -35,7 +37,7 @@ public class Bekci extends Boss {
     private double summonTimer = FIRST_SUMMON_DELAY;
 
     public Bekci(int tileX, int tileY) {
-        super(tileX, tileY, "Mahzen Bekcisi", "boss_bekci");
+        super(tileX, tileY, Text.BOSS_BEKCI, "boss_bekci");
     }
 
     @Override
@@ -71,7 +73,7 @@ public class Bekci extends Boss {
         }
 
         if (summoned > 0) {
-            game.getMessageLog().combat(getName() + " " + summoned + " yaratık çağırdı!");
+            game.getMessageLog().combat(Text.MSG_BOSS_SUMMON.get(getName(), summoned));
         }
     }
 

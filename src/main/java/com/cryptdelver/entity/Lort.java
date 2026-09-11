@@ -1,5 +1,7 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
+
 import com.cryptdelver.game.Game;
 import com.cryptdelver.world.Position;
 
@@ -40,7 +42,7 @@ public class Lort extends Boss {
     private double blinkTimer = FIRST_BLINK_DELAY;
 
     public Lort(int tileX, int tileY) {
-        super(tileX, tileY, "Kript Lordu", "boss");
+        super(tileX, tileY, Text.BOSS_LORT, "boss");
     }
 
     @Override
@@ -62,7 +64,7 @@ public class Lort extends Boss {
 
         blinkTimer = BLINK_INTERVAL;
         setTile(landing);
-        game.getMessageLog().combat(getName() + " gölgeden çıktı — yanındasın!");
+        game.getMessageLog().combat(Text.MSG_BOSS_BLINK.get(getName()));
     }
 
     /** Oyuncunun çevresinde boş bir kare; hepsi doluysa ışınlanma iptal. */

@@ -19,6 +19,7 @@ import com.cryptdelver.game.Inventory;
 import com.cryptdelver.game.MessageLog;
 import com.cryptdelver.game.Records;
 import com.cryptdelver.game.Settings;
+import com.cryptdelver.game.Text;
 import com.cryptdelver.world.Dungeon;
 import com.cryptdelver.world.DungeonGenerator;
 import com.cryptdelver.world.Tile;
@@ -33,7 +34,6 @@ import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.RadialGradient;
 import javafx.scene.paint.Stop;
 import javafx.scene.text.Font;
-import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 
 /**
@@ -183,6 +183,22 @@ public class GameRenderer {
 
     /** Menü çerçevesinin ve satırlarının genişliği. */
     private static final double MENU_FRAME_WIDTH = 620;
+
+    /** Baslik ve altindaki ayrac; kadro da ayracin ustunde duruyor. */
+    private static final double TITLE_Y = 120;
+    private static final double DIVIDER_Y = 180;
+
+    /** Baslik isigi: mesale gibi nefes aliyor. */
+    private static final Color TITLE_GLOW = Color.web("#ff9a3d");
+    private static final int TITLE_GLOW_RINGS = 3;
+    private static final long TITLE_PULSE_MILLIS = 2600;
+
+    /** Ayracin ustundeki karakterlerin boyu ve merkezden uzakligi. */
+    private static final double CAST_SIZE = 44;
+    private static final double CAST_SPREAD = 248;
+
+    /** Cercevenin kose centiklerinin boyu. */
+    private static final double CORNER_TICK = 16;
     private static final double MENU_ROW_WIDTH = 460;
     private static final double MENU_ROW_HEIGHT = 34;
 
@@ -248,7 +264,7 @@ public class GameRenderer {
     private final Font menuFont = Font.font("Consolas", 20);
 
     /** Yazı genişliği ölçmek için tutulan görünmez düğüm; {@link #measure} kullanıyor. */
-    private final Text textMeasure = new Text();
+    private final javafx.scene.text.Text textMeasure = new javafx.scene.text.Text();
 
     /** Farenin üstünde durduğu çanta eşyası; balon bunun için çiziliyor. */
     private Item tooltipItem;
@@ -303,13 +319,18 @@ public class GameRenderer {
         double centerX = mapWidth / 2;
         drawMenuFrame(gc, centerX, mapHeight);
 
+        // Başlık bir meşale gibi yanıyor: menü, oyunun kendi ışığını taşısın.
+        drawTitleGlow(gc, centerX, TITLE_Y);
+
         gc.setFont(titleFont);
         gc.setFill(GOLD_TEXT);
-        gc.fillText("CRYPTDELVER", centerX, 120);
+        gc.fillText(Text.GAME_TITLE.get(), centerX, TITLE_Y);
 
         gc.setFont(hudFont);
         gc.setFill(HUD_ACCENT);
-        gc.fillText("Kripte in, ganimeti topla, Kript Lordunu gec.", centerX, 158);
+        gc.fillText(Text.GAME_TAGLINE.get(), centerX, 158);
+
+        drawMenuCast(gc, centerX);
 
         switch (menu.getPane()) {
             case MAIN -> {
@@ -324,9 +345,48 @@ public class GameRenderer {
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setFill(HUD_TEXT);
         gc.fillText(menu.getPane() == StartMenu.Pane.MAIN
-                        ? "Yon tuslariyla sec, Enter ile onayla"
-                        : "Yon tuslariyla degistir, ESC ile geri don",
+                        ? Text.MENU_HINT.get()
+                        : Text.SETTINGS_HINT.get(),
                 centerX, mapHeight - 60);
+    }
+
+    /**
+     * Başlığın arkasındaki sıcak ışık.
+     *
+     * <p>Menü, oyunun geri kalanıyla aynı dili konuşsun diye: aynı nefes alan
+     * halka büyücünün ocağında ve öfkelenen bossun çevresinde de var. Sabit bir
+     * parlaklık dekor gibi kalırdı; kıpırdayınca meşale oluyor.</p>
+     */
+    private void drawTitleGlow(GraphicsContext gc, double centerX, double centerY) {
+        double phase = (System.currentTimeMillis() % TITLE_PULSE_MILLIS)
+                / (double) TITLE_PULSE_MILLIS;
+        double breath = 0.5 + 0.5 * Math.sin(phase * 2 * Math.PI);
+
+        for (int ring = TITLE_GLOW_RINGS; ring >= 1; ring--) {
+            double radiusX = 150.0 * ring * (0.94 + 0.06 * breath);
+            double radiusY = 34.0 * ring * (0.94 + 0.06 * breath);
+            double alpha = 0.085 / ring * (0.75 + 0.25 * breath);
+
+            gc.setFill(Color.color(TITLE_GLOW.getRed(), TITLE_GLOW.getGreen(),
+                    TITLE_GLOW.getBlue(), alpha));
+            gc.fillOval(centerX - radiusX, centerY - radiusY, radiusX * 2, radiusY * 2);
+        }
+    }
+
+    /**
+     * Ayracın üstünde duran kadro: kâşif bir yanda, zindan öbür yanda.
+     *
+     * <p>Menü uzun süre yalnızca yazıydı ve oyunla hiçbir görsel bağı yoktu —
+     * aynı yazı listesi başka bir oyunun menüsü de olabilirdi. Oyunun kendi
+     * sprite'ları, ne oynayacağını daha ilk ekranda söylüyor. Hepsi canlı
+     * çerçeveler olduğu için menü de kıpırdıyor.</p>
+     */
+    private void drawMenuCast(GraphicsContext gc, double centerX) {
+        double y = DIVIDER_Y - 4;
+
+        sprites.get("player").draw(gc, centerX - CAST_SPREAD, y, CAST_SIZE);
+        sprites.get("imp").draw(gc, centerX + CAST_SPREAD - 46, y, CAST_SIZE * 0.8);
+        sprites.get("skeleton").draw(gc, centerX + CAST_SPREAD, y, CAST_SIZE * 0.85);
     }
 
     /**
@@ -350,17 +410,17 @@ public class GameRenderer {
         gc.setFont(hudFont);
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setFill(HUD_ACCENT);
-        gc.fillText("— GECMIS —", centerX, y);
+        gc.fillText(Text.RECORDS_TITLE.get(), centerX, y);
 
         gc.setFill(MESSAGE_TEXT);
-        gc.fillText("En derin kat " + records.getDeepestFloor() + "/" + FloorTheme.MAX_DEPTH
-                        + "   ·   En cok altin " + records.getMostGold(),
+        gc.fillText(Text.RECORDS_DEEPEST.get(records.getDeepestFloor())
+                        + "   ·   " + Text.RECORDS_GOLD.get(records.getMostGold()),
                 centerX, y + 22);
 
         gc.setFill(records.getWins() > 0 ? GOLD_TEXT : MESSAGE_FADED);
         gc.fillText(records.getWins() > 0
-                        ? records.getRuns() + " kosu, " + records.getWins() + " kez kurtuldun"
-                        : records.getRuns() + " kosu, henuz kurtulamadin",
+                        ? Text.RECORDS_RUNS.get(records.getRuns(), records.getWins())
+                        : Text.RECORDS_NO_WIN.get(records.getRuns()),
                 centerX, y + 42);
     }
 
@@ -374,9 +434,33 @@ public class GameRenderer {
         gc.setLineWidth(1);
         gc.strokeRoundRect(centerX - width / 2, top, width, height, 10, 10);
 
+        // Köşe çentikleri: düz bir dikdörtgen pencere gibi duruyordu, çentikler
+        // onu duvara asılı bir levhaya çeviriyor.
+        drawFrameCorners(gc, centerX - width / 2, top, width, height);
+
         // Başlığın altındaki ayraç; başlıkla listeyi ayırıyor.
         gc.setStroke(HUD_ACCENT);
-        gc.strokeLine(centerX - width / 2 + 40, 180, centerX + width / 2 - 40, 180);
+        gc.strokeLine(centerX - width / 2 + 40, DIVIDER_Y, centerX + width / 2 - 40, DIVIDER_Y);
+    }
+
+    /** Çerçevenin dört köşesindeki kısa altın çentikler. */
+    private void drawFrameCorners(GraphicsContext gc, double left, double top,
+                                  double width, double height) {
+        double right = left + width;
+        double bottom = top + height;
+
+        gc.setStroke(HUD_ACCENT);
+        gc.setLineWidth(2);
+
+        for (int corner = 0; corner < 4; corner++) {
+            double x = (corner % 2 == 0) ? left : right;
+            double y = (corner < 2) ? top : bottom;
+            double towardsX = (corner % 2 == 0) ? CORNER_TICK : -CORNER_TICK;
+            double towardsY = (corner < 2) ? CORNER_TICK : -CORNER_TICK;
+
+            gc.strokeLine(x, y, x + towardsX, y);
+            gc.strokeLine(x, y, x, y + towardsY);
+        }
     }
 
     private void drawMainPane(GraphicsContext gc, StartMenu menu, double centerX) {
@@ -439,17 +523,18 @@ public class GameRenderer {
     /** Seçili zorluğun ne yaptığını tek satırda anlatır. */
     private String difficultyHint(Settings settings) {
         return switch (settings.getDifficulty()) {
-            case KOLAY -> "Kolay: kat daha tenha, dusmanlar derinlikle yavas sertlesir.";
-            case NORMAL -> "Normal: oyunun dengelendigi kademe.";
-            case ZOR -> "Zor: kat kalabalik, dusmanlar derinlikle hizla sertlesir.";
+            case KOLAY -> Text.DIFFICULTY_EASY_HINT.get();
+            case NORMAL -> Text.DIFFICULTY_NORMAL_HINT.get();
+            case ZOR -> Text.DIFFICULTY_HARD_HINT.get();
         };
     }
 
     private String settingValue(StartMenu.SettingRow row, Settings settings) {
         return switch (row) {
+            case LANGUAGE -> settings.getLanguage().getLabel();
             case VOLUME -> "%" + settings.getVolumePercent();
             case MUSIC -> "%" + settings.getMusicPercent();
-            case MUTE -> settings.isMuted() ? "Acik" : "Kapali";
+            case MUTE -> settings.isMuted() ? Text.ON.get() : Text.OFF.get();
             case DIFFICULTY -> settings.getDifficulty().getLabel();
             case BACK -> "";
         };
@@ -524,6 +609,12 @@ public class GameRenderer {
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setFill(selected ? GOLD_TEXT : MESSAGE_FADED);
         gc.fillText(label, centerX, centerY);
+
+        // Seçili satırın yanında bir kılıç: hangi satırda olduğun çerçeveden
+        // önce buradan anlaşılıyor ve işaret oyunun kendi ikonundan geliyor.
+        if (selected) {
+            sprites.get("sword_steel").draw(gc, centerX - width / 2 + 26, centerY, 22);
+        }
     }
 
     /** Haritayı, varlıkları, bilgi şeridini ve gerekiyorsa ölüm ekranını çizer. */
@@ -633,7 +724,7 @@ public class GameRenderer {
         gc.setTextBaseline(VPos.CENTER);
         gc.setFont(titleFont);
         gc.setFill(GOLD_TEXT);
-        gc.fillText("DURAKLATILDI", mapWidth / 2, mapHeight / 2 - 175);
+        gc.fillText(Text.PAUSED.get(), mapWidth / 2, mapHeight / 2 - 175);
 
         double y = drawSettingsSection(gc, game, mapWidth, mapHeight / 2 - 115);
         drawKeyList(gc, mapWidth, y + 24);
@@ -650,22 +741,22 @@ public class GameRenderer {
         gc.setFont(hudFont);
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setFill(HUD_ACCENT);
-        gc.fillText("— AYARLAR —", mapWidth / 2, top);
+        gc.fillText(Text.SETTINGS_TITLE.get(), mapWidth / 2, top);
 
         double rowY = top + 28;
-        drawLevelRow(gc, settings, "Efekt", settings.getVolume(),
+        drawLevelRow(gc, settings, Text.SETTING_EFFECTS.get(), settings.getVolume(),
                 settings.getVolumePercent(), mapWidth, rowY);
 
         // Müzik kendi satırında: efektten ayrı bir seviye olmasının anlamı
         // ancak ayrı görünürse var.
         rowY += 22;
-        drawLevelRow(gc, settings, "Muzik", settings.getMusicVolume(),
+        drawLevelRow(gc, settings, Text.SETTING_MUSIC.get(), settings.getMusicVolume(),
                 settings.getMusicPercent(), mapWidth, rowY);
 
         rowY += 20;
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setFill(HUD_TEXT);
-        gc.fillText("- / +  efekt,  M  sustur,  muzik menudeki ayarlardan", mapWidth / 2, rowY);
+        gc.fillText(Text.PAUSE_SOUND_HINT.get(), mapWidth / 2, rowY);
 
         // Zorluk burada yalnızca gösteriliyor. Oyunun ortasında ok tuşlarıyla
         // zorluk değiştirmek kolayca yanlışlıkla yapılırdı; menüdeki ayarlar
@@ -673,7 +764,7 @@ public class GameRenderer {
         rowY += 24;
         gc.setTextAlign(TextAlignment.RIGHT);
         gc.setFill(MESSAGE_TEXT);
-        gc.fillText("Zorluk", mapWidth / 2 - 20, rowY);
+        gc.fillText(Text.SETTING_DIFFICULTY.get(), mapWidth / 2 - 20, rowY);
         gc.setTextAlign(TextAlignment.LEFT);
         gc.setFill(GOLD_TEXT);
         gc.fillText(settings.getDifficulty().getLabel(), mapWidth / 2 + 20, rowY);
@@ -693,7 +784,7 @@ public class GameRenderer {
 
         gc.setTextAlign(TextAlignment.LEFT);
         gc.setFill(settings.isMuted() ? HUD_TEXT : GOLD_TEXT);
-        gc.fillText(settings.isMuted() ? "kapali" : "%" + percent, mapWidth / 2 + 90, rowY);
+        gc.fillText(settings.isMuted() ? Text.OFF.get() : "%" + percent, mapWidth / 2 + 90, rowY);
     }
 
     private void drawVolumeBar(GraphicsContext gc, Settings settings, double level,
@@ -719,34 +810,34 @@ public class GameRenderer {
     }
 
     private void drawKeyList(GraphicsContext gc, double mapWidth, double top) {
-        String[][] keys = {
-                {"WASD / oklar", "hareket"},
-                {"Bosluk", "vur"},
-                {"1-8 / tik", "cantadaki esyayi kullan / kusan"},
-                {"Shift + 1-8 / tik", "esyayi yere birak"},
-                {"F", "yerdeki ekipmani al ya da buyucuyle konus"},
-                {"E", "merdivende in ya da cik"},
-                {"T", "büyücünün yaninda tezgahi ac"},
-                {"", "iksir ve altin kendiliginden alinir"},
-                {"- / + / M", "ses azalt / artir / sustur"},
-                {"Enter", "olunce yeniden basla"},
-                {"ESC", "devam et"},
+        Text[][] keys = {
+                {Text.KEY_MOVE, Text.KEY_MOVE_WHAT},
+                {Text.KEY_ATTACK, Text.KEY_ATTACK_WHAT},
+                {Text.KEY_USE, Text.KEY_USE_WHAT},
+                {Text.KEY_DROP, Text.KEY_DROP_WHAT},
+                {Text.KEY_TAKE, Text.KEY_TAKE_WHAT},
+                {Text.KEY_STAIRS, Text.KEY_STAIRS_WHAT},
+                {Text.KEY_FORGE, Text.KEY_FORGE_WHAT},
+                {null, Text.KEY_AUTOPICK_NOTE},
+                {Text.KEY_VOLUME, Text.KEY_VOLUME_WHAT},
+                {Text.KEY_RESTART, Text.KEY_RESTART_WHAT},
+                {Text.KEY_PAUSE, Text.KEY_PAUSE_WHAT},
         };
 
         gc.setFont(hudFont);
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setFill(HUD_ACCENT);
-        gc.fillText("— TUSLAR —", mapWidth / 2, top);
+        gc.fillText(Text.KEYS_TITLE.get(), mapWidth / 2, top);
 
         double y = top + 26;
-        for (String[] row : keys) {
+        for (Text[] row : keys) {
             gc.setTextAlign(TextAlignment.RIGHT);
             gc.setFill(HUD_ACCENT);
-            gc.fillText(row[0], mapWidth / 2 - 15, y);
+            gc.fillText(row[0] == null ? "" : row[0].get(), mapWidth / 2 - 15, y);
 
             gc.setTextAlign(TextAlignment.LEFT);
             gc.setFill(MESSAGE_TEXT);
-            gc.fillText(row[1], mapWidth / 2 + 15, y);
+            gc.fillText(row[1].get(), mapWidth / 2 + 15, y);
             y += 21;
         }
     }
@@ -1064,11 +1155,11 @@ public class GameRenderer {
         drawCharacterPanel(gc, game, mapHeight);
         drawInventoryPanel(gc, game, mapHeight);
 
-        drawMessageColumn(gc, game, MessageLog.Channel.COMBAT, "SAVAS",
+        drawMessageColumn(gc, game, MessageLog.Channel.COMBAT, Text.PANEL_COMBAT.get(),
                 COMBAT_PANEL_X, mapHeight);
-        drawMessageColumn(gc, game, MessageLog.Channel.ITEM, "ESYA",
+        drawMessageColumn(gc, game, MessageLog.Channel.ITEM, Text.PANEL_ITEM.get(),
                 ITEM_PANEL_X, mapHeight);
-        drawMessageColumn(gc, game, MessageLog.Channel.STATUS, "DURUM",
+        drawMessageColumn(gc, game, MessageLog.Channel.STATUS, Text.PANEL_STATUS.get(),
                 STATUS_PANEL_X, mapHeight);
         drawFooter(gc, game, mapWidth, mapHeight);
 
@@ -1110,7 +1201,7 @@ public class GameRenderer {
      * gereken şey bu.</p>
      */
     private void drawCharacterPanel(GraphicsContext gc, Game game, double mapHeight) {
-        drawPanelTitle(gc, "KARAKTER", CHARACTER_PANEL_X, mapHeight);
+        drawPanelTitle(gc, Text.PANEL_CHARACTER.get(), CHARACTER_PANEL_X, mapHeight);
 
         Player player = game.getPlayer();
         double slotTop = mapHeight + 22;
@@ -1130,19 +1221,19 @@ public class GameRenderer {
         double line = mapHeight + 72;
 
         gc.setFill(HUD_TEXT);
-        gc.fillText("Vurus " + player.getAttackPower(), CHARACTER_PANEL_X, line);
-        gc.fillText("Zirh " + player.getDefense(), CHARACTER_PANEL_X + 76, line);
+        gc.fillText(Text.HUD_ATTACK.get(player.getAttackPower()), CHARACTER_PANEL_X, line);
+        gc.fillText(Text.HUD_DEFENSE.get(player.getDefense()), CHARACTER_PANEL_X + 76, line);
 
         gc.setFill(GOLD_TEXT);
-        gc.fillText("Altin " + game.getGold(), CHARACTER_PANEL_X + 136, line);
+        gc.fillText(Text.HUD_GOLD.get(game.getGold()), CHARACTER_PANEL_X + 136, line);
 
         gc.setFill(HUD_ACCENT);
-        gc.fillText("Kat " + game.getDepth() + "/" + FloorTheme.MAX_DEPTH,
+        gc.fillText(Text.HUD_DEPTH.get(game.getDepth(), FloorTheme.MAX_DEPTH),
                 CHARACTER_PANEL_X, line + 16);
         gc.setFill(HUD_TEXT);
-        gc.fillText(String.format("Sure %.0fs", game.getElapsedSeconds()),
+        gc.fillText(Text.HUD_TIME.get(game.getElapsedSeconds()),
                 CHARACTER_PANEL_X + 76, line + 16);
-        gc.fillText("Dusman " + game.getEnemies().size(), CHARACTER_PANEL_X + 156, line + 16);
+        gc.fillText(Text.HUD_ENEMIES.get(game.getEnemies().size()), CHARACTER_PANEL_X + 156, line + 16);
 
         // Zindan uyandıysa kalıcı bir uyarı: takviyeler gelirken oyuncu
         // "neden birden kalabalıklaştı" diye düşünmesin.
@@ -1150,7 +1241,7 @@ public class GameRenderer {
             gc.setFont(slotFont);
             gc.setTextAlign(TextAlignment.RIGHT);
             gc.setFill(HP_TEXT);
-            gc.fillText("ZINDAN UYANDI", INVENTORY_PANEL_X - PANEL_GAP - 6, mapHeight + 14);
+            gc.fillText(Text.HUD_DUNGEON_AWAKE.get(), INVENTORY_PANEL_X - PANEL_GAP - 6, mapHeight + 14);
             gc.setFont(hudFont);
         }
     }
@@ -1219,7 +1310,7 @@ public class GameRenderer {
             gc.setFill(HP_BAR_BACKGROUND);
             gc.fillRect(x, top + GEAR_SLOT_SIZE / 2.0 - 7, GEAR_SLOT_SIZE, 13);
             gc.setFill(HP_TEXT);
-            gc.fillText("KIRIK", x + GEAR_SLOT_SIZE / 2.0, top + GEAR_SLOT_SIZE / 2.0);
+            gc.fillText(Text.GEAR_BROKEN.get(), x + GEAR_SLOT_SIZE / 2.0, top + GEAR_SLOT_SIZE / 2.0);
             gc.setFont(hudFont);
         }
     }
@@ -1328,7 +1419,7 @@ public class GameRenderer {
      * değil.</p>
      */
     private void drawInventoryPanel(GraphicsContext gc, Game game, double mapHeight) {
-        drawPanelTitle(gc, "CANTA", INVENTORY_PANEL_X, mapHeight);
+        drawPanelTitle(gc, Text.PANEL_BAG.get(), INVENTORY_PANEL_X, mapHeight);
         drawInventory(gc, game, INVENTORY_PANEL_X, mapHeight + 28);
 
         // Slotların altındaki tek satır: toplama tuşa bağlandığından beri
@@ -1336,7 +1427,7 @@ public class GameRenderer {
         gc.setFont(slotFont);
         gc.setTextAlign(TextAlignment.LEFT);
         gc.setFill(SLOT_NUMBER);
-        gc.fillText("F ekipmani alir · 1-8 kullanir · Shift+1-8 birakir",
+        gc.fillText(Text.HUD_BAG_HINT.get(),
                 INVENTORY_PANEL_X, mapHeight + 76);
         gc.setFont(hudFont);
     }
@@ -1426,7 +1517,7 @@ public class GameRenderer {
         gc.fillText(game.getTheme().getLabel(), mapWidth - 10, mapHeight + 14);
 
         gc.setFill(HUD_TEXT);
-        gc.fillText("ESC: durdur, ayarlar ve tuslar", mapWidth - 10, mapHeight + HUD_HEIGHT - 10);
+        gc.fillText(Text.HUD_ESC_HINT.get(), mapWidth - 10, mapHeight + HUD_HEIGHT - 10);
     }
 
     /**
@@ -1703,11 +1794,11 @@ public class GameRenderer {
         String hint;
 
         if (here.size() == 1) {
-            hint = "F ile " + here.get(0).getName() + " al";
+            hint = Text.HINT_TAKE_ONE.get(here.get(0).getName());
         } else if (!here.isEmpty()) {
-            hint = "F ile " + here.size() + " esyayi al";
+            hint = Text.HINT_TAKE_MANY.get(here.size());
         } else if (game.isNearWizard()) {
-            hint = "F ile tezgahi ac";
+            hint = Text.HINT_OPEN_BENCH.get();
         } else {
             return;
         }
@@ -1736,15 +1827,15 @@ public class GameRenderer {
         boolean locked = onDown && game.isStairsLocked();
         String hint;
         if (locked) {
-            hint = "Merdiveni tutan seyi once yen";
+            hint = Text.HINT_STAIRS_LOCKED.get();
         } else if (!onDown) {
             // Yukarı çıkan merdiven: geldiğin yer.
-            hint = "E ile bir ust kata cik";
+            hint = Text.HINT_STAIRS_UP.get();
         } else if (game.isFinalFloor()) {
             // Yirminci katın merdiveni aşağı değil dışarı çıkıyor.
-            hint = "E ile kriptten cik";
+            hint = Text.HINT_STAIRS_EXIT.get();
         } else {
-            hint = "E ile bir alt kata in";
+            hint = Text.HINT_STAIRS_DOWN.get();
         }
 
         double boxWidth = locked ? 230 : 200;
@@ -1910,41 +2001,41 @@ public class GameRenderer {
         gc.setTextBaseline(VPos.CENTER);
         gc.setFont(titleFont);
         gc.setFill(GOLD_TEXT);
-        gc.fillText("BUYUCU", mapWidth / 2, mapHeight / 2 - 190);
+        gc.fillText(Text.WIZARD_SIGN.get(), mapWidth / 2, mapHeight / 2 - 190);
 
         gc.setFont(hudFont);
         gc.setFill(HUD_TEXT);
-        gc.fillText("Kesende " + game.getGold() + " altin var.", mapWidth / 2, mapHeight / 2 - 148);
+        gc.fillText(Text.FORGE_PURSE.get(game.getGold()), mapWidth / 2, mapHeight / 2 - 148);
 
         Player player = game.getPlayer();
         Weapon weapon = player.getEquippedWeapon();
         Armor armor = player.getEquippedArmor();
         double y = mapHeight / 2 - 112;
 
-        y = drawForgeRow(gc, game, mapWidth, y, "1", "Silahi tamir et", weapon, false,
+        y = drawForgeRow(gc, game, mapWidth, y, "1", Text.FORGE_REPAIR.get(Text.FORGE_WEAPON.get()), weapon, false,
                 UiAction.Bench.REPAIR_WEAPON);
-        y = drawForgeRow(gc, game, mapWidth, y, "2", "Zirhi tamir et", armor, false,
+        y = drawForgeRow(gc, game, mapWidth, y, "2", Text.FORGE_REPAIR.get(Text.FORGE_ARMOR.get()), armor, false,
                 UiAction.Bench.REPAIR_ARMOR);
-        y = drawForgeRow(gc, game, mapWidth, y, "3", "Silahi yukselt", weapon, true,
+        y = drawForgeRow(gc, game, mapWidth, y, "3", Text.FORGE_UPGRADE.get(Text.FORGE_WEAPON.get()), weapon, true,
                 UiAction.Bench.UPGRADE_WEAPON);
-        y = drawForgeRow(gc, game, mapWidth, y, "4", "Zirhi yukselt", armor, true,
+        y = drawForgeRow(gc, game, mapWidth, y, "4", Text.FORGE_UPGRADE.get(Text.FORGE_ARMOR.get()), armor, true,
                 UiAction.Bench.UPGRADE_ARMOR);
 
         y += 10;
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setFill(HUD_ACCENT);
-        gc.fillText("— BUYULER (her parcada bir tane durur) —", mapWidth / 2, y);
+        gc.fillText(Text.FORGE_ENCHANTS_TITLE.get(), mapWidth / 2, y);
         y += 26;
 
-        y = drawEnchantRows(gc, game, mapWidth, y, "Kilica", weapon, WEAPON_ENCHANT_KEYS);
-        y = drawEnchantRows(gc, game, mapWidth, y, "Zirha", armor, ARMOR_ENCHANT_KEYS);
+        y = drawEnchantRows(gc, game, mapWidth, y, Text.FORGE_TO_WEAPON.get(), weapon, WEAPON_ENCHANT_KEYS);
+        y = drawEnchantRows(gc, game, mapWidth, y, Text.FORGE_TO_ARMOR.get(), armor, ARMOR_ENCHANT_KEYS);
 
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setFill(HUD_TEXT);
-        gc.fillText("Yukseltme tavani, bu katta bossun birakacagi parca kadar.",
+        gc.fillText(Text.FORGE_CAP_NOTE.get(),
                 mapWidth / 2, y + 18);
         gc.setFill(HUD_ACCENT);
-        gc.fillText("ESC ile tezgahtan ayril", mapWidth / 2, y + 40);
+        gc.fillText(Text.FORGE_LEAVE.get(), mapWidth / 2, y + 40);
     }
 
     /**
@@ -1984,12 +2075,12 @@ public class GameRenderer {
             gc.fillText(owner + ": " + option.getLabel(), mapWidth / 2 - 285, y);
 
             gc.setFill(active ? GOLD_TEXT : MESSAGE_FADED);
-            gc.fillText(active ? "takili — " + option.getDescription() : option.getDescription(),
+            gc.fillText(active ? Text.FORGE_ACTIVE.get(option.getDescription()) : option.getDescription(),
                     mapWidth / 2 - 60, y);
 
             gc.setTextAlign(TextAlignment.RIGHT);
             gc.setFill(affordable ? GOLD_TEXT : MESSAGE_FADED);
-            gc.fillText(item == null ? "—" : price + " altin", mapWidth / 2 + 300, y);
+            gc.fillText(item == null ? Text.FORGE_NONE.get() : Text.FORGE_COST.get(price), mapWidth / 2 + 300, y);
 
             y += 26;
         }
@@ -2011,19 +2102,19 @@ public class GameRenderer {
         boolean available;
 
         if (item == null) {
-            detail = "kusanilmis parca yok";
-            cost = "—";
+            detail = Text.FORGE_NO_GEAR.get();
+            cost = Text.FORGE_NONE.get();
             available = false;
         } else if (upgrade) {
             available = item.canUpgrade(game.getDepth());
             detail = item.getFullName() + "  +" + item.getBonus()
                     + (available ? "" : "  (tavan)");
-            cost = available ? Forge.upgradeCost(item) + " altin" : "—";
+            cost = available ? Text.FORGE_COST.get(Forge.upgradeCost(item)) : Text.FORGE_NONE.get();
         } else {
             available = item.needsRepair();
             detail = item.getFullName() + "  " + item.getDurability() + "/"
                     + item.getMaxDurability() + (item.isBroken() ? "  KIRIK" : "");
-            cost = available ? Forge.repairCost(item) + " altin" : "saglam";
+            cost = available ? Text.FORGE_COST.get(Forge.repairCost(item)) : Text.FORGE_SOUND.get();
         }
 
         boolean affordable = available && item != null
@@ -2102,11 +2193,11 @@ public class GameRenderer {
 
         gc.setFont(titleFont);
         gc.setFill(GOLD_TEXT);
-        gc.fillText("KURTULDUN", mapWidth / 2, mapHeight / 2 - 60);
+        gc.fillText(Text.VICTORY.get(), mapWidth / 2, mapHeight / 2 - 60);
 
         gc.setFont(menuFont);
         gc.setFill(MESSAGE_TEXT);
-        gc.fillText("Yirmi kat indin ve geri dondun.", mapWidth / 2, mapHeight / 2 - 10);
+        gc.fillText(Text.VICTORY_LINE.get(), mapWidth / 2, mapHeight / 2 - 10);
 
         gc.setFont(hudFont);
         gc.setFill(HUD_ACCENT);
@@ -2114,7 +2205,7 @@ public class GameRenderer {
                 game.getElapsedSeconds()), mapWidth / 2, mapHeight / 2 + 26);
 
         gc.setFill(HUD_TEXT);
-        gc.fillText("Enter ile yeniden basla", mapWidth / 2, mapHeight / 2 + 58);
+        gc.fillText(Text.GAME_OVER_HINT.get(), mapWidth / 2, mapHeight / 2 + 58);
     }
 
     private void drawGameOver(GraphicsContext gc, Game game, double mapWidth, double mapHeight) {
@@ -2126,14 +2217,14 @@ public class GameRenderer {
 
         gc.setFont(titleFont);
         gc.setFill(OVERLAY_TITLE);
-        gc.fillText("OLDUN", mapWidth / 2.0, mapHeight / 2.0 - 30);
+        gc.fillText(Text.GAME_OVER.get(), mapWidth / 2.0, mapHeight / 2.0 - 30);
 
         gc.setFont(hudFont);
         gc.setFill(GOLD_TEXT);
-        gc.fillText(game.getDepth() + ". katta dustun    " + game.getGold() + " altin topladin",
+        gc.fillText(Text.GAME_OVER_LINE.get(game.getDepth(), game.getGold()),
                 mapWidth / 2.0, mapHeight / 2.0 + 8);
 
         gc.setFill(MESSAGE_TEXT);
-        gc.fillText("Enter ile yeniden basla", mapWidth / 2.0, mapHeight / 2.0 + 32);
+        gc.fillText(Text.GAME_OVER_HINT.get(), mapWidth / 2.0, mapHeight / 2.0 + 32);
     }
 }

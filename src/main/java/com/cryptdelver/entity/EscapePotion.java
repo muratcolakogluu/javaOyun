@@ -1,5 +1,7 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
+
 import com.cryptdelver.game.Game;
 
 /**
@@ -16,7 +18,7 @@ import com.cryptdelver.game.Game;
 public class EscapePotion extends Item {
 
     public EscapePotion(int tileX, int tileY) {
-        super(tileX, tileY, "Kaçış İksiri");
+        super(tileX, tileY, Text.ITEM_ESCAPE);
     }
 
     @Override
@@ -26,7 +28,7 @@ public class EscapePotion extends Item {
 
     @Override
     public String getDescription() {
-        return "Seni merdivenin basina isinlar";
+        return Text.ITEM_ESCAPE_INFO.get();
     }
 
     /** Tek slotta yigildigi icin cantani sikistirmaz: uzerine basmak yeter. */

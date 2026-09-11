@@ -1,5 +1,7 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
+
 
 /**
  * Yıldızkıran: zindanda bulunabilecek en iyi kılıç.
@@ -21,7 +23,7 @@ package com.cryptdelver.entity;
  */
 public class LegendWeapon extends Weapon {
 
-    private static final String NAME = "Yıldızkıran";
+    private static final Text NAME = Text.WEAPON_LEGEND;
     private static final int ATTACK_BONUS = 14;
     private static final int DURABILITY = 360;
     private static final int ENCHANT_SLOTS = 2;

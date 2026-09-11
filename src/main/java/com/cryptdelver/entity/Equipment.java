@@ -1,5 +1,6 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,6 +51,16 @@ public abstract class Equipment extends Item {
      */
     private int wearAttempts;
 
+    protected Equipment(int tileX, int tileY, Text name, int baseBonus,
+                        String spriteName, int maxDurability) {
+        super(tileX, tileY, name);
+        this.baseBonus = baseBonus;
+        this.spriteName = spriteName;
+        this.maxDurability = Math.max(1, maxDurability);
+        this.durability = this.maxDurability;
+    }
+
+    /** Testler icin: adi dogrudan veriyor. */
     protected Equipment(int tileX, int tileY, String name, int baseBonus,
                         String spriteName, int maxDurability) {
         super(tileX, tileY, name);
@@ -194,7 +205,13 @@ public abstract class Equipment extends Item {
         repair();
     }
 
-    /** Kayıttan dönerken kullanılıyor; oyun içi akışta çağrılmaz. */
+    /**
+     * Parcayi dogrudan verilen duruma getirir.
+     *
+     * <p>Oyun ici akista cagrilmiyor: testler yipranmis ya da kirik bir parcayi
+     * kurmak icin kullaniyor. Gercek yipranma {@link #wear()} uzerinden
+     * isliyor.</p>
+     */
     public void setCondition(int durability, int upgradeLevel) {
         this.upgradeLevel = Math.max(0, upgradeLevel);
         this.durability = Math.clamp(durability, 0, maxDurability);

@@ -1,5 +1,7 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
+
 import com.cryptdelver.game.Game;
 
 /**
@@ -10,7 +12,7 @@ public class Potion extends Item {
     private static final int HEAL_AMOUNT = 8;
 
     public Potion(int tileX, int tileY) {
-        super(tileX, tileY, "İksir");
+        super(tileX, tileY, Text.ITEM_POTION);
     }
 
     public int getHealAmount() {
@@ -19,7 +21,7 @@ public class Potion extends Item {
 
     @Override
     public String getDescription() {
-        return "Icince " + HEAL_AMOUNT + " can";
+        return Text.ITEM_POTION_INFO.get(HEAL_AMOUNT);
     }
 
     @Override
@@ -28,13 +30,13 @@ public class Potion extends Item {
 
         // Dolu canla iksir harcamayı engelle; yanlışlıkla basmak canını yakmasın.
         if (player.getHp() >= player.getMaxHp()) {
-            game.getMessageLog().add("Canın zaten dolu.");
+            game.getMessageLog().add(Text.MSG_POTION_WASTED.get());
             return false;
         }
 
         int before = player.getHp();
         player.heal(HEAL_AMOUNT);
-        game.getMessageLog().add("İksiri içtin: " + (player.getHp() - before) + " can geldi.");
+        game.getMessageLog().add(Text.MSG_POTION_DRUNK.get(player.getHp() - before));
         return true;
     }
 

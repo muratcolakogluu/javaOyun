@@ -1,5 +1,7 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
+
 import com.cryptdelver.ai.GreedyPathfinder;
 import com.cryptdelver.game.Game;
 import java.util.Random;
@@ -34,7 +36,7 @@ public class Imp extends Enemy {
     private int[] wanderDirection = DIRECTIONS[0];
 
     public Imp(int tileX, int tileY) {
-        super(tileX, tileY, "İmp", STATS, new GreedyPathfinder());
+        super(tileX, tileY, Text.ENEMY_IMP, STATS, new GreedyPathfinder());
         pickNewDirection();
     }
 

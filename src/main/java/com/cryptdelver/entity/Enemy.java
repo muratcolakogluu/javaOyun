@@ -1,5 +1,7 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
+
 import com.cryptdelver.ai.Pathfinder;
 import com.cryptdelver.game.Game;
 import com.cryptdelver.world.Position;
@@ -28,7 +30,7 @@ public abstract class Enemy extends Combatant implements Actor {
     private double attackCooldown;
     private double idleTimer;
 
-    protected Enemy(int tileX, int tileY, String name, EnemyStats stats, Pathfinder pathfinder) {
+    protected Enemy(int tileX, int tileY, Text name, EnemyStats stats, Pathfinder pathfinder) {
         super(tileX, tileY, name, stats.maxHp());
         this.stats = stats;
         this.pathfinder = pathfinder;

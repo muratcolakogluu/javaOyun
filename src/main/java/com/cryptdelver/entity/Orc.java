@@ -1,5 +1,7 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
+
 import com.cryptdelver.ai.AStarPathfinder;
 
 /**
@@ -23,7 +25,7 @@ public class Orc extends Enemy {
             10);    // fark etme menzili
 
     public Orc(int tileX, int tileY) {
-        super(tileX, tileY, "Ork Savaşçısı", STATS, new AStarPathfinder());
+        super(tileX, tileY, Text.ENEMY_ORC, STATS, new AStarPathfinder());
     }
 
     @Override

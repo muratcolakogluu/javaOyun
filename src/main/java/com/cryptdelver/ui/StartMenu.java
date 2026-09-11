@@ -1,5 +1,6 @@
 package com.cryptdelver.ui;
 
+import com.cryptdelver.game.Text;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,19 +22,19 @@ public class StartMenu {
 
     /** Ana sayfadaki satırlar. */
     public enum Option {
-        NEW_GAME("Yeni Oyun"),
-        SETTINGS("Ayarlar"),
-        HELP("Nasil Oynanir"),
-        QUIT("Cikis");
+        NEW_GAME(Text.MENU_NEW_GAME),
+        SETTINGS(Text.MENU_SETTINGS),
+        HELP(Text.MENU_HELP),
+        QUIT(Text.MENU_QUIT);
 
-        private final String label;
+        private final Text label;
 
-        Option(String label) {
+        Option(Text label) {
             this.label = label;
         }
 
         public String getLabel() {
-            return label;
+            return label.get();
         }
     }
 
@@ -45,20 +46,21 @@ public class StartMenu {
      * ama bilmen gerekmiyor.</p>
      */
     public enum SettingRow {
-        VOLUME("Efekt sesi"),
-        MUSIC("Muzik"),
-        MUTE("Sessiz"),
-        DIFFICULTY("Zorluk"),
-        BACK("Geri");
+        LANGUAGE(Text.SETTING_LANGUAGE),
+        VOLUME(Text.SETTING_EFFECTS),
+        MUSIC(Text.SETTING_MUSIC),
+        MUTE(Text.SETTING_MUTE),
+        DIFFICULTY(Text.SETTING_DIFFICULTY),
+        BACK(Text.SETTING_BACK);
 
-        private final String label;
+        private final Text label;
 
-        SettingRow(String label) {
+        SettingRow(Text label) {
             this.label = label;
         }
 
         public String getLabel() {
-            return label;
+            return label.get();
         }
     }
 

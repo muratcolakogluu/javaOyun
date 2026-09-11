@@ -1,5 +1,7 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
+
 import com.cryptdelver.game.Game;
 import com.cryptdelver.game.LootTable;
 import java.util.List;
@@ -16,10 +18,21 @@ public class Armor extends Equipment {
     /** Zırh sprite adlarının ortak başı; kademe etiketi bunun devamı. */
     private static final String SPRITE_PREFIX = "armor_";
 
+    public Armor(int tileX, int tileY, Text name, int defenseBonus, String spriteName) {
+        this(tileX, tileY, name, defenseBonus, spriteName, LootTable.armorDurabilityFor(defenseBonus));
+    }
+
+    public Armor(int tileX, int tileY, Text name, int defenseBonus, String spriteName,
+                 int maxDurability) {
+        super(tileX, tileY, name, defenseBonus, spriteName, maxDurability);
+    }
+
+    /** Testler icin: adi dogrudan veriyor. */
     public Armor(int tileX, int tileY, String name, int defenseBonus, String spriteName) {
         this(tileX, tileY, name, defenseBonus, spriteName, LootTable.armorDurabilityFor(defenseBonus));
     }
 
+    /** Testler icin: adi dogrudan veriyor. */
     public Armor(int tileX, int tileY, String name, int defenseBonus, String spriteName,
                  int maxDurability) {
         super(tileX, tileY, name, defenseBonus, spriteName, maxDurability);
@@ -27,8 +40,8 @@ public class Armor extends Equipment {
 
     @Override
     public String getDescription() {
-        return "+" + getBonus() + " savunma  ·  " + getDurability() + "/" + getMaxDurability()
-                + (isBroken() ? "  KIRIK" : "");
+        return Text.GEAR_ARMOR_INFO.get(getBonus(), getDurability(), getMaxDurability())
+                + (isBroken() ? "  " + Text.GEAR_BROKEN.get() : "");
     }
 
     /** Dövüşte işleyen bonus: parçalanmış zırh hiç korumuyor. */
@@ -73,12 +86,12 @@ public class Armor extends Equipment {
         Player player = game.getPlayer();
 
         if (player.getEquippedArmor() == this) {
-            game.getMessageLog().item(getDisplayName() + " zaten üstünde.");
+            game.getMessageLog().item(Text.MSG_ALREADY_WORN.get(getDisplayName()));
             return false;
         }
 
         player.equip(this);
-        game.getMessageLog().item(getDisplayName() + " kuşandın (+" + getBonus() + " savunma).");
+        game.getMessageLog().item(Text.MSG_EQUIPPED_ARMOR.get(getDisplayName(), getBonus()));
         return false;
     }
 
@@ -103,7 +116,7 @@ public class Armor extends Equipment {
         }
 
         player.equip(this);
-        game.getMessageLog().item(getDisplayName() + " kuşandın (+" + getBonus() + " savunma).");
+        game.getMessageLog().item(Text.MSG_EQUIPPED_ARMOR.get(getDisplayName(), getBonus()));
         game.discardToGround(current);
     }
 

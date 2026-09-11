@@ -3,6 +3,7 @@ package com.cryptdelver.entity;
 import com.cryptdelver.ai.AStarPathfinder;
 import com.cryptdelver.game.Game;
 import com.cryptdelver.game.LootTable;
+import com.cryptdelver.game.Text;
 
 /**
  * Bir bölgenin sahibi: belirli katlarda merdiveni tutan boss.
@@ -87,7 +88,7 @@ public abstract class Boss extends Enemy {
 
     private final String spriteName;
 
-    protected Boss(int tileX, int tileY, String name, String spriteName) {
+    protected Boss(int tileX, int tileY, Text name, String spriteName) {
         super(tileX, tileY, name, STATS, new AStarPathfinder());
         this.spriteName = spriteName;
     }
@@ -145,8 +146,8 @@ public abstract class Boss extends Enemy {
 
         game.getPlayer().gainMaxHp(MAX_HP_REWARD);
 
-        game.getMessageLog().combat(getName() + " düştü! " + reward.getName() + " bıraktı.");
-        game.getMessageLog().addImportant("Gücü sana geçti: +" + MAX_HP_REWARD + " azami can.");
+        game.getMessageLog().combat(Text.MSG_BOSS_FELL.get(getName(), reward.getName()));
+        game.getMessageLog().addImportant(Text.MSG_BOSS_REWARD.get(MAX_HP_REWARD));
     }
 
     @Override

@@ -1,5 +1,7 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
+
 import com.cryptdelver.game.Game;
 
 /**
@@ -32,7 +34,7 @@ public class Seytan extends Boss {
     private boolean enraged;
 
     public Seytan(int tileX, int tileY) {
-        super(tileX, tileY, "Kor Seytani", "boss_seytan");
+        super(tileX, tileY, Text.BOSS_SEYTAN, "boss_seytan");
     }
 
     /** Öfkelendi mi; ekran çevresine kızıl bir halka çiziyor. */
@@ -54,7 +56,7 @@ public class Seytan extends Boss {
         }
 
         enraged = true;
-        game.getMessageLog().addImportant(getName() + " öfkelendi! Artık kaçamazsın.");
+        game.getMessageLog().addImportant(Text.MSG_BOSS_ENRAGE.get(getName()));
     }
 
     @Override

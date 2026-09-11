@@ -20,16 +20,16 @@ package com.cryptdelver.game;
 public enum FloorTheme {
 
     /** 1-5: giriş katları. Kuru taş, soğuk ve nötr. */
-    MAHZEN("Mahzen", "#3a4a6b", 0.10, "#243044", 0.20),
+    MAHZEN(Text.REGION_MAHZEN, "#3a4a6b", 0.10, "#243044", 0.20),
 
     /** 6-10: su sızmış, yosun tutmuş katlar. */
-    SARNIC("Sarnic", "#2f6b57", 0.14, "#155a6b", 0.24),
+    SARNIC(Text.REGION_SARNIC, "#2f6b57", 0.14, "#155a6b", 0.24),
 
     /** 11-15: derindeki sıcak damarlar. */
-    KORLUK("Korluk", "#8a3a22", 0.16, "#6b2438", 0.26),
+    KORLUK(Text.REGION_KORLUK, "#8a3a22", 0.16, "#6b2438", 0.26),
 
     /** 16-20: Kript Lordunun kendi katları. */
-    KRIPT("Kript", "#5a2f7a", 0.20, "#33245e", 0.30);
+    KRIPT(Text.REGION_KRIPT, "#5a2f7a", 0.20, "#33245e", 0.30);
 
     /** Kaç katta bir bölge değişir. */
     public static final int FLOORS_PER_THEME = 5;
@@ -37,13 +37,13 @@ public enum FloorTheme {
     /** Oyunun son katı; buradan aşağısı yok. */
     public static final int MAX_DEPTH = FLOORS_PER_THEME * 4;
 
-    private final String label;
+    private final Text label;
     private final String roomTint;
     private final double roomAlpha;
     private final String caveTint;
     private final double caveAlpha;
 
-    FloorTheme(String label, String roomTint, double roomAlpha,
+    FloorTheme(Text label, String roomTint, double roomAlpha,
                String caveTint, double caveAlpha) {
         this.label = label;
         this.roomTint = roomTint;
@@ -53,7 +53,7 @@ public enum FloorTheme {
     }
 
     public String getLabel() {
-        return label;
+        return label.get();
     }
 
     /**

@@ -22,6 +22,7 @@ public class Settings {
     private double musicVolume = DEFAULT_VOLUME;
     private boolean muted;
     private Difficulty difficulty = Difficulty.NORMAL;
+    private Language language = Language.TURKCE;
 
     /** Ayarlanmış efekt seviyesi, 0 ile 1 arası (sessize almadan bağımsız). */
     public double getVolume() {
@@ -89,6 +90,22 @@ public class Settings {
     /** Ekranda gösterilen yüzde. */
     public int getVolumePercent() {
         return (int) Math.round(volume * 100);
+    }
+
+    /**
+     * Oyunun konustugu dil.
+     *
+     * <p>Ayarlanan dil ayni anda {@link Text}e de bildiriliyor: metin isteyen
+     * taraflarin ayarlari tasimasi gerekmesin diye tek bir sahip var ve o da
+     * burasi.</p>
+     */
+    public Language getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(Language chosen) {
+        this.language = chosen == null ? Language.TURKCE : chosen;
+        Text.use(this.language);
     }
 
     public Difficulty getDifficulty() {

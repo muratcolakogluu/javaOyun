@@ -3,6 +3,7 @@ package com.cryptdelver;
 import com.cryptdelver.entity.LegendWeapon;
 import com.cryptdelver.entity.Player;
 import com.cryptdelver.game.Game;
+import com.cryptdelver.game.Text;
 import com.cryptdelver.ui.GameScreen;
 import com.cryptdelver.world.BspGenerator;
 import com.cryptdelver.world.DungeonGenerator;
@@ -69,7 +70,7 @@ public class Main extends Application {
         LegendWeapon legend = new LegendWeapon(0, 0);
         game.getInventory().add(legend);
         game.getPlayer().equip(legend);
-        game.getMessageLog().add("Yıldızkıran elinde. İki büyü yuvası var.");
+        game.getMessageLog().add(Text.MSG_LEGEND_START.get());
     }
 
     public static void main(String[] args) {

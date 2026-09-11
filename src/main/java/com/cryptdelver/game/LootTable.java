@@ -33,21 +33,21 @@ public final class LootTable {
      * @param durability kaç kullanım dayanır; üst kademeler hem daha güçlü hem
      *                   daha uzun ömürlü, yoksa iyi parça bulmak yükü artırırdı
      */
-    private record Gear(String name, int bonus, String spriteName, int durability) {
+    private record Gear(Text name, int bonus, String spriteName, int durability) {
     }
 
     private static final Gear[] WEAPONS = {
-            new Gear("Paslı Kılıç", 2, "sword", 90),
-            new Gear("Çelik Kılıç", 4, "sword_steel", 120),
-            new Gear("Savaş Baltası", 6, "axe", 150),
-            new Gear("Kript Kılıcı", 9, "sword_crypt", 180),
+            new Gear(Text.WEAPON_RUSTY, 2, "sword", 90),
+            new Gear(Text.WEAPON_STEEL, 4, "sword_steel", 120),
+            new Gear(Text.WEAPON_AXE, 6, "axe", 150),
+            new Gear(Text.WEAPON_CRYPT, 9, "sword_crypt", 180),
     };
 
     private static final Gear[] ARMORS = {
-            new Gear("Deri Zırh", 1, "armor_leather", 60),
-            new Gear("Zincir Zırh", 2, "armor_chain", 80),
-            new Gear("Plaka Zırh", 4, "armor_plate", 100),
-            new Gear("Kript Plakası", 6, "armor_crypt", 120),
+            new Gear(Text.ARMOR_LEATHER, 1, "armor_leather", 60),
+            new Gear(Text.ARMOR_CHAIN, 2, "armor_chain", 80),
+            new Gear(Text.ARMOR_PLATE, 4, "armor_plate", 100),
+            new Gear(Text.ARMOR_CRYPT, 6, "armor_crypt", 120),
     };
 
     private LootTable() {

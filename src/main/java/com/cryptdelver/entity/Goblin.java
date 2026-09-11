@@ -1,5 +1,7 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
+
 import com.cryptdelver.ai.GreedyPathfinder;
 import com.cryptdelver.game.Game;
 
@@ -28,7 +30,7 @@ public class Goblin extends Enemy {
     private static final double FLEE_HEALTH_RATIO = 0.35;
 
     public Goblin(int tileX, int tileY) {
-        super(tileX, tileY, "Goblin", STATS, new GreedyPathfinder());
+        super(tileX, tileY, Text.ENEMY_GOBLIN, STATS, new GreedyPathfinder());
     }
 
     @Override

@@ -1,5 +1,7 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
+
 import com.cryptdelver.game.Game;
 import com.cryptdelver.game.LootTable;
 import java.util.List;
@@ -16,10 +18,21 @@ import java.util.List;
  */
 public class Weapon extends Equipment {
 
+    public Weapon(int tileX, int tileY, Text name, int attackBonus, String spriteName) {
+        this(tileX, tileY, name, attackBonus, spriteName, LootTable.weaponDurabilityFor(attackBonus));
+    }
+
+    public Weapon(int tileX, int tileY, Text name, int attackBonus, String spriteName,
+                  int maxDurability) {
+        super(tileX, tileY, name, attackBonus, spriteName, maxDurability);
+    }
+
+    /** Testler icin: adi dogrudan veriyor. */
     public Weapon(int tileX, int tileY, String name, int attackBonus, String spriteName) {
         this(tileX, tileY, name, attackBonus, spriteName, LootTable.weaponDurabilityFor(attackBonus));
     }
 
+    /** Testler icin: adi dogrudan veriyor. */
     public Weapon(int tileX, int tileY, String name, int attackBonus, String spriteName,
                   int maxDurability) {
         super(tileX, tileY, name, attackBonus, spriteName, maxDurability);
@@ -27,8 +40,8 @@ public class Weapon extends Equipment {
 
     @Override
     public String getDescription() {
-        return "+" + getBonus() + " vurus  ·  " + getDurability() + "/" + getMaxDurability()
-                + (isBroken() ? "  KIRIK" : "");
+        return Text.GEAR_WEAPON_INFO.get(getBonus(), getDurability(), getMaxDurability())
+                + (isBroken() ? "  " + Text.GEAR_BROKEN.get() : "");
     }
 
     /** Dövüşte işleyen bonus: kırık kılıç hiçbir şey vermiyor. */
@@ -58,12 +71,12 @@ public class Weapon extends Equipment {
         Player player = game.getPlayer();
 
         if (player.getEquippedWeapon() == this) {
-            game.getMessageLog().item(getDisplayName() + " zaten elinde.");
+            game.getMessageLog().item(Text.MSG_ALREADY_WIELDED.get(getDisplayName()));
             return false;
         }
 
         player.equip(this);
-        game.getMessageLog().item(getDisplayName() + " kuşandın (+" + getBonus() + " vuruş).");
+        game.getMessageLog().item(Text.MSG_EQUIPPED_WEAPON.get(getDisplayName(), getBonus()));
         return false;
     }
 
@@ -84,7 +97,7 @@ public class Weapon extends Equipment {
 
         if (current == null || getBonus() > current.getBonus()) {
             player.equip(this);
-            game.getMessageLog().item(getDisplayName() + " kuşandın (+" + getBonus() + " vuruş).");
+            game.getMessageLog().item(Text.MSG_EQUIPPED_WEAPON.get(getDisplayName(), getBonus()));
         }
     }
 

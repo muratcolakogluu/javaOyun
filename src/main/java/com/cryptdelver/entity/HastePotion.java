@@ -1,5 +1,7 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
+
 import com.cryptdelver.game.Game;
 
 /**
@@ -19,19 +21,19 @@ public class HastePotion extends Item {
     public static final double DURATION = 8.0;
 
     public HastePotion(int tileX, int tileY) {
-        super(tileX, tileY, "Hız İksiri");
+        super(tileX, tileY, Text.ITEM_HASTE);
     }
 
     @Override
     public boolean use(Game game) {
         game.getPlayer().applyHaste(DURATION);
-        game.getMessageLog().add("Hız iksiri: ayakların hafifledi.");
+        game.getMessageLog().add(Text.MSG_HASTE.get());
         return true;
     }
 
     @Override
     public String getDescription() {
-        return (int) DURATION + " saniye daha hizli yurursun";
+        return Text.ITEM_HASTE_INFO.get((int) DURATION);
     }
 
     /** Tek slotta yigildigi icin cantani sikistirmaz: uzerine basmak yeter. */

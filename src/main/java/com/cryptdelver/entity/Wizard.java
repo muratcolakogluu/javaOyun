@@ -1,5 +1,7 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
+
 import com.cryptdelver.game.Game;
 
 /**
@@ -26,7 +28,7 @@ public class Wizard extends Entity {
     private static final double WORN_RATIO = 0.5;
 
     public Wizard(int tileX, int tileY) {
-        super(tileX, tileY, "Büyücü");
+        super(tileX, tileY, Text.WIZARD_NAME);
     }
 
     /**
@@ -41,21 +43,21 @@ public class Wizard extends Entity {
         Equipment armor = player.getEquippedArmor();
 
         if (isBroken(weapon) || isBroken(armor)) {
-            return "Kırılmış o! Bırak da onarayım.";
+            return Text.WIZARD_BROKEN.get();
         }
         if (isWorn(weapon) || isWorn(armor)) {
-            return "Şu takımın hâline baksana. Tamir ister.";
+            return Text.WIZARD_WORN.get();
         }
         if (weapon == null && armor == null) {
-            return "Elin boş gezme. Bir şey getir, üstünde çalışayım.";
+            return Text.WIZARD_EMPTY.get();
         }
         if (canUpgrade(weapon, game) || canUpgrade(armor, game)) {
-            return "Altınını sayma, çeliğini büyütelim.";
+            return Text.WIZARD_UPGRADE.get();
         }
         if (game.isStairsLocked()) {
-            return "Aşağıdakine böyle gitme, bir düşün.";
+            return Text.WIZARD_BOSS.get();
         }
-        return "Ocak yanıyor, büyüler hazır.";
+        return Text.WIZARD_IDLE.get();
     }
 
     private static boolean isBroken(Equipment item) {

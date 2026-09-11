@@ -4,6 +4,7 @@ import com.cryptdelver.entity.Enchantment;
 import com.cryptdelver.game.Game;
 import com.cryptdelver.game.Records;
 import com.cryptdelver.game.Settings;
+import com.cryptdelver.game.Text;
 import com.cryptdelver.persistence.RecordsFile;
 import com.cryptdelver.persistence.SettingsFile;
 import java.util.ArrayDeque;
@@ -465,6 +466,9 @@ public class GameScreen {
 
         Settings settings = game.getSettings();
         switch (menu.getSelectedSetting()) {
+            case LANGUAGE -> settings.setLanguage(step > 0
+                    ? settings.getLanguage().next()
+                    : settings.getLanguage().previous());
             case VOLUME -> settings.adjustVolume(step * Settings.VOLUME_STEP);
             case MUSIC -> {
                 settings.adjustMusicVolume(step * Settings.VOLUME_STEP);
@@ -492,14 +496,15 @@ public class GameScreen {
     private void changeVolume(double delta) {
         game.getSettings().adjustVolume(delta);
         settingsFile.save(game.getSettings());
-        game.getMessageLog().add("Ses: %" + game.getSettings().getVolumePercent());
+        game.getMessageLog().add(Text.MSG_VOLUME.get(game.getSettings().getVolumePercent()));
         refreshAmbienceVolume();
     }
 
     private void toggleMute() {
         game.getSettings().toggleMuted();
         settingsFile.save(game.getSettings());
-        game.getMessageLog().add(game.getSettings().isMuted() ? "Ses kapatıldı." : "Ses açıldı.");
+        game.getMessageLog().add(game.getSettings().isMuted()
+                ? Text.MSG_MUTED.get() : Text.MSG_UNMUTED.get());
         refreshAmbienceVolume();
     }
 

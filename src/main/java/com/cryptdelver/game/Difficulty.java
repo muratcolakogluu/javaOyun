@@ -17,26 +17,26 @@ package com.cryptdelver.game;
 public enum Difficulty {
 
     /** Daha seyrek kalabalık, yavaş sertleşen düşmanlar. */
-    KOLAY("Kolay", 0.7, 0.5),
+    KOLAY(Text.DIFFICULTY_EASY, 0.7, 0.5),
 
     /** Oyunun dengelendiği kademe. */
-    NORMAL("Normal", 1.0, 1.0),
+    NORMAL(Text.DIFFICULTY_NORMAL, 1.0, 1.0),
 
     /** Kalabalık kat, derinlikle hızla sertleşen düşmanlar. */
-    ZOR("Zor", 1.3, 1.6);
+    ZOR(Text.DIFFICULTY_HARD, 1.3, 1.6);
 
-    private final String label;
+    private final Text label;
     private final double crowdScale;
     private final double depthScale;
 
-    Difficulty(String label, double crowdScale, double depthScale) {
+    Difficulty(Text label, double crowdScale, double depthScale) {
         this.label = label;
         this.crowdScale = crowdScale;
         this.depthScale = depthScale;
     }
 
     public String getLabel() {
-        return label;
+        return label.get();
     }
 
     /** Kattaki düşman sayısını bu oranda ölçekler. */

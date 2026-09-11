@@ -194,7 +194,7 @@ public class Game {
         this.floors = new FloorBuilder(generators, floorWidth, floorHeight);
         this.player = player;
         generateFloor(random.nextLong());
-        messageLog.add("Zindana indin. Boşluk vurur, F ekipman alır, 1-8 eşya kullanır.");
+        messageLog.add(Text.MSG_WELCOME.get());
     }
 
     // ---------------------------------------------------------------- durum
@@ -282,7 +282,7 @@ public class Game {
             return false;
         }
         if (isStairsLocked()) {
-            messageLog.add(boss.getName() + " merdiveni tutuyor; önce onu geç.");
+            messageLog.add(Text.MSG_BOSS_GUARDS.get(boss.getName()));
             return false;
         }
 
@@ -292,12 +292,12 @@ public class Game {
             won = true;
             sounds.play(SoundEffect.STAIRS);
             sounds.stopAmbience();
-            messageLog.addImportant("Kriptten çıktın. Zindan arkanda kaldı.");
+            messageLog.addImportant(Text.MSG_ESCAPED.get());
             return true;
         }
 
         travelTo(depth + 1);
-        messageLog.add(depth + ". kata indin (" + getTheme().getLabel() + ").");
+        messageLog.add(Text.MSG_DESCENDED.get(depth, getTheme().getLabel()));
         return true;
     }
 
@@ -328,8 +328,8 @@ public class Game {
 
         returns++;
         travelTo(depth - 1);
-        messageLog.add(depth + ". kata çıktın (" + getTheme().getLabel() + ").");
-        messageLog.addImportant("Zindan geri döndüğünü gördü; artık daha çabuk uyanıyor.");
+        messageLog.add(Text.MSG_ASCENDED.get(depth, getTheme().getLabel()));
+        messageLog.addImportant(Text.MSG_DUNGEON_ANGRIER.get());
         return true;
     }
 
@@ -566,7 +566,7 @@ public class Game {
         }
 
         if (!isNearWizard()) {
-            messageLog.add("Yakında büyücü yok. Büyücüler boss katlarında.");
+            messageLog.add(Text.MSG_NO_WIZARD.get());
             return;
         }
 
@@ -574,19 +574,19 @@ public class Game {
     }
 
     public void repairWeapon() {
-        repair(player.getEquippedWeapon(), "Silah");
+        repair(player.getEquippedWeapon(), Text.GEAR_WEAPON.get());
     }
 
     public void repairArmor() {
-        repair(player.getEquippedArmor(), "Zırh");
+        repair(player.getEquippedArmor(), Text.GEAR_ARMOR.get());
     }
 
     public void upgradeWeapon() {
-        upgrade(player.getEquippedWeapon(), "Silah");
+        upgrade(player.getEquippedWeapon(), Text.GEAR_WEAPON.get());
     }
 
     public void upgradeArmor() {
-        upgrade(player.getEquippedArmor(), "Zırh");
+        upgrade(player.getEquippedArmor(), Text.GEAR_ARMOR.get());
     }
 
     /**
@@ -597,12 +597,12 @@ public class Game {
      */
     private void repair(Equipment item, String label) {
         if (!requireForge() || item == null) {
-            messageLog.add(label + " kuşanmadın.");
+            messageLog.add(Text.MSG_NOTHING_EQUIPPED.get(label));
             return;
         }
 
         if (!item.needsRepair()) {
-            messageLog.add(item.getDisplayName() + " zaten sapasağlam.");
+            messageLog.add(Text.MSG_ALREADY_WHOLE.get(item.getDisplayName()));
             return;
         }
 
@@ -612,7 +612,7 @@ public class Game {
         }
 
         item.repair();
-        messageLog.add(item.getDisplayName() + " tamir edildi (-" + cost + " altın).");
+        messageLog.add(Text.MSG_REPAIRED.get(item.getDisplayName(), cost));
         sounds.play(SoundEffect.EQUIP);
     }
 
@@ -625,12 +625,12 @@ public class Game {
      */
     private void upgrade(Equipment item, String label) {
         if (!requireForge() || item == null) {
-            messageLog.add(label + " kuşanmadın.");
+            messageLog.add(Text.MSG_NOTHING_EQUIPPED.get(label));
             return;
         }
 
         if (!item.canUpgrade(depth)) {
-            messageLog.add(item.getDisplayName() + " bu katta daha ileri gitmiyor; bossu geç.");
+            messageLog.add(Text.MSG_UPGRADE_CAP.get(item.getDisplayName()));
             return;
         }
 
@@ -640,16 +640,16 @@ public class Game {
         }
 
         item.upgrade();
-        messageLog.add(item.getDisplayName() + " yükseltildi (-" + cost + " altın).");
+        messageLog.add(Text.MSG_UPGRADED.get(item.getDisplayName(), cost));
         sounds.play(SoundEffect.EQUIP);
     }
 
     public void enchantWeapon(Enchantment enchantment) {
-        enchant(player.getEquippedWeapon(), enchantment, "Silah");
+        enchant(player.getEquippedWeapon(), enchantment, Text.GEAR_WEAPON.get());
     }
 
     public void enchantArmor(Enchantment enchantment) {
-        enchant(player.getEquippedArmor(), enchantment, "Zırh");
+        enchant(player.getEquippedArmor(), enchantment, Text.GEAR_ARMOR.get());
     }
 
     /**
@@ -688,18 +688,17 @@ public class Game {
      */
     private void enchant(Equipment item, Enchantment enchantment, String label) {
         if (!requireForge() || item == null) {
-            messageLog.add(label + " kuşanmadın.");
+            messageLog.add(Text.MSG_NOTHING_EQUIPPED.get(label));
             return;
         }
 
         if (!item.accepts(enchantment)) {
-            messageLog.add(label.toLowerCase() + " bu büyüyü taşımaz.");
+            messageLog.add(Text.MSG_ENCHANT_REFUSED.get(label));
             return;
         }
 
         if (item.hasEnchantment(enchantment)) {
-            messageLog.add(item.getDisplayName() + " zaten " + enchantment.getLabel()
-                    + " taşıyor.");
+            messageLog.add(Text.MSG_ENCHANT_ALREADY.get(item.getDisplayName(), enchantment.getLabel()));
             return;
         }
 
@@ -712,11 +711,9 @@ public class Game {
         sounds.play(SoundEffect.EQUIP);
 
         if (replaced == null) {
-            messageLog.add(item.getDisplayName() + " artık " + enchantment.getLabel()
-                    + " taşıyor (-" + cost + " altın).");
+            messageLog.add(Text.MSG_ENCHANTED.get(item.getDisplayName(), enchantment.getLabel(), cost));
         } else {
-            messageLog.add(replaced.getLabel() + " silindi, yerine " + enchantment.getLabel()
-                    + " basıldı (-" + cost + " altın).");
+            messageLog.add(Text.MSG_ENCHANT_REPLACED.get(replaced.getLabel(), enchantment.getLabel(), cost));
         }
     }
 
@@ -724,14 +721,14 @@ public class Game {
         if (forgeOpen) {
             return true;
         }
-        messageLog.add("Önce büyücüye git.");
+        messageLog.add(Text.MSG_GO_TO_WIZARD.get());
         return false;
     }
 
     /** Yetiyorsa keseden düşer; yetmiyorsa uyarır ve hiçbir şey yapmaz. */
     private boolean spendGold(int cost) {
         if (gold < cost) {
-            messageLog.add("Altın yetmiyor: " + cost + " gerekiyor, " + gold + " var.");
+            messageLog.add(Text.MSG_NOT_ENOUGH_GOLD.get(cost, gold));
             return false;
         }
 
@@ -833,7 +830,7 @@ public class Game {
         // İlk uyarı bir kez: sonrası zaten karşına çıkacak.
         if (!dungeonAwake) {
             dungeonAwake = true;
-            messageLog.addImportant("Zindan seni fark etti. Oyalanma.");
+            messageLog.addImportant(Text.MSG_DUNGEON_AWAKE.get());
         }
 
         reinforceTimer += delta;
@@ -992,7 +989,7 @@ public class Game {
             return true;
         }
 
-        messageLog.item("Ayağının altında bir şey yok.");
+        messageLog.item(Text.MSG_NOTHING_HERE.get());
         return false;
     }
 
@@ -1012,7 +1009,7 @@ public class Game {
         }
 
         if (itemsUnderfoot().isEmpty()) {
-            messageLog.item("Ayağının altında bir şey yok.");
+            messageLog.item(Text.MSG_NOTHING_HERE.get());
             return false;
         }
 
@@ -1061,10 +1058,10 @@ public class Game {
 
             if (item.goesToInventory()) {
                 if (!inventory.add(item)) {
-                    messageLog.importantItem("Çantan dolu: " + item.getName() + " yerde kaldı.");
+                    messageLog.importantItem(Text.MSG_BAG_FULL.get(item.getName()));
                     continue;
                 }
-                messageLog.item(item.getName() + " aldın.");
+                messageLog.item(Text.MSG_TOOK.get(item.getName()));
                 sounds.play(SoundEffect.PICKUP);
             }
 
@@ -1123,7 +1120,7 @@ public class Game {
         item.setTile(player.getTile());
         item.onDrop(this);
         addGroundItem(item);
-        messageLog.item(item.getName() + " yere bıraktın.");
+        messageLog.item(Text.MSG_DROPPED.get(item.getName()));
 
         // Bırakmak kendiliğinden toplamayı tetiklemesin: bıraktığın iksir
         // anında geri gelirdi.
@@ -1162,8 +1159,8 @@ public class Game {
 
         sounds.play(SoundEffect.KILL);
         messageLog.add(hit == 0
-                ? "Bomba boşluğa patladı."
-                : "Bomba patladı: " + hit + " düşman vuruldu.");
+                ? Text.MSG_BOMB_EMPTY.get()
+                : Text.MSG_BOMB_HIT.get(hit));
     }
 
     /**
@@ -1177,14 +1174,14 @@ public class Game {
      */
     public boolean teleportToStairs() {
         if (stairs == null) {
-            messageLog.add("Bu katta merdiven yok.");
+            messageLog.add(Text.MSG_NO_STAIRS.get());
             return false;
         }
 
         player.setTile(stairs);
         refreshVision();
         sounds.play(SoundEffect.STAIRS);
-        messageLog.add("Kaçış iksiri: merdivenin başındasın.");
+        messageLog.add(Text.MSG_ESCAPE.get());
         return true;
     }
 
@@ -1204,7 +1201,7 @@ public class Game {
         item.setTile(player.getTile());
         addGroundItem(item);
         lastPickupTile = player.getTile();
-        messageLog.item(item.getName() + " yere bırakıldı.");
+        messageLog.item(Text.MSG_DISCARDED.get(item.getName()));
     }
 
     // ---------------------------------------------------------------- savaş
@@ -1228,17 +1225,17 @@ public class Game {
         sounds.play(SoundEffect.SWING);
 
         if (targets.isEmpty()) {
-            messageLog.combat("Kılıcın boşluğu kesti.");
+            messageLog.combat(Text.MSG_SWING_MISS.get());
             return;
         }
 
         sounds.play(SoundEffect.HIT);
-        wearGear(player.getEquippedWeapon(), "Kılıcın");
+        wearGear(player.getEquippedWeapon(), Text.GEAR_YOUR_WEAPON.get());
 
         for (Enemy enemy : targets) {
             int damage = resolveDamage(player, enemy);
             enemy.takeDamage(damage);
-            messageLog.combat(enemy.getName() + " " + damage + " hasar aldı.");
+            messageLog.combat(Text.MSG_ENEMY_HURT.get(enemy.getName(), damage));
 
             if (!enemy.isAlive()) {
                 buryEnemy(enemy);
@@ -1256,7 +1253,7 @@ public class Game {
      */
     private void buryEnemy(Enemy enemy) {
         removeEnemy(enemy);
-        messageLog.combat(enemy.getName() + " yere serildi.");
+        messageLog.combat(Text.MSG_ENEMY_DOWN.get(enemy.getName()));
         sounds.play(SoundEffect.KILL);
 
         // Ganimeti düşman kendi bırakıyor; burada tür kontrolü yok.
@@ -1274,7 +1271,7 @@ public class Game {
         }
 
         player.heal(VAMPIRISM_HEAL);
-        messageLog.combat("Vampirlik " + VAMPIRISM_HEAL + " can emdi.");
+        messageLog.combat(Text.MSG_VAMPIRISM.get(VAMPIRISM_HEAL));
     }
 
     /**
@@ -1284,9 +1281,9 @@ public class Game {
     public void enemyAttacksPlayer(Enemy enemy) {
         int damage = resolveDamage(enemy, player);
         player.takeDamage(damage);
-        messageLog.combat(enemy.getName() + " sana " + damage + " hasar vurdu.");
+        messageLog.combat(Text.MSG_PLAYER_HURT.get(enemy.getName(), damage));
         sounds.play(SoundEffect.HURT);
-        wearGear(player.getEquippedArmor(), "Zırhın");
+        wearGear(player.getEquippedArmor(), Text.GEAR_YOUR_ARMOR.get());
         reflectThorns(enemy);
         announceDeathIfFallen();
     }
@@ -1304,9 +1301,9 @@ public class Game {
 
         player.takeDamage(damage);
         player.triggerHitFlash();
-        messageLog.combat(shooter.getName() + " oku sana " + damage + " hasar vurdu.");
+        messageLog.combat(Text.MSG_ARROW_HURT.get(shooter.getName(), damage));
         sounds.play(SoundEffect.HURT);
-        wearGear(player.getEquippedArmor(), "Zırhın");
+        wearGear(player.getEquippedArmor(), Text.GEAR_YOUR_ARMOR.get());
         announceDeathIfFallen();
     }
 
@@ -1315,7 +1312,7 @@ public class Game {
             return;
         }
 
-        messageLog.addImportant("Zindanda öldün.");
+        messageLog.addImportant(Text.MSG_DIED.get());
         sounds.play(SoundEffect.DEATH);
 
         // Zemin sesi susuyor: sessizlik, ölümü ekrandaki yazıdan daha net
@@ -1336,7 +1333,7 @@ public class Game {
         }
 
         enemy.takeDamage(THORNS_DAMAGE);
-        messageLog.combat("Diken " + enemy.getName() + " üstünde " + THORNS_DAMAGE + " hasar açtı.");
+        messageLog.combat(Text.MSG_THORNS.get(enemy.getName(), THORNS_DAMAGE));
 
         if (!enemy.isAlive()) {
             buryEnemy(enemy);
@@ -1360,7 +1357,7 @@ public class Game {
         }
 
         if (item.wear()) {
-            messageLog.addImportant(label + " kırıldı! Büyücüye uğrayana kadar hiçbir işe yaramaz.");
+            messageLog.addImportant(Text.MSG_GEAR_BROKE.get(label));
         }
     }
 
@@ -1416,7 +1413,7 @@ public class Game {
         projectiles.clear();
         messageLog.clear();
         regenerateFloor();
-        messageLog.add("Yeniden zindana indin.");
+        messageLog.add(Text.MSG_RESTARTED.get());
     }
 
     /**
@@ -1483,7 +1480,7 @@ public class Game {
             return;
         }
 
-        messageLog.addImportant(boss.getName() + " merdiveni tutuyor. Yavaş — vur ve geri çekil.");
+        messageLog.addImportant(Text.MSG_BOSS_ANNOUNCE.get(boss.getName()));
         sounds.play(SoundEffect.BOSS);
     }
 }

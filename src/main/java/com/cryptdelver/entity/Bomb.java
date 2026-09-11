@@ -1,5 +1,7 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
+
 import com.cryptdelver.game.Game;
 
 /**
@@ -26,7 +28,7 @@ public class Bomb extends Item {
     public static final int BLAST_DAMAGE = 12;
 
     public Bomb(int tileX, int tileY) {
-        super(tileX, tileY, "Bomba");
+        super(tileX, tileY, Text.ITEM_BOMB);
     }
 
     @Override
@@ -37,7 +39,7 @@ public class Bomb extends Item {
 
     @Override
     public String getDescription() {
-        return BLAST_RADIUS + " kare icindeki herkese " + BLAST_DAMAGE + " hasar";
+        return Text.ITEM_BOMB_INFO.get(BLAST_RADIUS, BLAST_DAMAGE);
     }
 
     /** Tek slotta yigildigi icin cantani sikistirmaz: uzerine basmak yeter. */

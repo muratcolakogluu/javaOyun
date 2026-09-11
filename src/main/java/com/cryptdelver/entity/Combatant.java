@@ -1,5 +1,7 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
+
 /**
  * Canı olan, vuran ve vurulabilen varlıkların ortak atası.
  *
@@ -17,6 +19,13 @@ public abstract class Combatant extends Entity {
     private int maxHp;
     private int hp;
 
+    protected Combatant(int tileX, int tileY, Text name, int maxHp) {
+        super(tileX, tileY, name);
+        this.maxHp = maxHp;
+        this.hp = maxHp;
+    }
+
+    /** Testler icin: adi dogrudan veriyor. */
     protected Combatant(int tileX, int tileY, String name, int maxHp) {
         super(tileX, tileY, name);
         this.maxHp = maxHp;

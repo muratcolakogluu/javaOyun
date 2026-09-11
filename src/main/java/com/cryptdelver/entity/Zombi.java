@@ -1,5 +1,7 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
+
 import com.cryptdelver.ai.GreedyPathfinder;
 
 /**
@@ -24,7 +26,7 @@ public class Zombi extends Enemy {
             8);     // fark etme menzili
 
     public Zombi(int tileX, int tileY) {
-        super(tileX, tileY, "Zombi", STATS, new GreedyPathfinder());
+        super(tileX, tileY, Text.ENEMY_ZOMBI, STATS, new GreedyPathfinder());
     }
 
     @Override

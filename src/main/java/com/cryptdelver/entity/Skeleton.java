@@ -1,5 +1,7 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
+
 import com.cryptdelver.ai.AStarPathfinder;
 
 /**
@@ -26,7 +28,7 @@ public class Skeleton extends Enemy {
             11);    // fark etme menzili (kare)
 
     public Skeleton(int tileX, int tileY) {
-        super(tileX, tileY, "İskelet", STATS, new AStarPathfinder());
+        super(tileX, tileY, Text.ENEMY_SKELETON, STATS, new AStarPathfinder());
     }
 
     @Override

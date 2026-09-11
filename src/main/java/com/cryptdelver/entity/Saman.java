@@ -1,5 +1,7 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
+
 import com.cryptdelver.ai.AStarPathfinder;
 
 /**
@@ -23,7 +25,7 @@ public class Saman extends Enemy {
             40);    // fark etme menzili: pratikte bütün kat
 
     public Saman(int tileX, int tileY) {
-        super(tileX, tileY, "Sahin Saman", STATS, new AStarPathfinder());
+        super(tileX, tileY, Text.ENEMY_SAMAN, STATS, new AStarPathfinder());
     }
 
     @Override

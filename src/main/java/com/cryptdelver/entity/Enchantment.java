@@ -1,5 +1,7 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
+
 /**
  * Bir parçaya basılabilen büyü.
  *
@@ -22,7 +24,7 @@ public enum Enchantment {
     // ------------------------------------------------------------ kılıç
 
     /** Öldürdüğün her düşman biraz can veriyor; saldırgan oynayışın ödülü. */
-    VAMPIRLIK("Vampirlik", "her öldürmede 2 can", 220),
+    VAMPIRLIK(Text.ENCHANT_VAMPIRISM, Text.ENCHANT_VAMPIRISM_INFO, 220),
 
     /**
      * Vuruş bir kare daha uzağa ulaşıyor.
@@ -30,32 +32,32 @@ public enum Enchantment {
      * <p>Menzil, hasardan bağımsız bir eksen: aynı vuruşu daha güvenli yerden
      * yapıyorsun. Kaçarak dövüşen oyuncunun en çok işine yarayan büyü bu.</p>
      */
-    YILDIRIM("Yildirim", "vurus bir kare uzaga daha erisir", 260),
+    YILDIRIM(Text.ENCHANT_LIGHTNING, Text.ENCHANT_LIGHTNING_INFO, 260),
 
     /** Vuruşlar arası bekleme kısalıyor; aynı sürede daha çok savuruş. */
-    ACELE("Acele", "daha hizli savuruyorsun", 240),
+    ACELE(Text.ENCHANT_HASTE, Text.ENCHANT_HASTE_INFO, 240),
 
     // ------------------------------------------------------------- zırh
 
     /** Sana vuran düşman da hasar alıyor; kalabalığın ortasında işe yarıyor. */
-    DIKEN("Diken", "sana vurana 1 hasar", 200),
+    DIKEN(Text.ENCHANT_THORNS, Text.ENCHANT_THORNS_INFO, 200),
 
     /** Yavaş yavaş can doluyor; iksir bulamadığın katlarda hayat kurtarıyor. */
-    YENILENME("Yenilenme", "birkac saniyede bir 1 can", 280),
+    YENILENME(Text.ENCHANT_REGEN, Text.ENCHANT_REGEN_INFO, 280),
 
     /** Daha hızlı yürüyorsun; vur-kaç oynayışın omurgası. */
-    CEVIKLIK("Ceviklik", "daha hizli yuruyorsun", 240),
+    CEVIKLIK(Text.ENCHANT_AGILITY, Text.ENCHANT_AGILITY_INFO, 240),
 
     // ------------------------------------------------------------- ortak
 
     /** Parça yarı hızda yıpranıyor; büyücüye daha az altın bırakmanın yolu. */
-    SAGLAMLIK("Saglamlik", "yipranma yari hizda", 160);
+    SAGLAMLIK(Text.ENCHANT_STURDY, Text.ENCHANT_STURDY_INFO, 160);
 
-    private final String label;
-    private final String description;
+    private final Text label;
+    private final Text description;
     private final int cost;
 
-    Enchantment(String label, String description, int cost) {
+    Enchantment(Text label, Text description, int cost) {
         this.label = label;
         this.description = description;
         this.cost = cost;
@@ -63,12 +65,12 @@ public enum Enchantment {
 
     /** Ekranda ve mesajlarda görünen ad. */
     public String getLabel() {
-        return label;
+        return label.get();
     }
 
     /** Tezgâhta büyünün yanında yazan tek satırlık açıklama. */
     public String getDescription() {
-        return description;
+        return description.get();
     }
 
     public int getCost() {

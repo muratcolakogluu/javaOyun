@@ -66,10 +66,10 @@ class StartMenuTest {
         StartMenu menu = new StartMenu();
         menu.openPane(StartMenu.Pane.SETTINGS);
 
-        assertEquals(StartMenu.SettingRow.VOLUME, menu.getSelectedSetting());
+        assertEquals(StartMenu.SettingRow.LANGUAGE, menu.getSelectedSetting());
 
         menu.moveDown();
-        assertEquals(StartMenu.SettingRow.MUSIC, menu.getSelectedSetting());
+        assertEquals(StartMenu.SettingRow.VOLUME, menu.getSelectedSetting());
 
         menu.moveUp();
         menu.moveUp();

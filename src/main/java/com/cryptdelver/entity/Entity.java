@@ -1,5 +1,6 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
 import com.cryptdelver.world.Position;
 
 /**
@@ -19,7 +20,22 @@ public abstract class Entity {
     /** Vuruş anındaki beyaz parlamanın süresi (saniye). */
     private static final double HIT_FLASH_DURATION = 0.16;
 
-    private final String name;
+    /**
+     * Varlığın adı, çevrilebilir bir anahtar olarak.
+     *
+     * <p>Ad ham dizge olarak saklanmıyor çünkü dil oyunun ortasında
+     * değişebiliyor: kurulurken çözülmüş bir ad, dil değişince eski dilde
+     * kalırdı.</p>
+     */
+    private final Text nameKey;
+
+    /**
+     * Anahtarı olmayan adlar için.
+     *
+     * <p>Yalnızca testler kullanıyor: "Test Kılıcı" gibi uydurma adlara sözlükte
+     * yer açmanın anlamı yok. Oyundaki her adın bir anahtarı var.</p>
+     */
+    private final String rawName;
 
     private int tileX;
     private int tileY;
@@ -29,13 +45,22 @@ public abstract class Entity {
     private double progress;
     private double hitFlash;
 
-    protected Entity(int tileX, int tileY, String name) {
-        this.name = name;
+    protected Entity(int tileX, int tileY, Text name) {
+        this.nameKey = name;
+        this.rawName = null;
         setTile(tileX, tileY);
     }
 
+    /** Testler için: adı doğrudan veriyor, çeviriden geçmiyor. */
+    protected Entity(int tileX, int tileY, String name) {
+        this.nameKey = null;
+        this.rawName = name;
+        setTile(tileX, tileY);
+    }
+
+    /** Ekranda görünen ad; dil değişince bu da değişiyor. */
     public String getName() {
-        return name;
+        return nameKey == null ? rawName : nameKey.get();
     }
 
     /** Varlığın mantıksal olarak üstünde durduğu kare. */
@@ -166,6 +191,6 @@ public abstract class Entity {
 
     @Override
     public String toString() {
-        return name + "(" + tileX + ", " + tileY + ")";
+        return getName() + "(" + tileX + ", " + tileY + ")";
     }
 }

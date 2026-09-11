@@ -1,5 +1,7 @@
 package com.cryptdelver.entity;
 
+import com.cryptdelver.game.Text;
+
 import com.cryptdelver.game.Game;
 
 /**
@@ -16,6 +18,11 @@ import com.cryptdelver.game.Game;
  */
 public abstract class Item extends Entity {
 
+    protected Item(int tileX, int tileY, Text name) {
+        super(tileX, tileY, name);
+    }
+
+    /** Testler icin: adi dogrudan veriyor. */
     protected Item(int tileX, int tileY, String name) {
         super(tileX, tileY, name);
     }
