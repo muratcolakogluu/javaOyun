@@ -206,6 +206,11 @@ public class GameRenderer {
      * iniyor. Sıfıra kadar daraltmak daha "tam" durur ama son anlar
      * görünmez kalırdı -- oysa en kritik an tam orası.</p>
      */
+    /** Açık sırt işaretinin boyu, nefes payı ve nefes süresi. */
+    private static final double OPENING_SIZE = 5;
+    private static final double OPENING_LIFT = 3;
+    private static final long OPENING_PULSE_MILLIS = 900;
+
     private static final double STRIKE_TELL_START = 0.95;
     private static final double STRIKE_TELL_END = 0.42;
     private static final Color STRIKE_TELL = Color.web("#ff6a4d");
@@ -296,7 +301,7 @@ public class GameRenderer {
     private static final double HINT_LINE = 26;
 
     /** Tus listesindeki satir sayisi ve araligi; yerlesim hesabi buna dayaniyor. */
-    private static final int KEY_ROWS = 13;
+    private static final int KEY_ROWS = 14;
     private static final double KEY_ROW_SPACING = 21;
 
     /** Baslik isigi: mesale gibi nefes aliyor. */
@@ -901,6 +906,14 @@ public class GameRenderer {
             drawBossTells(gc, enemy);
             drawEntity(gc, enemy, 1.0);
             drawHealthBar(gc, enemy);
+
+            // Açık sırt işareti gövdenin üstünde: kırmızı halka "tehlike",
+            // altın işaret "fırsat" diyor. İkisi aynı anda da görünebilir --
+            // kolunu kaldırmış bir orkun arkasına geçtiğinde tam olarak bu
+            // oluyor ve o kare oyunun söylemek istediği şeyin kendisi.
+            if (game.hasOpeningOn(enemy)) {
+                drawOpening(gc, enemy);
+            }
         }
         // İz gövdenin altına: sıçramanın nereden geldiğini gösteriyor ama
         // oyuncunun kendisini gölgelemiyor.
@@ -1060,6 +1073,7 @@ public class GameRenderer {
                 {Text.KEY_STAIRS, Text.KEY_STAIRS_WHAT},
                 {Text.KEY_FORGE, Text.KEY_FORGE_WHAT},
                 {null, Text.KEY_TELL_NOTE},
+                {null, Text.KEY_OPENING_NOTE},
                 {null, Text.KEY_AUTOPICK_NOTE},
                 {Text.KEY_VOLUME, Text.KEY_VOLUME_WHAT},
                 {Text.KEY_RESTART, Text.KEY_RESTART_WHAT},
@@ -2086,6 +2100,35 @@ public class GameRenderer {
         if (enemy.isWindingUp()) {
             drawStrikeTell(gc, enemy);
         }
+    }
+
+    /**
+     * Açık sırt işareti: düşmanın tepesinde aşağı bakan altın bir üçgen.
+     *
+     * <p>Arkadan vuruş, düşmanın hangi yöne baktığını bilmeyi gerektiriyor —
+     * ama gövdeler dört yöne dönmüyor, yani yönü resimden okuyamıyorsun. O
+     * yüzden kuralı ekran söylüyor: işaret duruyorsa vuruş iki katı. Yönü
+     * tahmin ettirmek yerine <em>sonucu</em> göstermek, mekaniği ilk
+     * denemede öğretiyor.</p>
+     *
+     * <p>Nefes alıyor: sabit bir üçgen dekor gibi kalırdı, kıpırdayınca
+     * "şimdi" diyor.</p>
+     */
+    private void drawOpening(GraphicsContext gc, Enemy enemy) {
+        double centerX = enemy.getRenderX() * TILE_SIZE;
+        double top = enemy.getRenderY() * TILE_SIZE - TILE_SIZE * 0.52;
+
+        double phase = (System.currentTimeMillis() % OPENING_PULSE_MILLIS)
+                / (double) OPENING_PULSE_MILLIS;
+        double breath = 0.5 + 0.5 * Math.sin(phase * 2 * Math.PI);
+        double lift = OPENING_LIFT * breath;
+
+        gc.setFill(Color.color(GOLD_TEXT.getRed(), GOLD_TEXT.getGreen(), GOLD_TEXT.getBlue(),
+                0.65 + 0.35 * breath));
+        gc.fillPolygon(
+                new double[] {centerX - OPENING_SIZE, centerX + OPENING_SIZE, centerX},
+                new double[] {top - lift, top - lift, top - lift + OPENING_SIZE * 1.4},
+                3);
     }
 
     /**

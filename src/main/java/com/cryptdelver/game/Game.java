@@ -459,6 +459,7 @@ public class Game {
 
         enemies.clear();
         enemies.addAll(floor.enemies());
+        facePlayer();
         projectiles.clear();
         groundItems.clear();
         groundItems.addAll(floor.groundItems());
@@ -899,8 +900,30 @@ public class Game {
         return null;
     }
 
+    /**
+     * Düşmanı kata koyar ve yüzünü oyuncuya döndürür.
+     *
+     * <p>Yön dönmesinin sebebi arkadan vuruş: doğduğu andan beri hiç adım
+     * atmamış bir düşmanın yönü keyfî olurdu ve oyuncu yarı yarıya bedava
+     * arkadan vuruş kazanırdı. Bedava olan şey hamle değildir; zindana giren
+     * her şey davetsiz misafirin nerede olduğunu biliyor.</p>
+     */
     public void addEnemy(Enemy enemy) {
+        enemy.faceTowards(player);
         enemies.add(enemy);
+    }
+
+    /**
+     * Kattaki bütün düşmanların yüzünü oyuncuya döndürür.
+     *
+     * <p>Kat devralınırken çağrılıyor: kat kurulurken oyuncunun nerede
+     * duracağı henüz belli değil, o yüzden yön ancak burada anlam
+     * kazanıyor.</p>
+     */
+    private void facePlayer() {
+        for (Enemy enemy : enemies) {
+            enemy.faceTowards(player);
+        }
     }
 
     public void removeEnemy(Enemy enemy) {
@@ -1402,9 +1425,17 @@ public class Game {
         wearGear(player.getEquippedWeapon(), Text.GEAR_YOUR_WEAPON.get());
 
         for (Enemy enemy : targets) {
+            boolean behind = hasOpeningOn(enemy);
             int damage = resolveDamage(player, enemy);
+
+            if (behind) {
+                damage *= BACKSTAB_SCALE;
+            }
+
             enemy.takeDamage(damage);
-            messageLog.combat(Text.MSG_ENEMY_HURT.get(enemy.getName(), damage));
+            messageLog.combat(behind
+                    ? Text.MSG_BACKSTAB.get(enemy.getName(), damage)
+                    : Text.MSG_ENEMY_HURT.get(enemy.getName(), damage));
 
             if (!enemy.isAlive()) {
                 buryEnemy(enemy);
@@ -1412,6 +1443,26 @@ public class Game {
             }
         }
     }
+
+    /**
+     * Oyuncu bu düşmanın arkasında mı: vuruş iki katına çıkar mı.
+     *
+     * <p>Kaçış adımı şimdiye kadar tamamen savunmaydı — kaçıyordun, o kadar.
+     * Arkadan inen vuruş onu bir <em>hamleye</em> çeviriyor: düşmanın yanından
+     * sıçrayıp arkasına düşüyorsun ve daha dönemeden vuruyorsun. En temiz
+     * hâli kolunu kaldırmış bir orkta: hazırlanırken yerinden kıpırdamıyor,
+     * yani arkası açık kalıyor.</p>
+     *
+     * <p>Yalnızca yanı başındakine işliyor. Menzilli bir silahla uzaktan
+     * arkadan vurmak da sayılsaydı, "arkasına geçmek" diye bir hamle
+     * kalmazdı.</p>
+     */
+    public boolean hasOpeningOn(Enemy enemy) {
+        return enemy.isAdjacentTo(player) && enemy.isBehind(player);
+    }
+
+    /** Arkadan inen vuruşun çarpanı. */
+    private static final int BACKSTAB_SCALE = 2;
 
     /**
      * Ölen düşmanı listeden çıkarır, ganimetini bıraktırır ve duyurur.
@@ -1629,6 +1680,7 @@ public class Game {
 
         enemies.clear();
         enemies.addAll(floor.enemies());
+        facePlayer();
         projectiles.clear();
         groundItems.clear();
         groundItems.addAll(floor.groundItems());

@@ -201,6 +201,12 @@ public abstract class Enemy extends Combatant implements Actor {
      * de bir çözüm değil, zamanlamayı tutturmak gerekiyor.</p>
      */
     private void beginSwing(Game game) {
+        // Vurmadan önce dönüyor: bir düşman sana vururken sana bakıyordur.
+        // Dönme anı aynı zamanda arkadan vuruş penceresinin kapandığı an --
+        // ve hazırlık başladıktan sonra bir daha dönmüyor, yani kolunu
+        // kaldırmış düşmanın arkasına geçmek işe yarıyor.
+        faceTowards(game.getPlayer());
+
         if (getWindup() <= 0) {
             game.enemyAttacksPlayer(this);
             attackCooldown = getAttackCooldown();

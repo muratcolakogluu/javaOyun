@@ -74,8 +74,6 @@ public class Player extends Combatant implements Actor {
 
     private int inputX;
     private int inputY;
-    private int facingX = 1;
-    private int facingY;
     private boolean attackRequested;
     private double attackCooldown;
     private double swingTimer;
@@ -180,21 +178,9 @@ public class Player extends Combatant implements Actor {
         this.inputY = Integer.signum(dy);
 
         // Yön yalnızca gerçek bir girdide güncellenir; tuşu bıraktığında en son
-        // baktığın yöne bakmaya devam ediyorsun.
-        if (inputX != 0 || inputY != 0) {
-            this.facingX = inputX;
-            this.facingY = inputY;
-        }
-    }
-
-    /** Baktığı yönün yatay bileşeni (-1, 0, 1). */
-    public int getFacingX() {
-        return facingX;
-    }
-
-    /** Baktığı yönün dikey bileşeni (-1, 0, 1). */
-    public int getFacingY() {
-        return facingY;
+        // baktığın yöne bakmaya devam ediyorsun. Oyuncu, adım atmadan da
+        // dönebilen tek varlık: tuşa dokunmak yönü değiştirmeye yetiyor.
+        face(inputX, inputY);
     }
 
     /** Saldırı tuşuna basıldığını bildirir; bekleme süresi dolmuşsa işler. */
@@ -262,8 +248,8 @@ public class Player extends Combatant implements Actor {
         int lastY = getTileY();
 
         for (int step = 1; step <= DASH_TILES; step++) {
-            int x = getTileX() + facingX * step;
-            int y = getTileY() + facingY * step;
+            int x = getTileX() + getFacingX() * step;
+            int y = getTileY() + getFacingY() * step;
 
             if (!game.isTileFree(x, y, this)) {
                 break;
@@ -317,8 +303,7 @@ public class Player extends Combatant implements Actor {
         dashRequested = false;
         attackRequested = false;
         setMoveInput(0, 0);
-        facingX = 1;
-        facingY = 0;
+        face(1, 0);
     }
 
     @Override

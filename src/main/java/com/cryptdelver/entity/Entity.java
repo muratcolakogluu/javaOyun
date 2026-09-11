@@ -104,6 +104,10 @@ public abstract class Entity {
         this.progress = 0;
     }
 
+    /** Baktığı yön; başlangıçta sağa. */
+    private int facingX = 1;
+    private int facingY;
+
     public void setTile(Position tile) {
         setTile(tile.x(), tile.y());
     }
@@ -114,6 +118,62 @@ public abstract class Entity {
         this.targetY = y;
         this.moving = true;
         this.progress = 0;
+        face(x - tileX, y - tileY);
+    }
+
+    /**
+     * Baktığı yön: son attığı adımın yönü.
+     *
+     * <p>Oyuncuda tuşlar belirliyordu ve yalnızca oyuncuda vardı. Artık
+     * herkeste var, çünkü <b>bir şeyin arkasında olmak</b> bir kural hâline
+     * geldi: arkadan inen vuruş daha sert. Yön hareketten çıkıyor, yani
+     * ayrıca beslenmesi gereken bir alan değil — adım atan zaten dönmüş
+     * oluyor.</p>
+     */
+    public int getFacingX() {
+        return facingX;
+    }
+
+    public int getFacingY() {
+        return facingY;
+    }
+
+    /** Yönü değiştirir; sıfır vektör yok sayılıyor, yani yerinde duran dönmez. */
+    protected void face(int dx, int dy) {
+        if (dx != 0 || dy != 0) {
+            facingX = dx;
+            facingY = dy;
+        }
+    }
+
+    /**
+     * Yüzünü verilen varlığa döner.
+     *
+     * <p>Çapraz duruyorsa baskın eksene dönüyor: yönler dört yönlü kalmalı,
+     * yoksa "arkası" kavramı bulanıklaşır.</p>
+     */
+    public void faceTowards(Entity other) {
+        int dx = other.tileX - tileX;
+        int dy = other.tileY - tileY;
+
+        if (Math.abs(dx) >= Math.abs(dy)) {
+            face(Integer.signum(dx), 0);
+        } else {
+            face(0, Integer.signum(dy));
+        }
+    }
+
+    /**
+     * Verilen varlık bu varlığın <em>arkasında</em> mı.
+     *
+     * <p>Yalnızca tam arka sayılıyor, yan taraf değil: baktığı yönle ona
+     * doğru olan yön birbirine ters bakıyorsa evet. Yanına geçmek kolay,
+     * arkasına geçmek bir hamle gerektiriyor — ödül de ona göre.</p>
+     */
+    public boolean isBehind(Entity other) {
+        int towardsX = other.tileX - tileX;
+        int towardsY = other.tileY - tileY;
+        return facingX * towardsX + facingY * towardsY < 0;
     }
 
     /**

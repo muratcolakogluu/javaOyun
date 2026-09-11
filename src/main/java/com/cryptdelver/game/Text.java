@@ -103,6 +103,8 @@ public enum Text {
     KEY_PAUSE_WHAT("devam et", "resume"),
     KEY_TELL_NOTE("kızıl halka kapanıyorsa bir adım geri",
             "a closing red ring: step back"),
+    KEY_OPENING_NOTE("altın işaret varsa sırtı açık: vuruş iki katı",
+            "a gold mark means its back is open: double damage"),
     KEY_AUTOPICK_NOTE("iksir ve altın kendiliğinden alınır",
             "potions and gold are picked up for you"),
 
@@ -309,6 +311,7 @@ public enum Text {
     // -------------------------------------------------------------------- dövüş
 
     MSG_ENEMY_HURT("%s %d hasar aldı.", "%s took %d damage."),
+    MSG_BACKSTAB("Arkadan! %s %d hasar aldı.", "From behind! %s took %d damage."),
     MSG_ENEMY_DOWN("%s yere serildi.", "%s went down."),
     MSG_PLAYER_HURT("%s sana %d hasar vurdu.", "%s hit you for %d."),
     MSG_ARROW_HURT("%s oku sana %d hasar vurdu.", "%s's arrow hit you for %d."),
