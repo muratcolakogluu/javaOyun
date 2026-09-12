@@ -32,21 +32,18 @@ public enum Text {
     GAME_TAGLINE("Kripte in, ganimeti topla, Kript Lordu'nu geç.",
             "Descend the crypt, take the loot, beat the Crypt Lord."),
     MENU_NEW_GAME("Yeni Oyun", "New Game"),
+    MENU_SETTINGS("Ayarlar", "Settings"),
+    MENU_HELP("Nasıl Oynanır", "How to Play"),
+    MENU_QUIT("Çıkış", "Quit"),
+    MENU_HINT("Yön tuşlarıyla seç, Enter ile onayla",
+            "Arrow keys to choose, Enter to confirm"),
+    SETTINGS_HINT("Yön tuşlarıyla değiştir, ESC ile geri dön",
+            "Arrow keys to change, ESC to go back"),
 
-    // --------------------------------------------------------- başlangıç yolları
+    // ------------------------------------------------------- başlangıç yolları
 
     PATHS_TITLE("— NASIL İNİYORSUN —", "— HOW DO YOU DESCEND —"),
     PATHS_HINT("Yön tuşlarıyla seç, Enter ile in", "Arrows to choose, Enter to descend"),
-    SKILL_SHOCKWAVE("Sarsıntı", "Shockwave"),
-    SKILL_SHOCKWAVE_WHAT("yanındaki herkesi sersemletir",
-            "staggers everyone beside you"),
-    SKILL_DASH("Kaçış adımı", "Dash"),
-    SKILL_DASH_WHAT("baktığın yöne üç kare sıçra",
-            "leap three tiles the way you face"),
-    SKILL_BRIBE("Rüşvet", "Bribe"),
-    SKILL_BRIBE_WHAT("altın harca, yakındakiler dağılsın",
-            "spend gold and the nearby scatter"),
-
     PATH_GUARD("Muhafız", "Warden"),
     PATH_GUARD_WHAT("deri zırh, fazladan can · Q: sarsıntı",
             "leather armor, extra health · Q: shockwave"),
@@ -56,13 +53,18 @@ public enum Text {
     PATH_TRADER("Tüccar", "Trader"),
     PATH_TRADER_WHAT("takım yok, 150 altın ve bir iksir · Q: rüşvet",
             "no gear, 150 gold and a potion · Q: bribe"),
-    MENU_SETTINGS("Ayarlar", "Settings"),
-    MENU_HELP("Nasıl Oynanır", "How to Play"),
-    MENU_QUIT("Çıkış", "Quit"),
-    MENU_HINT("Yön tuşlarıyla seç, Enter ile onayla",
-            "Arrow keys to choose, Enter to confirm"),
-    SETTINGS_HINT("Yön tuşlarıyla değiştir, ESC ile geri dön",
-            "Arrow keys to change, ESC to go back"),
+
+    // ---------------------------------------------------------- yol yetenekleri
+
+    SKILL_SHOCKWAVE("Sarsıntı", "Shockwave"),
+    SKILL_SHOCKWAVE_WHAT("yanındaki herkesi sersemletir",
+            "staggers everyone beside you"),
+    SKILL_DASH("Kaçış adımı", "Dash"),
+    SKILL_DASH_WHAT("baktığın yöne üç kare sıçra",
+            "leap three tiles the way you face"),
+    SKILL_BRIBE("Rüşvet", "Bribe"),
+    SKILL_BRIBE_WHAT("altın harca, yakındakiler dağılsın",
+            "spend gold and the nearby scatter"),
 
     // ----------------------------------------------------------------- ayarlar
 
@@ -189,7 +191,6 @@ public enum Text {
     SUMMARY_UNARMORED("yok", "nothing"),
     VICTORY("KURTULDUN", "YOU ESCAPED"),
     VICTORY_LINE("Yirmi kat indin ve geri döndün.", "Twenty floors down and back again."),
-    VICTORY_STATS("%d altın  ·  %.0f saniye", "%d gold  ·  %.0f seconds"),
 
     RECORDS_TITLE("— GEÇMİŞ —", "— HISTORY —"),
     RECORDS_DEEPEST("En derin kat %d", "Deepest floor %d"),
@@ -199,7 +200,6 @@ public enum Text {
 
     // ------------------------------------------------------------------ tezgâh
 
-    FORGE_TITLE("BÜYÜCÜ", "WIZARD"),
     FORGE_PURSE("Kesende %d altın var.", "You carry %d gold."),
     FORGE_REPAIR("%s tamir et", "Repair %s"),
     FORGE_UPGRADE("%s yükselt", "Upgrade %s"),
@@ -357,7 +357,6 @@ public enum Text {
     // ------------------------------------------------------------- kader taşı
 
     SHRINE_NAME("Kader Taşı", "Stone of Fate"),
-    SHRINE_SIGN("KADER TAŞI", "STONE OF FATE"),
     SHRINE_OFFER("%s — bedeli %d azami can", "%s — it costs %d max health"),
     SHRINE_SILENT("Taş sustu.", "The stone has fallen silent."),
     SHRINE_STEEL("Çeliğin büyür", "Your steel grows"),
