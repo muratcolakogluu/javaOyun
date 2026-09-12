@@ -1,0 +1,84 @@
+# Her platform icin cift tiklanabilir paket uretir.
+#
+# Neden gerekli: jpackage capraz derleme yapmiyor. Windows'ta calistirinca
+# yalnizca Windows paketi cikiyor, cunku hem JavaFX'in yerel kutuphaneleri
+# hem de pakete konan Java calisma zamani o isletim sistemine ait. Mac paketi
+# icin bir Mac gerekiyor -- bu dosya o Mac'i GitHub'dan odunc aliyor.
+#
+# Calistirma: GitHub'da Actions sekmesi > "Paket" > Run workflow. Ya da bir
+# surum etiketi it (git tag v0.1.0 && git push --tags).
+#
+# Cikti: her is icin bir "artifact"; Actions sayfasindan indiriliyor.
+
+name: Paket
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  paketle:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            ad: windows
+          # macos-latest Apple Silicon; macos-13 son Intel kosucusu.
+          # Ikisi ayri cunku Mac'in iki mimarisinin kutuphaneleri ayri.
+          - os: macos-latest
+            ad: mac-apple-silicon
+          - os: macos-13
+            ad: mac-intel
+          - os: ubuntu-latest
+            ad: linux
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Java kur
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Testleri kosur
+        run: mvn -B test
+
+      # Profil verilmiyor: Maven zaten kosucunun kendi platformunun JavaFX
+      # kutuphanelerini cekiyor. "tumplatformlar" profili tek bir jar'i her
+      # yere gonderebilmek icin vardi; burada her platformun kendi paketi
+      # uretildigi icin gereksiz.
+      - name: Sisman jar
+        run: mvn -B -DskipTests package
+
+      - name: Paket girdisini hazirla
+        shell: bash
+        run: |
+          mkdir -p paket/girdi
+          cp target/cryptdelver-*-oyun.jar paket/girdi/cryptdelver.jar
+
+      - name: jpackage
+        shell: bash
+        run: |
+          jpackage \
+            --type app-image \
+            --name CryptDelver \
+            --app-version 0.1.0 \
+            --vendor CryptDelver \
+            --input paket/girdi \
+            --main-jar cryptdelver.jar \
+            --main-class com.cryptdelver.Launcher \
+            --dest paket/dagitim \
+            --java-options "--enable-native-access=ALL-UNNAMED"
+
+      - name: Yukle
+        uses: actions/upload-artifact@v4
+        with:
+          name: CryptDelver-${{ matrix.ad }}
+          path: paket/dagitim

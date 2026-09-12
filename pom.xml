@@ -23,6 +23,9 @@
             javadoc'unda.
         -->
         <launcher.class>com.cryptdelver.Launcher</launcher.class>
+
+        <!-- Her yerde calisan jar'a hangi Mac mimarisi konacak. -->
+        <mac.mimari>mac-aarch64</mac.mimari>
     </properties>
 
     <dependencies>
@@ -46,6 +49,86 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <!--
+        "Her yerde calisan tek jar" profili.
+
+        JavaFX'in yerel kutuphaneleri isletim sistemine gore ayri jar'larda
+        duruyor ve Maven varsayilan olarak yalnizca derlemenin yapildigi
+        sistemin jar'ini cekiyor. Windows'ta uretilen sisman jar bu yuzden
+        Mac'te acilmiyor: sinif dosyalari var ama .dylib'ler yok.
+
+        Bu profil Windows, Linux ve Mac kutuphanelerini bir arada koyuyor.
+        Varsayilan derlemeye eklemedim: gelistirirken ve test ederken diger
+        platformlarin kutuphanesini indirip sinif yoluna koymanin hicbir
+        faydasi yok.
+
+        Mac'in iki mimarisi ayni dosya adlarini kullaniyor (libglass.dylib),
+        yani ikisi tek jar'a sigmiyor: birlestirme sirasinda biri otekinin
+        uzerine yaziliyor ve yanlis mimari sessizce icerde kaliyor. O yuzden
+        mimari bir secim ve acikca yaziliyor. Varsayilan Apple Silicon,
+        cunku 2020 sonu sonrasi butun Mac'ler oyle. Intel Mac icin:
+
+            mvn -Ptumplatformlar -Dmac.mimari=mac -DskipTests package
+
+        Kullanim: mvn -Ptumplatformlar -DskipTests package
+    -->
+    <profiles>
+        <profile>
+            <id>tumplatformlar</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.openjfx</groupId>
+                    <artifactId>javafx-base</artifactId>
+                    <version>${javafx.version}</version>
+                    <classifier>${mac.mimari}</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>org.openjfx</groupId>
+                    <artifactId>javafx-graphics</artifactId>
+                    <version>${javafx.version}</version>
+                    <classifier>${mac.mimari}</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>org.openjfx</groupId>
+                    <artifactId>javafx-controls</artifactId>
+                    <version>${javafx.version}</version>
+                    <classifier>${mac.mimari}</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>org.openjfx</groupId>
+                    <artifactId>javafx-media</artifactId>
+                    <version>${javafx.version}</version>
+                    <classifier>${mac.mimari}</classifier>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.openjfx</groupId>
+                    <artifactId>javafx-base</artifactId>
+                    <version>${javafx.version}</version>
+                    <classifier>linux</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>org.openjfx</groupId>
+                    <artifactId>javafx-graphics</artifactId>
+                    <version>${javafx.version}</version>
+                    <classifier>linux</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>org.openjfx</groupId>
+                    <artifactId>javafx-controls</artifactId>
+                    <version>${javafx.version}</version>
+                    <classifier>linux</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>org.openjfx</groupId>
+                    <artifactId>javafx-media</artifactId>
+                    <version>${javafx.version}</version>
+                    <classifier>linux</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 
     <build>
         <plugins>
