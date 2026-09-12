@@ -59,6 +59,28 @@ public final class Route {
     }
 
     /**
+     * Bu merdivende yol sunuluyor mu.
+     *
+     * <p>Her inişte sunulmuyor, <b>yarısında</b>. Sebebi bir çelişkiyi
+     * kapatmak: kat olayları "indiğin anda bir cümle karşılıyor" diye
+     * yapılmıştı, sonra yol seçimi o olayı bir <em>menüye</em> çevirdi. İkisi
+     * arka arkaya gelince rastgele kat olayı oyunda hiç çıkmaz oldu — zindan
+     * artık sana hiçbir şey dayatmıyordu, her şeyi sen seçiyordun ve sürpriz
+     * tamamen gitmişti.</p>
+     *
+     * <p>Yarı yarıya olunca ikisi birlikte yaşıyor: bazı merdivenlerde sen
+     * karar veriyorsun, bazılarında zindan. Seçim bir <em>ikram</em> oluyor,
+     * her katın zorunlu bir adımı değil.</p>
+     *
+     * <p>Zar katın tohumundan: aynı merdivene tekrar basmak aynı cevabı
+     * veriyor. Her basışta yeniden atılsaydı oyuncu seçim çıkana kadar basıp
+     * kalkardı ve "yarısında" diye bir şey kalmazdı.</p>
+     */
+    public static boolean offeredAt(long seed) {
+        return mixed(seed, OFFER_SALT).nextDouble() < OFFER_CHANCE;
+    }
+
+    /**
      * Bu kattan aşağı inen iki yolu verir.
      *
      * <p>Çift katın tohumundan çıkıyor: aynı kata geri dönüp merdivene tekrar
@@ -71,7 +93,7 @@ public final class Route {
      * (karanlık kat gibi) — sakin olanı seçmek de her zaman bedava değil.</p>
      */
     public static List<Route> from(long seed) {
-        Random dice = mixed(seed);
+        Random dice = mixed(seed, ROUTE_SALT);
 
         FloorEvent calm = dice.nextInt(3) == 0
                 ? null
@@ -88,8 +110,8 @@ public final class Route {
      * yalnızca hafifçe karıştırıyor ve birbirine yakın tohumlar birbirine
      * yakın ilk değerler veriyor.</p>
      */
-    private static Random mixed(long seed) {
-        long value = seed ^ ROUTE_SALT;
+    private static Random mixed(long seed, long salt) {
+        long value = seed ^ salt;
         value ^= value >>> 33;
         value *= 0xff51afd7ed558ccdL;
         value ^= value >>> 33;
@@ -99,4 +121,14 @@ public final class Route {
     }
 
     private static final long ROUTE_SALT = 0x27D4EB2FL;
+
+    /**
+     * Sunulma zarı ve oranı.
+     *
+     * <p>Ayrı bir tuz: aynı sayıyla atılsaydı "sunulsun mu" ile "hangi iki
+     * yol" birbirine bağlı çıkardı, yani örneğin seçim sunulan her merdiven
+     * aynı çifti gösterirdi.</p>
+     */
+    private static final long OFFER_SALT = 0x3C6EF372L;
+    private static final double OFFER_CHANCE = 0.5;
 }

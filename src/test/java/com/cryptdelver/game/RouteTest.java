@@ -123,6 +123,27 @@ class RouteTest {
         }
 
         /**
+         * Secim sunulan bir merdiven bulup ekrani acar.
+         *
+         * <p>Yol her merdivende sunulmuyor, yarisinda. O yuzden sinav "in ve
+         * ekran acilsin" diyemiyor: sunulan bir merdiven bulunana kadar kat
+         * yeniden kuruluyor.</p>
+         */
+        private void openChoice() {
+            pressStairs();
+
+            for (int attempt = 0; attempt < 400; attempt++) {
+                if (game.hasRoutesBelow()) {
+                    assertFalse(pressStairs(), "Secim ekrani acilinca inis beklemeli");
+                    assertTrue(game.isChoosingRoute());
+                    return;
+                }
+                game.regenerateFloor();
+            }
+            throw new AssertionError("Secim sunulan bir merdiven cikmadi");
+        }
+
+        /**
          * Ilk iki katin hali sabit: oralar oyunu ogretiyor, secim sunmak
          * ogretilmemis bir seyi sormak olurdu.
          */
@@ -137,20 +158,54 @@ class RouteTest {
         @Test
         @DisplayName("Ucuncu kata inerken iki yol soruluyor")
         void thechoiceAppears() {
-            pressStairs();
+            openChoice();
 
-            assertFalse(pressStairs(), "Secim ekrani acilinca inis beklemeli");
-            assertTrue(game.isChoosingRoute());
             assertEquals(2, game.getDepth(), "Secim yapilmadan kat degismemeli");
             assertEquals(2, game.getRoutes().size());
+        }
+
+        /**
+         * Yol her merdivende sunulmuyor. Sebebi bir celiskiyi kapatmak: kat
+         * olaylari "indigin anda bir cumle karsiliyor" diye yapilmisti, sonra
+         * yol secimi o olayi bir menuye cevirdi ve rastgele kat olayi oyunda
+         * hic cikmaz oldu. Yari yariya olunca ikisi birlikte yasiyor.
+         */
+        @Test
+        @DisplayName("Secim her merdivende sunulmuyor")
+        void thechoiceIsAnOccasionalTreat() {
+            pressStairs();
+
+            int offered = 0;
+            int stairs = 400;
+            for (int attempt = 0; attempt < stairs; attempt++) {
+                if (game.hasRoutesBelow()) {
+                    offered++;
+                }
+                game.regenerateFloor();
+            }
+
+            assertTrue(offered > stairs / 5, "Fazla seyrek sunuluyor: " + offered);
+            assertTrue(offered < stairs * 4 / 5, "Neredeyse her merdivende: " + offered);
+        }
+
+        /** Ayni merdivene tekrar basmak ayni cevabi vermeli. */
+        @Test
+        @DisplayName("Sunulma karari merdivene basmakla degismiyor")
+        void theofferIsStable() {
+            pressStairs();
+            boolean first = game.hasRoutesBelow();
+
+            for (int i = 0; i < 20; i++) {
+                assertEquals(first, game.hasRoutesBelow(),
+                        "Ayni merdiven ayni cevabi vermeli");
+            }
         }
 
         /** Secim ekrani acikken dunya durmali: karar verirken vurulmak olmaz. */
         @Test
         @DisplayName("Secim ekrani acikken zaman akmiyor")
         void theworldStopsWhileChoosing() {
-            pressStairs();
-            pressStairs();
+            openChoice();
 
             assertTrue(game.isFrozen());
         }
@@ -159,8 +214,7 @@ class RouteTest {
         @Test
         @DisplayName("Secim acikken E yeniden inmiyor")
         void thestairsDoNotSkipTheQuestion() {
-            pressStairs();
-            pressStairs();
+            openChoice();
 
             assertFalse(game.beginDescent(), "Secim acikken inis olmamali");
             assertEquals(2, game.getDepth());
@@ -169,8 +223,7 @@ class RouteTest {
         @Test
         @DisplayName("Secilen yol asagida gerceklesiyor")
         void thechosenRouteIsWhatYouGet() {
-            pressStairs();
-            pressStairs();
+            openChoice();
 
             FloorEvent promised = game.getRoutes().get(1).getEvent();
             assertTrue(game.takeRoute(1));
@@ -194,15 +247,21 @@ class RouteTest {
         void theplainWayGivesAnOrdinaryFloor() {
             pressStairs();
 
-            for (int attempt = 0; attempt < 200; attempt++) {
-                pressStairs();
-                if (game.isChoosingRoute() && game.getRoutes().get(0).getEvent() == null) {
-                    assertTrue(game.takeRoute(0));
-                    assertNull(game.getEvent(), "Duz yol olaysiz kat vermeli");
-                    return;
-                }
+            // Merdivene yalnizca secim SUNULDUGUNDA basiyoruz. Onceki hal
+            // her turda basiyordu ve secim sunulmayan merdivenler iniyordu:
+            // dongu birkac turda boss katina sapliyor, orada ne inis ne secim
+            // oldugu icin sonsuza kadar bosa donuyordu.
+            for (int attempt = 0; attempt < 400; attempt++) {
+                if (game.hasRoutesBelow()) {
+                    assertFalse(pressStairs());
 
-                game.cancelRoute();
+                    if (game.getRoutes().get(0).getEvent() == null) {
+                        assertTrue(game.takeRoute(0));
+                        assertNull(game.getEvent(), "Duz yol olaysiz kat vermeli");
+                        return;
+                    }
+                    game.cancelRoute();
+                }
                 game.regenerateFloor();
             }
             throw new AssertionError("Duz yol sunulan bir merdiven cikmadi");
@@ -212,9 +271,7 @@ class RouteTest {
         @Test
         @DisplayName("ESC ile secimden vazgecilebiliyor")
         void thechoiceCanBeSteppedBack() {
-            pressStairs();
-            pressStairs();
-            assertTrue(game.isChoosingRoute());
+            openChoice();
 
             game.togglePause();
 
@@ -226,8 +283,7 @@ class RouteTest {
         @Test
         @DisplayName("Olmayan yolu secmek bir sey yapmiyor")
         void amissingRouteDoesNothing() {
-            pressStairs();
-            pressStairs();
+            openChoice();
 
             assertFalse(game.takeRoute(5));
             assertTrue(game.isChoosingRoute(), "Ekran acik kalmali");
@@ -263,8 +319,7 @@ class RouteTest {
         @Test
         @DisplayName("Secim bir sonraki kata tasinmiyor")
         void thechoiceLastsOneFloor() {
-            pressStairs();
-            pressStairs();
+            openChoice();
             assertTrue(game.takeRoute(1));
 
             Set<FloorEvent> seen = new HashSet<>();

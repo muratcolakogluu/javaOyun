@@ -464,7 +464,8 @@ public class Game {
      * dışarı çıkan merdivende seçim yok — orada E'nin tek bir işi var.</p>
      */
     public boolean hasRoutesBelow() {
-        return routesAvailable() && !isStairsLocked() && depth < FloorTheme.MAX_DEPTH;
+        return routesAvailable() && !isStairsLocked() && depth < FloorTheme.MAX_DEPTH
+                && Route.offeredAt(currentSeed);
     }
 
     /** Merdivende sunulan iki yol; ekran kapalıysa boş liste. */
