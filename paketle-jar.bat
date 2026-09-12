@@ -1,19 +1,25 @@
 @echo off
 REM ===================================================================
-REM  Her yerde calisan tek dosya: paket\CryptDelver.jar
+REM  Her yerde calisan jar'lar. Cikti:
 REM
-REM  paketle.bat'tan farki: bu jar'in icinde Java YOK, karsi tarafta
-REM  kurulu olmasi gerekiyor (21 ve uzeri). Buna karsilik Windows, Mac ve
-REM  Linux'ta ayni dosya calisiyor.
+REM    paket\CryptDelver-Mac-M-serisi.jar   (M1/M2/M3/M4 Mac)
+REM    paket\CryptDelver-Mac-Intel.jar      (2020 oncesi Mac)
 REM
-REM  Windows icin paketle.bat daha iyi (Java istemiyor). Bu betik Mac ya
-REM  da Linux'taki biri icin.
+REM  Ikisinin de icinde Windows ve Linux kutuphaneleri de var, yani
+REM  aslinda ikisi de her yerde calisiyor; fark yalnizca hangi Mac
+REM  islemcisine gore hazirlandiklari.
 REM
-REM  Calistirma (her platformda):  java -jar CryptDelver.jar
+REM  NEDEN IKI DOSYA: Mac'in iki mimarisinin kutuphaneleri ayni dosya
+REM  adlarini kullaniyor (libglass.dylib). Tek jar'a ikisi birden
+REM  sigmiyor, birlestirme sirasinda biri otekinin uzerine yaziliyor ve
+REM  yanlis mimari sessizce icerde kaliyor -- oyun karsi tarafta hic
+REM  acilmadan kapaniyor. Tek dosya ugruna "hangi Mac?" diye sormak
+REM  yerine ikisini de uretip karsi tarafin kendi bildigi seye (Intel mi
+REM  M mi) gore secmesini biraktik.
 REM
-REM  MAC MIMARISI: varsayilan Apple Silicon. Karsi taraf Intel Mac
-REM  kullaniyorsa bu betikteki MAC_MIMARI satirini "mac" yap. Ikisi ayni
-REM  dosya adlarini kullandigi icin tek jar'a ikisi birden sigmiyor.
+REM  Bu jar'larin icinde Java YOK, karsi tarafta kurulu olmasi gerekiyor
+REM  (21 ve uzeri, adoptium.net). Windows icin paketle.bat daha iyi --
+REM  o Java istemiyor. Bu betik Mac ve Linux icin.
 REM ===================================================================
 
 setlocal
@@ -21,22 +27,27 @@ setlocal
 if "%JAVA_HOME%"=="" set JAVA_HOME=C:\Users\murat\.jdks\openjdk-25.0.2
 set MVN="C:\Program Files\JetBrains\IntelliJ IDEA 2025.2.3\plugins\maven\lib\maven3\bin\mvn.cmd"
 
-set MAC_MIMARI=mac-aarch64
 set SISMAN=target\cryptdelver-0.1.0-SNAPSHOT-oyun.jar
 
-echo.
-echo [1/2] Windows, Linux ve %MAC_MIMARI% kutuphaneleriyle derleniyor...
-call %MVN% -B -Ptumplatformlar -Dmac.mimari=%MAC_MIMARI% -DskipTests package || goto :hata
-
-echo.
-echo [2/2] Kopyalaniyor...
 if not exist paket mkdir paket
-copy /y "%SISMAN%" paket\CryptDelver.jar >nul || goto :hata
 
 echo.
-echo Bitti: paket\CryptDelver.jar
-echo Karsi taraf once Java 21+ kursun (adoptium.net), sonra:
-echo     java -jar CryptDelver.jar
+echo [1/2] M serisi Mac (Apple Silicon) icin...
+call %MVN% -B -Ptumplatformlar -Dmac.mimari=mac-aarch64 -DskipTests package || goto :hata
+copy /y "%SISMAN%" paket\CryptDelver-Mac-M-serisi.jar >nul || goto :hata
+
+echo.
+echo [2/2] Intel Mac icin...
+call %MVN% -B -Ptumplatformlar -Dmac.mimari=mac -DskipTests package || goto :hata
+copy /y "%SISMAN%" paket\CryptDelver-Mac-Intel.jar >nul || goto :hata
+
+echo.
+echo Bitti:
+echo   paket\CryptDelver-Mac-M-serisi.jar
+echo   paket\CryptDelver-Mac-Intel.jar
+echo.
+echo Karsi taraf once Java 21+ kursun (adoptium.net), sonra jar'a cift
+echo tiklasin. Acilmazsa Terminal'den:  java -jar DOSYA.jar
 goto :son
 
 :hata
