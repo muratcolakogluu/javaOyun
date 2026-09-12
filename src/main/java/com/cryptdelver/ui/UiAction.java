@@ -63,6 +63,16 @@ public sealed interface UiAction {
     record Path(com.cryptdelver.game.StartPath path) implements UiAction {
     }
 
+    /**
+     * Merdivende sunulan iki yoldan biri; tıklamak o yoldan iniyor.
+     *
+     * <p>Sıra numarayla tutuluyor: iki yol her merdivende yeniden kuruluyor
+     * ve nesneyi tutmak, kapanmış bir ekrana ait ölü bir tıklama bölgesi
+     * bırakabilirdi.</p>
+     */
+    record Route(int index) implements UiAction {
+    }
+
     /** Çantadaki bir slot; tıklamak kullanıyor, Shift ile yere bırakıyor. */
 
     record Slot(int index) implements UiAction {

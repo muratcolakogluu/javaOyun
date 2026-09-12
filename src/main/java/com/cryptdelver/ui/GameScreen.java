@@ -203,6 +203,9 @@ public class GameScreen {
         if (game.isShopOpen()) {
             return action instanceof UiAction.Buy;
         }
+        if (game.isChoosingRoute()) {
+            return action instanceof UiAction.Route;
+        }
         return action instanceof UiAction.Slot && !game.isFrozen();
     }
 
@@ -240,6 +243,7 @@ public class GameScreen {
                 }
             }
             case UiAction.Buy(int index) -> game.buy(index);
+            case UiAction.Route(int index) -> game.takeRoute(index);
             case UiAction.Slot(int index) -> {
                 // Çantada tıklama kullanıyor, Shift ile yere bırakıyor; tuş
                 // takımındaki 1-8 ve Shift+1-8 ile aynı kural.
@@ -571,6 +575,10 @@ public class GameScreen {
             handleShopCommand(code);
             return;
         }
+        if (game.isChoosingRoute()) {
+            handleRouteCommand(code);
+            return;
+        }
 
         if (game.isPaused()) {
             return;
@@ -609,7 +617,7 @@ public class GameScreen {
             return;
         }
 
-        game.descend();
+        game.beginDescent();
     }
 
     /**
@@ -655,6 +663,20 @@ public class GameScreen {
         int row = slotOf(code);
         if (row >= 0 && row < Merchant.STOCK_SIZE) {
             game.buy(row);
+        }
+    }
+
+    /**
+     * Merdivendeki yol seçiminin tuşları.
+     *
+     * <p>İki satır, iki rakam — tezgâhlarla aynı dil. Ok tuşu ve Enter
+     * vermedim: yalnızca iki seçenek varken "gez ve onayla" fazladan bir
+     * adım, rakam ise doğrudan cevap.</p>
+     */
+    private void handleRouteCommand(KeyCode code) {
+        int row = slotOf(code);
+        if (row >= 0 && row < game.getRoutes().size()) {
+            game.takeRoute(row);
         }
     }
 

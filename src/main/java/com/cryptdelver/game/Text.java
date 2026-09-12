@@ -146,6 +146,7 @@ public enum Text {
     HINT_STAIRS_LOCKED("Merdiveni tutan şeyi önce yen", "Beat what guards the stairs first"),
     HINT_STAIRS_UP("E ile bir üst kata çık", "E to go up one floor"),
     HINT_STAIRS_DOWN("E ile bir alt kata in", "E to go down one floor"),
+    HINT_STAIRS_CHOOSE("E ile aşağıdaki yolu seç", "E to choose the way down"),
     HINT_STAIRS_EXIT("E ile kriptten çık", "E to leave the crypt"),
     WIZARD_SIGN("BÜYÜCÜ", "WIZARD"),
     MERCHANT_SIGN("GEZGİN SATICI", "PEDLAR"),
@@ -221,6 +222,14 @@ public enum Text {
     GEAR_YOUR_ARMOR("Zırhın", "Your armor"),
 
     // ------------------------------------------------------------------ bölgeler
+
+    // ---------------------------------------------------------- merdivende yol
+
+    ROUTES_TITLE("— HANGİ YOLDAN İNİYORSUN —", "— WHICH WAY DOWN —"),
+    ROUTES_HINT("1 ve 2 ile seç, ESC ile vazgeç", "1 or 2 to choose, ESC to step back"),
+    ROUTE_PLAIN("Düz yol", "Plain way"),
+    ROUTE_PLAIN_WHAT("Sıradan bir kat: ne fazlası ne eksiği.",
+            "An ordinary floor: nothing more, nothing less."),
 
     // ------------------------------------------------------------- kat olaylari
 

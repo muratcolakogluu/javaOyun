@@ -19,6 +19,7 @@ import com.cryptdelver.game.Game;
 import com.cryptdelver.game.Inventory;
 import com.cryptdelver.game.MessageLog;
 import com.cryptdelver.game.Records;
+import com.cryptdelver.game.Route;
 import com.cryptdelver.game.RunLog;
 import com.cryptdelver.game.Settings;
 import com.cryptdelver.game.StartPath;
@@ -383,6 +384,10 @@ public class GameRenderer {
     private static final int SUMMARY_ROWS = 7;
     private static final double SUMMARY_LINE = 24;
     private static final double SUMMARY_GUTTER = 14;
+
+    /** Yol satırlarının ritmi: vaat satırın altında, bir sonraki satır uzakta. */
+    private static final double ROUTE_PROMISE_GAP = 22;
+    private static final double ROUTE_ROW_SPACING = 64;
 
     private static final double FORGE_ROW_WIDTH = 620;
     private static final double FORGE_ROW_HEIGHT = 26;
@@ -1028,6 +1033,10 @@ public class GameRenderer {
 
         if (game.isShopOpen()) {
             drawShopScreen(gc, game, mapWidth, mapHeight);
+        }
+
+        if (game.isChoosingRoute()) {
+            drawRouteScreen(gc, game, mapWidth, mapHeight);
         }
 
         if (game.isPaused()) {
@@ -2588,6 +2597,10 @@ public class GameRenderer {
         } else if (game.isFinalFloor()) {
             // Yirminci katın merdiveni aşağı değil dışarı çıkıyor.
             hint = Text.HINT_STAIRS_EXIT.get();
+        } else if (game.hasRoutesBelow()) {
+            // E'nin ineceğini mi yoksa soracağını mı bilmek, basmadan önce
+            // bilinmesi gereken bir şey.
+            hint = Text.HINT_STAIRS_CHOOSE.get();
         } else {
             hint = Text.HINT_STAIRS_DOWN.get();
         }
@@ -2903,6 +2916,65 @@ public class GameRenderer {
     private boolean registerForgeRow(UiAction action, double mapWidth, double y) {
         return clicks.add(action, mapWidth / 2 - FORGE_ROW_WIDTH / 2, y - FORGE_ROW_HEIGHT / 2,
                 FORGE_ROW_WIDTH, FORGE_ROW_HEIGHT);
+    }
+
+    /**
+     * Merdivendeki yol seçimi.
+     *
+     * <p>İki satır, her birinin altında ne vaat ettiği. Tezgâh ekranlarıyla
+     * aynı iskelet ama burada fiyat yok — bedeli altın değil, <em>aşağıda
+     * karşılaşacağın şey</em>. O yüzden vaat tek satırda tam yazılıyor:
+     * kısaltılmış bir vaat, oyuncunun neyi seçtiğini bilmemesi demek
+     * olurdu.</p>
+     */
+    private void drawRouteScreen(GraphicsContext gc, Game game, double mapWidth,
+                                 double mapHeight) {
+        List<Route> routes = game.getRoutes();
+
+        gc.setFill(OVERLAY);
+        gc.fillRect(0, 0, mapWidth, mapHeight);
+
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setTextBaseline(VPos.CENTER);
+        gc.setFont(titleFont);
+        gc.setFill(GOLD_TEXT);
+        gc.fillText(Text.ROUTES_TITLE.get(), mapWidth / 2, mapHeight / 2 - 130);
+
+        double y = mapHeight / 2 - 40;
+        for (int i = 0; i < routes.size(); i++) {
+            y = drawRouteRow(gc, mapWidth, y, i, routes.get(i));
+        }
+
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setFont(hudFont);
+        gc.setFill(HUD_ACCENT);
+        gc.fillText(Text.ROUTES_HINT.get(), mapWidth / 2, y + 20);
+    }
+
+    /**
+     * Tek bir yol satırı: rakam, ad ve vaat.
+     *
+     * @return bir sonraki satırın y'si
+     */
+    private double drawRouteRow(GraphicsContext gc, double mapWidth, double y, int index,
+                                Route route) {
+        if (registerForgeRow(new UiAction.Route(index), mapWidth, y)) {
+            drawForgeHighlight(gc, mapWidth, y);
+        }
+
+        gc.setFont(hudFont);
+        gc.setTextAlign(TextAlignment.RIGHT);
+        gc.setFill(GOLD_TEXT);
+        gc.fillText(String.valueOf(index + 1), mapWidth / 2 - 300, y);
+
+        gc.setTextAlign(TextAlignment.LEFT);
+        gc.setFill(MESSAGE_TEXT);
+        gc.fillText(route.getLabel(), mapWidth / 2 - 285, y);
+
+        gc.setFill(MESSAGE_FADED);
+        gc.fillText(route.getDescription(), mapWidth / 2 - 285, y + ROUTE_PROMISE_GAP);
+
+        return y + ROUTE_ROW_SPACING;
     }
 
     /**

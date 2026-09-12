@@ -330,6 +330,19 @@ public class FloorBuilder {
      * sebebi bu — belirlenimcilik tek başına sınanabiliyor.</p>
      */
     public Floor layout(int generatorIndex, int depth, long seed) {
+        return layoutWith(generatorIndex, depth, seed, rollEvent(depth, seed));
+    }
+
+    /**
+     * Katın döşemesi, hâli dışarıdan verilmiş hâliyle.
+     *
+     * <p>Merdivende yol seçen oyuncu aşağıda ne olacağını belirliyor, yani o
+     * katın olayı artık zarın değil oyuncunun kararı. Zarı atan sürüm
+     * ({@link #layout}) bu yöntemi çağırıyor — böylece "zar at" ile "şunu
+     * kullan" arasında bir nöbetçi değere gerek kalmıyor ve {@code null} her
+     * iki yolda da aynı şeyi söylüyor: sıradan kat.</p>
+     */
+    public Floor layoutWith(int generatorIndex, int depth, long seed, FloorEvent event) {
         Dungeon dungeon = generators.get(generatorIndex).generate(width, height, seed);
         Position spawn = dungeon.findWalkableNear(width / 2, height / 2);
 
@@ -374,12 +387,18 @@ public class FloorBuilder {
                 : null;
 
         return new Floor(seed, dungeon, spawn, stairs, wizard, merchant, shrine,
-                rollEvent(depth, seed), vault, null, List.of(), vaultLoot(vault, depth, seed));
+                event, vault, null, List.of(), vaultLoot(vault, depth, seed));
     }
 
     /** Döşemeyi kurup üstüne boss, düşman ve eşyaları dağıtır. */
     public Floor build(int generatorIndex, int depth, long seed, Difficulty difficulty) {
         return populate(layout(generatorIndex, depth, seed), depth, difficulty);
+    }
+
+    /** Aynısı, ama katın hâli merdivende seçilmişse onu kullanıyor. */
+    public Floor buildWith(int generatorIndex, int depth, long seed, Difficulty difficulty,
+                           FloorEvent event) {
+        return populate(layoutWith(generatorIndex, depth, seed, event), depth, difficulty);
     }
 
     /**

@@ -204,6 +204,25 @@ public class Game {
      * açık olduğunu çizim tarafında yeniden çıkarmak gerekirdi.</p>
      */
     private boolean shopOpen;
+
+    /**
+     * Merdivende sunulan iki yol; seçim ekranı kapalıysa boş.
+     *
+     * <p>Liste boş olması "ekran kapalı" demek: ayrı bir bayrak tutmak, iki
+     * alanın birbirine düşmesi ihtimalini açardı.</p>
+     */
+    private List<Route> routes = List.of();
+
+    /**
+     * Merdivende seçilen yol; seçim yapılmadıysa {@code null}.
+     *
+     * <p>Yolun <em>kendisi</em> tutuluyor, verdiği hâl değil. Sebebi ince ama
+     * önemli: "Düz yol" seçmek de bir seçim ve onun hâli {@code null} —
+     * yani hâli saklasaydım "oyuncu düz yolu seçti" ile "hiç seçim olmadı"
+     * aynı değerle anlatılırdı ve düz yolu seçen oyuncuya rastgele bir olay
+     * verilirdi. Bu tam olarak oldu; sınav yakaladı.</p>
+     */
+    private Route takenRoute;
     private boolean won;
     private double regenTimer;
     private Vision vision;
@@ -211,6 +230,9 @@ public class Game {
     private double reinforceTimer;
     private boolean dungeonAwake;
     private Position upStairs;
+
+    /** Yol seçimi bu kattan itibaren sunuluyor; öncesi oyunu öğretiyor. */
+    private static final int ROUTE_MIN_DEPTH = 3;
 
     /** Kaç kez yukarı çıkıldı; zindanın sabrını bu kısaltıyor. */
     private int returns;
@@ -355,7 +377,7 @@ public class Game {
      * @return inildiyse {@code true}
      */
     public boolean descend() {
-        if (isOver() || !isPlayerOnStairs() || floors == null) {
+        if (isOver() || isChoosingRoute() || !isPlayerOnStairs() || floors == null) {
             return false;
         }
         if (isStairsLocked()) {
@@ -373,10 +395,104 @@ public class Game {
             return true;
         }
 
+        return goDown(null);
+    }
+
+    /**
+     * E tuşunun merdivende yaptığı iş: ya soruyor ya iniyor.
+     *
+     * <p>{@link #descend()}'den ayrı durmasının sebebi ikisinin farklı şeyler
+     * olması. {@code descend()} "şimdi in" demek ve katın hâlini zara
+     * bırakıyor — ilk katlarda, boss katlarında ve aşağıda seçilecek bir şey
+     * olmadığında olan tam olarak bu. Bu yöntem ise <em>oyuncunun</em> niyeti:
+     * aşağıda iki yol varsa önce onu gösteriyor, yoksa doğrudan
+     * indiriyor.</p>
+     *
+     * <p>Ayrımı korumak, "in" diyen her yerin bir soru ekranıyla
+     * karşılaşmasını engelliyor: kaçış iksiri de, yeniden başlatma da, kat
+     * kurulumu da inişin kendisiyle ilgileniyor, seçimle değil.</p>
+     *
+     * @return bu çağrıda inildiyse {@code true}; soru açıldıysa {@code false}
+     */
+    public boolean beginDescent() {
+        if (isOver() || isChoosingRoute() || !isPlayerOnStairs() || floors == null) {
+            return false;
+        }
+
+        if (hasRoutesBelow()) {
+            routes = Route.from(currentSeed);
+            return false;
+        }
+
+        return descend();
+    }
+
+    /**
+     * İnişi tamamlar.
+     *
+     * @param route merdivende seçilen yol; seçim yapılmadıysa {@code null} ve
+     *              kat kendi zarını atıyor
+     */
+    private boolean goDown(Route route) {
+        takenRoute = route;
+        routes = List.of();
+
         travelTo(depth + 1);
         runLog.reachedFloor(depth);
         messageLog.add(Text.MSG_DESCENDED.get(depth, getTheme().getLabel()));
         return true;
+    }
+
+    /**
+     * Aşağıda seçilecek bir şey var mı.
+     *
+     * <p>İlk iki katta ve boss katına inerken yol seçimi yok: o katların
+     * hâli zaten sabit (ilk katlar öğretiyor, boss katının olayı bossun
+     * kendisi). Boş bir seçim ekranı açıp iki özdeş satır göstermek, kararı
+     * değersizleştirirdi.</p>
+     */
+    private boolean routesAvailable() {
+        int next = depth + 1;
+        return next >= ROUTE_MIN_DEPTH && !FloorBuilder.isBossFloor(next);
+    }
+
+    /**
+     * Aşağıda seçilecek iki yol var mı.
+     *
+     * <p>Merdiven ipucu bunu okuyor: E'nin ineceğini mi yoksa soracağını mı
+     * bilmek, basmadan önce bilinmesi gereken bir şey. Bossun tuttuğu ya da
+     * dışarı çıkan merdivende seçim yok — orada E'nin tek bir işi var.</p>
+     */
+    public boolean hasRoutesBelow() {
+        return routesAvailable() && !isStairsLocked() && depth < FloorTheme.MAX_DEPTH;
+    }
+
+    /** Merdivende sunulan iki yol; ekran kapalıysa boş liste. */
+    public List<Route> getRoutes() {
+        return routes;
+    }
+
+    /** Yol seçimi ekranı açık mı. */
+    public boolean isChoosingRoute() {
+        return !routes.isEmpty();
+    }
+
+    /**
+     * Sunulan yollardan birini seçip iner.
+     *
+     * @param index 0 ya da 1; listede olmayan bir sıra hiçbir şey yapmıyor
+     * @return inildiyse {@code true}
+     */
+    public boolean takeRoute(int index) {
+        if (index < 0 || index >= routes.size()) {
+            return false;
+        }
+        return goDown(routes.get(index));
+    }
+
+    /** Seçimden vazgeçer; oyuncu merdivenin üstünde kalıyor. */
+    public void cancelRoute() {
+        routes = List.of();
     }
 
     /** Oyuncu yukarı çıkan merdivenin üstünde mi. */
@@ -598,10 +714,12 @@ public class Game {
      * ilerletmeden dönüyor. Oyun bittiyse duraklatmanın anlamı yok.</p>
      */
     public void togglePause() {
-        // Bir tezgâh açıksa ESC önce onu kapatıyor: tek "geri" tuşu.
-        if (forgeOpen || shopOpen) {
+        // Bir tezgâh ya da seçim ekranı açıksa ESC önce onu kapatıyor: tek
+        // "geri" tuşu.
+        if (forgeOpen || shopOpen || isChoosingRoute()) {
             forgeOpen = false;
             shopOpen = false;
+            cancelRoute();
             return;
         }
 
@@ -618,7 +736,7 @@ public class Game {
      * birlikte bir koşul daha biriktirirdi.</p>
      */
     public boolean isFrozen() {
-        return paused || forgeOpen || shopOpen || won;
+        return paused || forgeOpen || shopOpen || isChoosingRoute() || won;
     }
 
     // -------------------------------------------------------------- büyücü
@@ -1830,6 +1948,8 @@ public class Game {
         visited.clear();
         returns = 0;
         elapsedSeconds = 0;
+        routes = List.of();
+        takenRoute = null;
         enemies.clear();
         groundItems.clear();
         projectiles.clear();
@@ -1854,7 +1974,15 @@ public class Game {
     private void generateFloor(long seed) {
         generatorIndex = floors.generatorForDepth(depth);
 
-        adopt(floors.build(generatorIndex, depth, seed, settings.getDifficulty()));
+        // Merdivende bir yol seçildiyse katın hâli oradan geliyor; seçim
+        // tek bir kat için geçerli, o yüzden hemen tüketiliyor.
+        Route route = takenRoute;
+        takenRoute = null;
+
+        adopt(route == null
+                ? floors.build(generatorIndex, depth, seed, settings.getDifficulty())
+                : floors.buildWith(generatorIndex, depth, seed, settings.getDifficulty(),
+                        route.getEvent()));
         announceEvent();
         announceBoss();
     }
