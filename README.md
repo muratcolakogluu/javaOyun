@@ -5,6 +5,9 @@ Yirmi kat aşağı in, Kript Lordu'nu geç, geri dön.
 Java 21 ve JavaFX ile yazılmış, gerçek zamanlı prosedürel bir zindan kaşifi
 (roguelike). Her koşu yeni bir zindan üretiyor; ölünce baştan başlıyorsun.
 
+Java sınıflarını kullanarak kat kat ilerlenen bir oyun tasarlama denemesi
+olarak başladı; aşağıdaki "Ne amaçladık" bölümü nereye vardığını anlatıyor.
+
 ```bash
 mvn javafx:run
 ```
