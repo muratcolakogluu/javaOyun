@@ -873,7 +873,9 @@ public class GameRenderer {
     private void drawHelpPane(GraphicsContext gc, double mapWidth, double top, double bottom) {
         // Tuş listesi de kendi boşluğuna ortalanıyor; satır sayısı değişirse
         // liste yine ortada kalıyor.
-        drawKeyList(gc, mapWidth, centeredListStart(top, bottom, KEY_ROWS + 1, KEY_ROW_SPACING));
+        // Menüde henüz yol seçilmemiş oluyor, o yüzden genel satır.
+        drawKeyList(gc, mapWidth, centeredListStart(top, bottom, KEY_ROWS + 1, KEY_ROW_SPACING),
+                Text.KEY_DASH_WHAT.get());
     }
 
     /** Menüde tek satır; seçili olan çerçeveli ve parlak. */
@@ -1070,7 +1072,8 @@ public class GameRenderer {
         gc.fillText(Text.PAUSED.get(), mapWidth / 2, mapHeight / 2 - 175);
 
         double y = drawSettingsSection(gc, game, mapWidth, mapHeight / 2 - 115);
-        drawKeyList(gc, mapWidth, y + 24);
+        // Oyunun içinde Q'nun ne yaptığı belli: seçtiğin yolun yeteneği.
+        drawKeyList(gc, mapWidth, y + 24, game.getPlayer().getSkill().getDescription());
     }
 
     /**
@@ -1152,11 +1155,11 @@ public class GameRenderer {
         }
     }
 
-    private void drawKeyList(GraphicsContext gc, double mapWidth, double top) {
+    private void drawKeyList(GraphicsContext gc, double mapWidth, double top, String skill) {
         Text[][] keys = {
                 {Text.KEY_MOVE, Text.KEY_MOVE_WHAT},
                 {Text.KEY_ATTACK, Text.KEY_ATTACK_WHAT},
-                {Text.KEY_DASH, Text.KEY_DASH_WHAT},
+                {Text.KEY_DASH, null},
                 {Text.KEY_PARRY, Text.KEY_PARRY_WHAT},
                 {Text.KEY_USE, Text.KEY_USE_WHAT},
                 {Text.KEY_DROP, Text.KEY_DROP_WHAT},
@@ -1184,7 +1187,10 @@ public class GameRenderer {
 
             gc.setTextAlign(TextAlignment.LEFT);
             gc.setFill(MESSAGE_TEXT);
-            gc.fillText(row[1].get(), mapWidth / 2 + 15, y);
+
+            // Açıklaması {@code null} olan tek satır Q: ne yaptığı seçilen
+            // yola bağlı, yani listenin kendisi bilemiyor.
+            gc.fillText(row[1] == null ? skill : row[1].get(), mapWidth / 2 + 15, y);
             y += KEY_ROW_SPACING;
         }
     }

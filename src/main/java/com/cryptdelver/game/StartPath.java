@@ -34,7 +34,7 @@ public enum StartPath {
      * yavaş deviriyor — ama hata yapma payı en yüksek olan yol bu. Oyuna yeni
      * başlayan için doğru varsayılan, o yüzden listenin başında.</p>
      */
-    MUHAFIZ(Text.PATH_GUARD, Text.PATH_GUARD_WHAT) {
+    MUHAFIZ(Text.PATH_GUARD, Text.PATH_GUARD_WHAT, PathSkill.SARSINTI) {
         @Override
         void outfit(Game game) {
             game.getPlayer().gainMaxHp(GUARD_BONUS_HP);
@@ -49,7 +49,7 @@ public enum StartPath {
      * iniyor; buna karşılık dövüşü kısa tutabiliyor. Kaçış adımıyla en iyi
      * anlaşan yol: vur, çekil, geri gir.</p>
      */
-    HAYDUT(Text.PATH_ROGUE, Text.PATH_ROGUE_WHAT) {
+    HAYDUT(Text.PATH_ROGUE, Text.PATH_ROGUE_WHAT, PathSkill.SICRAMA) {
         @Override
         void outfit(Game game) {
             Weapon blade = LootTable.weaponForTier(START_TIER, 0, 0);
@@ -69,7 +69,7 @@ public enum StartPath {
      * <p>Yanında bir iksir var: çıplak elle geçilen ilk katın tamamen zara
      * kalmaması için.</p>
      */
-    TUCCAR(Text.PATH_TRADER, Text.PATH_TRADER_WHAT) {
+    TUCCAR(Text.PATH_TRADER, Text.PATH_TRADER_WHAT, PathSkill.RUSVET) {
         @Override
         void outfit(Game game) {
             game.addGold(TRADER_PURSE);
@@ -85,10 +85,23 @@ public enum StartPath {
 
     private final Text label;
     private final Text description;
+    private final PathSkill skill;
 
-    StartPath(Text label, Text description) {
+    StartPath(Text label, Text description, PathSkill skill) {
         this.label = label;
         this.description = description;
+        this.skill = skill;
+    }
+
+    /**
+     * Bu yolun Q tuşuna verdiği yetenek.
+     *
+     * <p>Yol seçimini yirmi katın tamamına yayan şey bu. Yalnızca başlangıç
+     * takımı farklı olsaydı seçim ilk beş dakikaya ait olurdu: ilk kattan
+     * sonra elindeki kılıç neyse öyle oynardın.</p>
+     */
+    public PathSkill getSkill() {
+        return skill;
     }
 
     public String getLabel() {
@@ -106,6 +119,19 @@ public enum StartPath {
      * koşunun ortasında yol değiştirmesine gerek yok.</p>
      */
     abstract void outfit(Game game);
+
+    /**
+     * Oyuncuyu bu yola göre donatır ve yeteneğini öğretir.
+     *
+     * <p>Yeteneği burada veriyorum, {@link #outfit} içinde değil: üç yolun
+     * hiçbiri onu unutmasın. Her birinin kendi {@code outfit}'ine bir satır
+     * daha koymak, dördüncü bir yol eklendiğinde sessizce atlanabilecek bir
+     * adım olurdu.</p>
+     */
+    void begin(Game game) {
+        game.getPlayer().learn(skill);
+        outfit(game);
+    }
 
     /** Çantaya koyar; kuşanılacak bir şey değilse yolu bu. */
     private static void carry(Game game, Item item) {

@@ -47,6 +47,9 @@ public abstract class Enemy extends Combatant implements Actor {
     /** Kilitli mahzenin anahtarını taşıyor mu. */
     private boolean carriesKey;
 
+    /** Korku: bittiğinde düşman yeniden üstüne geliyor. */
+    private double frightLeft;
+
     protected Enemy(int tileX, int tileY, Text name, EnemyStats stats, Pathfinder pathfinder) {
         super(tileX, tileY, name, stats.maxHp());
         this.stats = stats;
@@ -189,6 +192,23 @@ public abstract class Enemy extends Combatant implements Actor {
         windupLeft = 0;
     }
 
+    /**
+     * Düşmanı korkutur: verilen süre boyunca oyuncudan kaçıyor.
+     *
+     * <p>Sersemlikten farkı hareket etmesi: sersemlemiş düşman duruyor,
+     * korkmuş düşman <em>uzaklaşıyor</em>. İkisi ayrı çünkü çözdükleri şey
+     * ayrı — sersemlik vurmak için pencere açıyor, korku aradaki mesafeyi
+     * açıyor.</p>
+     */
+    public void frighten(double seconds) {
+        frightLeft = Math.max(frightLeft, seconds);
+    }
+
+    /** Şu an korkmuş mu; ekran bunu okuyup işaretini çiziyor. */
+    public boolean isFrightened() {
+        return frightLeft > 0;
+    }
+
     /** Şu an sersemlemiş mi; ekran bunu okuyup işaretini çiziyor. */
     public boolean isStaggered() {
         return staggerLeft > 0;
@@ -259,7 +279,12 @@ public abstract class Enemy extends Combatant implements Actor {
             return;
         }
 
-        Stance stance = stanceTowards(game);
+        frightLeft = Math.max(0, frightLeft - delta);
+
+        // Korku türün kendi kararını eziyor: kaçan bir düşman ne kovalıyor ne
+        // hat tutuyor. Boss da kaçıyor -- rüşvet bossa da işliyor ve bunun
+        // özel bir kuralı yok.
+        Stance stance = frightLeft > 0 ? Stance.FLEE : stanceTowards(game);
 
         // Kaçan düşman vurmaz; canını kurtarmaya çalışır. Duran düşman ise
         // yanına gelirsen vurur — durmasının sebebi korkmak değil, mesafeyi

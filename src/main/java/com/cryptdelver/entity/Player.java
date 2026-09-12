@@ -1,6 +1,7 @@
 package com.cryptdelver.entity;
 
 import com.cryptdelver.game.Game;
+import com.cryptdelver.game.PathSkill;
 import com.cryptdelver.game.Text;
 
 /**
@@ -50,19 +51,6 @@ public class Player extends Combatant implements Actor {
      */
     private static final int DASH_TILES = 3;
 
-    /**
-     * Iki kacis adimi arasindaki bekleme, saniye.
-     *
-     * <p>Bekleme suresi mekanigin kendisi kadar onemli: serbest olsaydi
-     * kacis adimi yurumenin yerine gecer ve konum bir karar olmaktan cikardi.
-     * Iki buçuk saniye, bir dovusun icinde bir ya da iki kez kullanabilecegin
-     * kadar -- yani "simdi mi harcayayim" sorusu gercek.</p>
-     */
-    private static final double DASH_COOLDOWN = 2.5;
-
-    /** Ceviklik buyusu beklemeyi bu orana indiriyor. */
-    private static final double SWIFT_DASH_SCALE = 0.65;
-
     /** Sicrama izinin ekranda kalma suresi. */
     private static final double DASH_TRAIL_DURATION = 0.22;
 
@@ -99,6 +87,15 @@ public class Player extends Combatant implements Actor {
     private double parryTimer;
     private double parryCooldown;
     private boolean dashRequested;
+
+    /**
+     * Q tuşunun bu koşuda ne yaptığı.
+     *
+     * <p>Başlangıç yolu belirliyor. Varsayılanı sıçrama: oyun kurulduğunda
+     * henüz yol seçilmemiş oluyor ve elinde hiçbir yeteneği olmayan bir
+     * oyuncu yanlış bir ara durum olurdu.</p>
+     */
+    private PathSkill skill = PathSkill.SICRAMA;
     private double dashCooldown;
     private double dashTrail;
     private int dashFromX;
@@ -235,7 +232,19 @@ public class Player extends Combatant implements Actor {
         dashRequested = true;
     }
 
-    /** Kaçış adımı şu an kullanılabilir mi; ekran göstergeyi buna göre çiziyor. */
+    /**
+     * Bu koşunun yeteneğini belirler; başlangıç yolu donatırken çağırıyor.
+     */
+    public void learn(PathSkill skill) {
+        this.skill = skill;
+    }
+
+    /** Q tuşunun bu koşuda ne yaptığı. */
+    public PathSkill getSkill() {
+        return skill;
+    }
+
+    /** Yetenek şu an kullanılabilir mi; ekran göstergeyi buna göre çiziyor. */
     public boolean canDash() {
         return dashCooldown <= 0;
     }
@@ -247,16 +256,14 @@ public class Player extends Combatant implements Actor {
     }
 
     /**
-     * Kaçış adımı arası bekleme.
+     * Yetenek arası bekleme.
      *
-     * <p>Çeviklik büyüsü burayı kısaltıyor: büyü zaten "daha hızlı yürüyorsun"
-     * diyordu, artık "daha sık sıçrıyorsun" da diyor. Aynı büyünün iki etkisi
-     * de aynı şeyi anlatıyor — yer değiştirmek senin için ucuz.</p>
+     * <p>Değer yeteneğin kendisinden geliyor: sarsıntı uzun bekliyor,
+     * sıçrama kısa, rüşvet arada. Çeviklik büyüsü de yalnızca sıçramaya
+     * dokunuyor ve bu kuralı büyü değil <em>yetenek</em> biliyor.</p>
      */
     public double getDashCooldown() {
-        return hasArmorEnchantment(Enchantment.CEVIKLIK)
-                ? DASH_COOLDOWN * SWIFT_DASH_SCALE
-                : DASH_COOLDOWN;
+        return skill.cooldownFor(this);
     }
 
     /**
@@ -273,7 +280,7 @@ public class Player extends Combatant implements Actor {
      *
      * @return gerçekten yer değiştirdiyse {@code true}
      */
-    private boolean dash(Game game) {
+    public boolean dash(Game game) {
         int lastX = getTileX();
         int lastY = getTileY();
 
@@ -363,11 +370,12 @@ public class Player extends Combatant implements Actor {
         }
         parryRequested = false;
 
-        // Sicrama yurumeden once: ayni karede hem sicrayip hem adim atmak
+        // Yetenek yurumeden once: ayni karede hem sicrayip hem adim atmak
         // gidisi iki kat gosterirdi.
-        if (dashRequested && dashCooldown <= 0 && dash(game)) {
+        // Sesi yeteneğin kendisi çalıyor: üçünün sesi aynı olmamalı ve
+        // "hangi ses" sorusu yeteneğin bilgisi.
+        if (dashRequested && dashCooldown <= 0 && skill.use(game, this)) {
             dashCooldown = getDashCooldown();
-            game.onPlayerDashed();
         }
         dashRequested = false;
 

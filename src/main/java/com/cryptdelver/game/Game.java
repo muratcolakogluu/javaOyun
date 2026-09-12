@@ -113,6 +113,26 @@ public class Game {
      */
     private static final double STAGGER_DURATION = 1.5;
 
+    /**
+     * Sarsıntının sersemletme süresi.
+     *
+     * <p>Savuşturmanınkinden kısa: savuşturma doğru anı tutmayı gerektiriyor,
+     * sarsıntı yalnızca bir tuş. Zor olan daha çok ödül almalı.</p>
+     */
+    private static final double SHOCKWAVE_STAGGER = 1.1;
+
+    /**
+     * Rüşvetin bedeli, menzili ve süresi.
+     *
+     * <p>Yirmi beş altın bir iksirin bedelinden az: yetenek pahalı olmamalı,
+     * yoksa hiç kullanılmaz. Menzil üç kare, yani yalnızca yanındakileri
+     * değil üstüne gelmekte olanları da dağıtıyor — Tüccarın sorunu dövüşe
+     * girmek, dövüşten çıkmak değil.</p>
+     */
+    private static final int BRIBE_COST = 25;
+    private static final int BRIBE_RANGE = 3;
+    private static final double BRIBE_DURATION = 3.0;
+
     /** Takviyeler kattaki düşman sayısını bu sınırın üstüne çıkarmıyor. */
     private static final int REINFORCE_LIMIT = 24;
 
@@ -1832,6 +1852,82 @@ public class Game {
      *
      *  killer son vuruşu indiren şeyin adı
      */
+    // ------------------------------------------------------- yol yetenekleri
+
+    /**
+     * Sarsıntı: yanındaki herkesi sersemletir.
+     *
+     * <p>Muhafızın yeteneği. Hasar vermiyor — bu bir saldırı değil bir
+     * <em>çıkış</em>: kuşatılmışken nefes alacak bir pencere açıyor.
+     * Sersemlik savuşturmanın verdiği sersemliğin aynısı, yani oyuncu yeni
+     * bir kural öğrenmiyor: "yıldız gördüğün düşman vurmuyor" zaten
+     * biliniyor.</p>
+     *
+     * <p>Kimse yanında değilse hiçbir şey olmuyor ve bekleme de harcanmıyor:
+     * boşluğa sarsıntı yapmak yeteneği elinden almamalı.</p>
+     *
+     * @return en az bir düşman sersemlediyse {@code true}
+     */
+    public boolean shockwave() {
+        List<Enemy> shaken = new ArrayList<>();
+        for (Enemy enemy : enemies) {
+            if (enemy.isAdjacentTo(player)) {
+                shaken.add(enemy);
+            }
+        }
+
+        if (shaken.isEmpty()) {
+            return false;
+        }
+
+        for (Enemy enemy : shaken) {
+            enemy.stagger(SHOCKWAVE_STAGGER);
+        }
+
+        sounds.play(SoundEffect.PARRY);
+        messageLog.combat(Text.MSG_SHOCKWAVE.get(shaken.size()));
+        return true;
+    }
+
+    /**
+     * Rüşvet: kese açılır, yakındakiler dağılır.
+     *
+     * <p>Tüccarın yeteneği ve oyundaki tek <em>bedelli</em> yetenek. Altın
+     * yetmiyorsa çalışmıyor, yani Tüccar keseyi boşaltmayı iki kez düşünüyor:
+     * büyücüye mi harcayacak, canını kurtarmaya mı.</p>
+     *
+     * <p>Düşmanlar ölmüyor, korkuyor — birkaç saniye sonra geri geliyorlar.
+     * Öldürseydi bu bir yetenek değil bir para-silah olurdu ve altın hasara
+     * çevrilebilen bir şeye dönerdi.</p>
+     *
+     * @return kese yettiyse ve dağılan biri olduysa {@code true}
+     */
+    public boolean bribe() {
+        List<Enemy> nearby = new ArrayList<>();
+        for (Enemy enemy : enemies) {
+            if (enemy.tileDistanceTo(player) <= BRIBE_RANGE) {
+                nearby.add(enemy);
+            }
+        }
+
+        if (nearby.isEmpty()) {
+            return false;
+        }
+        if (gold < BRIBE_COST) {
+            messageLog.add(Text.MSG_BRIBE_BROKE.get(BRIBE_COST));
+            return false;
+        }
+
+        gold -= BRIBE_COST;
+        for (Enemy enemy : nearby) {
+            enemy.frighten(BRIBE_DURATION);
+        }
+
+        sounds.play(SoundEffect.PICKUP);
+        messageLog.combat(Text.MSG_BRIBED.get(nearby.size(), BRIBE_COST));
+        return true;
+    }
+
     /**
      * Karşılanan vuruş: hasar yok, vuran sersemliyor.
      *
@@ -1957,7 +2053,7 @@ public class Game {
         messageLog.clear();
         regenerateFloor();
 
-        startPath.outfit(this);
+        startPath.begin(this);
 
         // Defter donatmadan SONRA açılıyor. Tüccarın kesesi "bu koşuda
         // topladığın altın" değil, elinde indiğin sermaye; önce sıfırlasaydım
