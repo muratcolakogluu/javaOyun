@@ -59,7 +59,14 @@ class DifficultyTest {
                 "Zorda ayni katin dusmanlari daha dayanikli olmali");
     }
 
-    /** Verilen kademede o derinlige inip en dayanikli dusmanin canini verir. */
+    /**
+     * Verilen kademede o derinlige inip en dayanikli <em>siradan</em>
+     * dusmanin canini verir.
+     *
+     * <p>Elitler olcumun disinda: Kanli elit ondort can ekliyor, yani
+     * kolayda cikan tek bir elit zorda cikmayan bir kattan daha dayanikli
+     * gorunebiliyor. Burada sorulan sey derinlik bonusu, elit zari degil.</p>
+     */
     private int toughestAtDepth(Difficulty difficulty, int depth) {
         Player player = new Player(0, 0);
         Game game = new Game(List.of(new BspGenerator()), WIDTH, HEIGHT, player);
@@ -77,7 +84,11 @@ class DifficultyTest {
             assertTrue(game.descend(), "Inis calismali");
         }
 
-        return game.getEnemies().stream().mapToInt(Enemy::getMaxHp).max().orElse(0);
+        return game.getEnemies().stream()
+                .filter(enemy -> !enemy.isElite())
+                .mapToInt(Enemy::getMaxHp)
+                .max()
+                .orElse(0);
     }
 
     @Test

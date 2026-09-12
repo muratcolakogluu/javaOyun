@@ -43,14 +43,33 @@ public class Vision {
     private final boolean[][] visible;
     private final boolean[][] remembered;
 
+    /**
+     * Bu katta kaç kare öteyi görebiliyorsun.
+     *
+     * <p>Sabit bir sayı değil artık: karanlık katlarda yarıya iniyor. Değer
+     * görüşün kendi bilgisi çünkü kat başına belirleniyor ve kat boyunca
+     * değişmiyor — bir kurucu parametresi, bir kural değil.</p>
+     */
+    private final int radius;
+
     private int lastX = Integer.MIN_VALUE;
     private int lastY = Integer.MIN_VALUE;
 
     public Vision(int width, int height) {
+        this(width, height, RADIUS);
+    }
+
+    public Vision(int width, int height, int radius) {
         this.width = width;
         this.height = height;
+        this.radius = Math.max(1, radius);
         this.visible = new boolean[width][height];
         this.remembered = new boolean[width][height];
+    }
+
+    /** Bu görüşün yarıçapı; kat olayı onu kısaltmış olabilir. */
+    public int getRadius() {
+        return radius;
     }
 
     /** Şu anda ışık altında mı. */
@@ -81,9 +100,9 @@ public class Vision {
             java.util.Arrays.fill(column, false);
         }
 
-        for (int x = fromX - RADIUS; x <= fromX + RADIUS; x++) {
-            for (int y = fromY - RADIUS; y <= fromY + RADIUS; y++) {
-                if (!contains(x, y) || distanceSquared(fromX, fromY, x, y) > RADIUS * RADIUS) {
+        for (int x = fromX - radius; x <= fromX + radius; x++) {
+            for (int y = fromY - radius; y <= fromY + radius; y++) {
+                if (!contains(x, y) || distanceSquared(fromX, fromY, x, y) > radius * radius) {
                     continue;
                 }
                 if (hasLineOfSight(dungeon, fromX, fromY, x, y)) {

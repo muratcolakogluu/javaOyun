@@ -163,6 +163,11 @@ public class FloorBuilder {
     /** Taş girişten biraz daha uzağa kuruluyor; bulunması da işin parçası. */
     private static final int SHRINE_MIN_DISTANCE = 6;
 
+    /** Kat olaylarının kattan itibaren, sıklığı ve kendi zarı. */
+    private static final int EVENT_MIN_DEPTH = 3;
+    private static final double EVENT_CHANCE = 0.33;
+    private static final long EVENT_ROLL_SALT = 0x9E3779B9L;
+
     /**
      * Nadir eşyalar için kat başına kaç zar, hangi olasılıkla.
      *
@@ -195,6 +200,31 @@ public class FloorBuilder {
         this.generators = List.copyOf(generators);
         this.width = width;
         this.height = height;
+    }
+
+    /**
+     * Katın tohumundan bağımsız bir zar üretir.
+     *
+     * <p>Önce {@code new Random(seed ^ SALT)} yazıyordum ve bu <b>yanlıştı</b>.
+     * {@code java.util.Random} tohumu yalnızca hafifçe karıştırdığı için
+     * birbirine yakın tohumlar birbirine yakın ilk değerler veriyor: sıralı
+     * tohumlarla kurulan yüzlerce katta "üçte bir" olması gereken olay her
+     * katta çıktı. Oyunda tohumlar {@code nextLong()}'dan geldiği için bu hiç
+     * görünmüyordu — sınav sıralı tohum kullanınca ortaya çıktı.</p>
+     *
+     * <p>Buradaki karıştırma (murmur3'ün bitiricisi) tohumun her bitini
+     * bütün bitlere yayıyor. Böylece hem komşu tohumlar ayrışıyor hem de
+     * <em>farklı tuzlar birbirinden bağımsız</em> kalıyor: büyücü zarı ile
+     * satıcı zarı artık aynı yöne eğilmiyor.</p>
+     */
+    private static Random diceFor(long seed, long salt) {
+        long mixed = seed ^ salt;
+        mixed ^= mixed >>> 33;
+        mixed *= 0xff51afd7ed558ccdL;
+        mixed ^= mixed >>> 33;
+        mixed *= 0xc4ceb9fe1a85ec53L;
+        mixed ^= mixed >>> 33;
+        return new Random(mixed);
     }
 
     /**
@@ -321,8 +351,8 @@ public class FloorBuilder {
                         spot -> Shrine.seeded(spot, seed ^ SHRINE_ROLL_SALT))
                 : null;
 
-        return new Floor(seed, dungeon, spawn, stairs, wizard, merchant, shrine, null,
-                List.of(), List.of());
+        return new Floor(seed, dungeon, spawn, stairs, wizard, merchant, shrine,
+                rollEvent(depth, seed), null, List.of(), List.of());
     }
 
     /** Döşemeyi kurup üstüne boss, düşman ve eşyaları dağıtır. */
@@ -345,7 +375,7 @@ public class FloorBuilder {
      */
     private boolean hasWizard(int depth, long seed) {
         return isBossFloor(depth)
-                || new Random(seed ^ WIZARD_ROLL_SALT).nextDouble() < WIZARD_WANDER_CHANCE;
+                || diceFor(seed, WIZARD_ROLL_SALT).nextDouble() < WIZARD_WANDER_CHANCE;
     }
 
     /**
@@ -361,6 +391,30 @@ public class FloorBuilder {
      * kopyası çıkardı.</p>
      */
     /**
+     * Bu katın kendine özgü bir hâli var mı, varsa hangisi.
+     *
+     * <p>Boss katlarında yok: boss zaten o katın olayı ve üstüne bir de
+     * karanlık eklemek, dövüşü okunamaz yapardı. İlk iki katta da yok — orada
+     * oyun kendi temel kurallarını öğretiyor ve istisnayı kural
+     * öğrenilmeden göstermek öğretmiyor.</p>
+     *
+     * <p>Üçte bir: daha sık olsa olay "normal" olurdu ve sıradan kat
+     * istisnaya dönerdi; daha seyrek olsa indiğinde okuduğun cümle
+     * hatırlanmazdı.</p>
+     */
+    private FloorEvent rollEvent(int depth, long seed) {
+        if (depth < EVENT_MIN_DEPTH || isBossFloor(depth)) {
+            return null;
+        }
+
+        Random dice = diceFor(seed, EVENT_ROLL_SALT);
+        if (dice.nextDouble() >= EVENT_CHANCE) {
+            return null;
+        }
+        return FloorEvent.values()[dice.nextInt(FloorEvent.values().length)];
+    }
+
+    /**
      * Bu katta kader taşı var mı.
      *
      * <p>Satıcı gibi yalnızca boss dışı katlarda ve aynı sıklıkta. İkisi aynı
@@ -369,12 +423,12 @@ public class FloorBuilder {
      */
     private boolean hasShrine(int depth, long seed) {
         return !isBossFloor(depth)
-                && new Random(seed ^ SHRINE_ROLL_SALT).nextDouble() < SHRINE_CHANCE;
+                && diceFor(seed, SHRINE_ROLL_SALT).nextDouble() < SHRINE_CHANCE;
     }
 
     private boolean hasMerchant(int depth, long seed) {
         return !isBossFloor(depth)
-                && new Random(seed ^ MERCHANT_ROLL_SALT).nextDouble() < MERCHANT_CHANCE;
+                && diceFor(seed, MERCHANT_ROLL_SALT).nextDouble() < MERCHANT_CHANCE;
     }
 
     /**
@@ -491,6 +545,9 @@ public class FloorBuilder {
         }
 
         int target = enemyCountForDepth(depth, difficulty);
+        if (floor.event() != null) {
+            target = floor.event().scaleCrowd(target);
+        }
         for (Position spot : spots) {
             if (enemies.size() - (boss == null ? 0 : 1) >= target) {
                 break;
@@ -503,7 +560,8 @@ public class FloorBuilder {
             enemies.add(createEnemyForDepth(spot, depth, difficulty));
         }
 
-        return floor.filledWith(boss, enemies, placeItems(spots, used, depth));
+        return floor.filledWith(boss, enemies,
+                placeItems(spots, used, depth, extraItems(floor.event())));
     }
 
     /** Boss merdivenin üstünde doğar: geçmek için onu yenmen gerekiyor. */
@@ -627,7 +685,13 @@ public class FloorBuilder {
      * <p>Ekipmanın kademesi rastgele değil, tamamen derinliğe bağlı
      * ({@link LootTable}): 2. katta bulduğun zırh 4. kattakinden iyi olamaz.</p>
      */
-    private List<Item> placeItems(List<Position> spots, Set<Position> used, int depth) {
+    /** Kat olayının fazladan koyduğu nadir eşya sayısı; olay yoksa sıfır. */
+    private static int extraItems(FloorEvent event) {
+        return event == null ? 0 : event.getExtraItems();
+    }
+
+    private List<Item> placeItems(List<Position> spots, Set<Position> used, int depth,
+                                  int extraRolls) {
         List<Item> items = new ArrayList<>();
         int tier = LootTable.tierForDepth(depth);
         int potions = 0;
@@ -666,11 +730,16 @@ public class FloorBuilder {
                     continue;
                 }
 
-            } else if (rareItems < RARE_ITEM_ROLLS) {
+            } else if (rareItems < RARE_ITEM_ROLLS + extraRolls) {
                 // Nadir eşyalar için tek tek zar atılıyor; tutmayan zar kareyi
                 // boş bırakıyor, yani "her katta bir tane" olmuyor.
+                //
+                // Kat olayının fazlaları ise zar atmıyor: "zengin kat" ancak
+                // gerçekten zenginse bir şey söylüyor. Zara bağlasaydım üç
+                // fazladan zar ortalama yarım eşya ederdi ve okuduğun cümle
+                // yalan olurdu.
                 rareItems++;
-                if (random.nextDouble() < RARE_ITEM_CHANCE) {
+                if (rareItems > RARE_ITEM_ROLLS || random.nextDouble() < RARE_ITEM_CHANCE) {
                     items.add(rollRareItem(spot));
                 } else {
                     continue;

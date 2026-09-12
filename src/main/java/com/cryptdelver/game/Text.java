@@ -222,6 +222,21 @@ public enum Text {
 
     // ------------------------------------------------------------------ bölgeler
 
+    // ------------------------------------------------------------- kat olaylari
+
+    EVENT_DARK("Karanlık", "Dark"),
+    EVENT_DARK_WHAT("Bu kat karanlık: gördüğün alan yarıya indi.",
+            "This floor is dark: you see half as far."),
+    EVENT_SWARM("Sürü", "Swarm"),
+    EVENT_SWARM_WHAT("Sürü katı: kalabalık, ama ganimeti de bol.",
+            "A swarm floor: crowded, but the loot is rich too."),
+    EVENT_QUIET("Sessiz", "Quiet"),
+    EVENT_QUIET_WHAT("Sessiz kat: zindan burada geç uyanıyor.",
+            "A quiet floor: the dungeon wakes late here."),
+    EVENT_RICH("Zengin", "Rich"),
+    EVENT_RICH_WHAT("Zengin kat: hazine çok, ama zindan çabuk uyanıyor.",
+            "A rich floor: much treasure, but the dungeon wakes fast."),
+
     REGION_MAHZEN("Mahzen", "The Vault"),
     REGION_SARNIC("Sarnıç", "The Cistern"),
     REGION_KORLUK("Korluk", "The Embers"),

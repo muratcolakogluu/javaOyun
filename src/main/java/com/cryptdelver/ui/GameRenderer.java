@@ -189,6 +189,9 @@ public class GameRenderer {
     private static final Color HUD_ACCENT = Color.web("#9a8fc0");
     private static final Color HP_TEXT = Color.web("#c9564f");
     private static final Color GOLD_TEXT = Color.web("#e8c46a");
+
+    /** Kat olayı etiketinin rengi; bölge adından ayrı dursun diye. */
+    private static final Color EVENT_LABEL = Color.web("#7fd0c8");
     private static final Color MESSAGE_TEXT = Color.web("#b6b6c8");
     private static final Color MESSAGE_FADED = Color.web("#6b6b80");
     private static final Color SLOT_BACKGROUND = Color.web("#1e1e2a");
@@ -1266,7 +1269,9 @@ public class GameRenderer {
         // kayıyor.
         double centerX = player.getRenderX() * TILE_SIZE + TILE_SIZE / 2.0;
         double centerY = player.getRenderY() * TILE_SIZE + TILE_SIZE / 2.0;
-        double radius = Vision.RADIUS * (double) TILE_SIZE;
+        // Işığın yarıçapı görüşün kendi yarıçapından: karanlık katta fener de
+        // küçülüyor, yoksa göremediğin yer aydınlık görünürdü.
+        double radius = vision.getRadius() * (double) TILE_SIZE;
 
         // Yarıçapın dışında son durak rengi geçerli, yani uzak her yer eşit
         // koyulukta: karanlığın nerede bittiğini gösteren bir halka olmuyor.
@@ -2043,6 +2048,16 @@ public class GameRenderer {
         gc.setTextAlign(TextAlignment.RIGHT);
         gc.setFill(HUD_ACCENT);
         gc.fillText(game.getTheme().getLabel(), mapWidth - 10, mapHeight + 14);
+
+        // Kat olayı bölge adının solunda, kendi renginde. İniş cümlesi bir kez
+        // geçiyor; buradaki etiket kalıcı, yani "bu kat neden böyle" sorusuna
+        // sonradan da bakılabiliyor.
+        if (game.getEvent() != null) {
+            gc.setFill(EVENT_LABEL);
+            gc.fillText(game.getEvent().getLabel(),
+                    mapWidth - 10 - measure(game.getTheme().getLabel(), hudFont) - 14,
+                    mapHeight + 14);
+        }
 
         gc.setFill(HUD_TEXT);
         gc.fillText(Text.HUD_ESC_HINT.get(), mapWidth - 10, mapHeight + HUD_HEIGHT - 10);

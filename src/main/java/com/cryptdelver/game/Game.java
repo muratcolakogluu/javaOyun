@@ -179,6 +179,9 @@ public class Game {
     private Merchant merchant;
     private Shrine shrine;
 
+    /** Bu katın kendine özgü hâli; sıradan bir katsa {@code null}. */
+    private FloorEvent event;
+
     /**
      * Kendiliğinden toplamanın en son denendiği kare.
      *
@@ -413,7 +416,13 @@ public class Game {
      * daha kötü olurdu.</p>
      */
     public double getFloorPatience() {
-        return Math.max(MIN_FLOOR_PATIENCE, FLOOR_PATIENCE - returns * PATIENCE_LOSS_PER_RETURN);
+        double patience = Math.max(MIN_FLOOR_PATIENCE,
+                FLOOR_PATIENCE - returns * PATIENCE_LOSS_PER_RETURN);
+
+        // Kat olayı en sona uygulanıyor: geri dönüş cezası taban payını
+        // koruyor, olay ise o katın kendi hâli. Sırası ters olsaydı "sessiz
+        // kat" taban paya çarpılıp neredeyse hiçbir şey değiştirmezdi.
+        return event == null ? patience : event.scalePatience(patience);
     }
 
     /** Kaç kez yukarı çıkıldı. */
@@ -439,8 +448,11 @@ public class Game {
         VisitedFloor known = visited.remove(depth);
         if (known == null) {
             generateFloor(random.nextLong());
+            announceEvent();
             announceBoss();
         } else {
+            // Geri döndüğün katın olayını yeniden duyurmuyoruz: orayı zaten
+            // gezdin, cümle yeni bir haber değil.
             resume(known);
         }
 
@@ -452,7 +464,7 @@ public class Game {
     /** O anki katı, bırakıldığı hâliyle bir değere çevirir. */
     private Floor snapshot() {
         return new Floor(currentSeed, dungeon, upStairs, stairs, wizard, merchant, shrine,
-                boss, enemies, groundItems);
+                event, boss, enemies, groundItems);
     }
 
     /** Daha önce gezilmiş bir katı bırakıldığı hâliyle geri yükler. */
@@ -467,6 +479,7 @@ public class Game {
         wizard = floor.wizard();
         merchant = floor.merchant();
         shrine = floor.shrine();
+        event = floor.event();
         boss = floor.boss();
 
         enemies.clear();
@@ -729,6 +742,23 @@ public class Game {
         sounds.play(SoundEffect.PICKUP);
         messageLog.importantItem(Text.MSG_BOUGHT.get(offer.item().getName(), offer.price()));
         return true;
+    }
+
+    /** Bu katın kendine özgü hâli; sıradan bir katsa {@code null}. */
+    public FloorEvent getEvent() {
+        return event;
+    }
+
+    /**
+     * Bu kattaki görüş yarıçapı.
+     *
+     * <p>Kat kurulduğunda bir kez soruluyor: görüş kat boyunca değişmiyor ve
+     * her karede yeniden hesaplamanın anlamı yok.</p>
+     */
+    private int visionRadius() {
+        return event == null
+                ? Vision.RADIUS
+                : (int) Math.round(event.scaleVision(Vision.RADIUS));
     }
 
     // ----------------------------------------------------------- kader taşı
@@ -1750,6 +1780,7 @@ public class Game {
         generatorIndex = floors.generatorForDepth(depth);
 
         adopt(floors.build(generatorIndex, depth, seed, settings.getDifficulty()));
+        announceEvent();
         announceBoss();
     }
 
@@ -1766,6 +1797,7 @@ public class Game {
         wizard = floor.wizard();
         merchant = floor.merchant();
         shrine = floor.shrine();
+        event = floor.event();
         boss = floor.boss();
 
         enemies.clear();
@@ -1779,8 +1811,9 @@ public class Game {
         player.setTile(floor.spawn());
 
         // Yeni kat baştan karanlık: bir önceki katın hatırladıkları buraya
-        // taşınmamalı.
-        vision = new Vision(dungeon.getWidth(), dungeon.getHeight());
+        // taşınmamalı. Görüş yarıçapı kat olayından geliyor: karanlık katta
+        // daha dar bir fenerle iniyorsun.
+        vision = new Vision(dungeon.getWidth(), dungeon.getHeight(), visionRadius());
         refreshVision();
 
         // Zindanın sabrı kat başına yeniliyor: inmek gerçekten rahatlatıyor.
@@ -1799,6 +1832,20 @@ public class Game {
      */
     private void refreshVision() {
         vision.update(dungeon, player.getTileX(), player.getTileY());
+    }
+
+    /**
+     * Katın kendine özgü hâlini duyurur.
+     *
+     * <p>Tek satır ve <em>önemli</em> kanalda: kat olayının bütün işi
+     * "burada farklı oyna" demek ve o cümle gürültünün arasında kaybolursa
+     * olay da kaybolur. Şeritteki bölge adının yanında kalıcı bir etiket de
+     * duruyor, yani sonradan da bakılabiliyor.</p>
+     */
+    private void announceEvent() {
+        if (event != null) {
+            messageLog.addImportant(event.getDescription());
+        }
     }
 
     /** Boss katına inince uyarı; sesle birlikte. */
