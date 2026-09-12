@@ -24,8 +24,18 @@ REM ===================================================================
 
 setlocal
 
-if "%JAVA_HOME%"=="" set JAVA_HOME=C:\Users\murat\.jdks\openjdk-25.0.2
-set MVN="C:\Program Files\JetBrains\IntelliJ IDEA 2025.2.3\plugins\maven\lib\maven3\bin\mvn.cmd"
+REM JDK ve Maven: once PATH'e, yoksa bu makinedeki tam yollara bakiyor.
+REM Baska bir makinede calistiracaksan JAVA_HOME ve MVN'yi kendi yollarinla
+REM ver, betige dokunmana gerek yok:
+REM     set JAVA_HOME=C:\yol\jdk & set MVN=mvn & paketle.bat
+if "%JAVA_HOME%"=="" if exist "%LOCALAPPDATA%\..\..\.jdks" set JAVA_HOME=%USERPROFILE%\.jdks\openjdk-25.0.2
+if "%JAVA_HOME%"=="" (
+    echo HATA: JAVA_HOME ayarli degil. JDK 21+ kurup JAVA_HOME'u ver.
+    exit /b 1
+)
+
+if "%MVN%"=="" where /q mvn.cmd && set MVN=mvn.cmd
+if "%MVN%"=="" set MVN="%PROGRAMFILES%\JetBrains\IntelliJ IDEA 2025.2.3\plugins\maven\lib\maven3\bin\mvn.cmd"
 
 set SISMAN=target\cryptdelver-0.1.0-SNAPSHOT-oyun.jar
 
