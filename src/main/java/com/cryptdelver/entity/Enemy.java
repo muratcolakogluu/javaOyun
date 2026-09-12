@@ -44,6 +44,9 @@ public abstract class Enemy extends Combatant implements Actor {
     /** Sersemlik: bittiğinde düşman yeniden hareket ediyor. */
     private double staggerLeft;
 
+    /** Kilitli mahzenin anahtarını taşıyor mu. */
+    private boolean carriesKey;
+
     protected Enemy(int tileX, int tileY, Text name, EnemyStats stats, Pathfinder pathfinder) {
         super(tileX, tileY, name, stats.maxHp());
         this.stats = stats;
@@ -136,7 +139,12 @@ public abstract class Enemy extends Combatant implements Actor {
      */
     @Override
     public String getName() {
-        return elite == null ? super.getName() : elite.getLabel() + " " + super.getName();
+        String name = elite == null ? super.getName() : elite.getLabel() + " " + super.getName();
+
+        // Anahtarcı sıfatı en başta: dövüş kaydında "hangisine vuruyorum"
+        // sorusunun cevabı ilk kelime olsun. Ekrandaki işaret haritada
+        // söylüyor, ad ise kayıtta.
+        return carriesKey ? Text.ENEMY_KEEPER.get() + " " + name : name;
     }
 
     /**
@@ -148,6 +156,21 @@ public abstract class Enemy extends Combatant implements Actor {
      */
     public double getWindup() {
         return stats.windup();
+    }
+
+    /**
+     * Bu düşmana mahzenin anahtarını verir.
+     *
+     * <p>Kat kurulurken bir kez çağrılıyor. Anahtarı hangi düşmanın taşıdığı
+     * ekranda görünüyor ({@link #hasKey()}), yoksa "kalabalığın içinden doğru
+     * olanı bul" bir hedef değil bir tarama olurdu.</p>
+     */
+    public void giveKey() {
+        this.carriesKey = true;
+    }
+
+    public boolean hasKey() {
+        return carriesKey;
     }
 
     /**
@@ -392,6 +415,14 @@ public abstract class Enemy extends Combatant implements Actor {
         // kalıp devirmenin bir karşılığı var.
         if (elite != null) {
             game.addGroundItem(new Gold(getTileX(), getTileY(), elite.getGold()));
+        }
+
+        // Anahtar düştüğü yerde duruyor: taşıyanı nerede devirdiysen mahzene
+        // oradan yürüyorsun. Doğrudan çantaya koymak "öldür ve al" olurdu,
+        // oysa kattaki mesafe de kararın parçası.
+        if (carriesKey) {
+            game.addGroundItem(new Key(getTileX(), getTileY()));
+            game.getMessageLog().importantItem(Text.MSG_KEY_DROPPED.get(getName()));
         }
     }
 }

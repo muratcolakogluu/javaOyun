@@ -31,6 +31,7 @@ import com.cryptdelver.entity.Zombi;
 import com.cryptdelver.world.Dungeon;
 import com.cryptdelver.world.DungeonGenerator;
 import com.cryptdelver.world.Position;
+import com.cryptdelver.world.Tile;
 import com.cryptdelver.world.Vision;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -181,6 +182,9 @@ public class Game {
 
     /** Bu katın kendine özgü hâli; sıradan bir katsa {@code null}. */
     private FloorEvent event;
+
+    /** Bu kattaki kilitli mahzen; yoksa {@code null}. */
+    private Vault vault;
 
     /**
      * Kendiliğinden toplamanın en son denendiği kare.
@@ -464,7 +468,7 @@ public class Game {
     /** O anki katı, bırakıldığı hâliyle bir değere çevirir. */
     private Floor snapshot() {
         return new Floor(currentSeed, dungeon, upStairs, stairs, wizard, merchant, shrine,
-                event, boss, enemies, groundItems);
+                event, vault, boss, enemies, groundItems);
     }
 
     /** Daha önce gezilmiş bir katı bırakıldığı hâliyle geri yükler. */
@@ -480,6 +484,7 @@ public class Game {
         merchant = floor.merchant();
         shrine = floor.shrine();
         event = floor.event();
+        vault = floor.vault();
         boss = floor.boss();
 
         enemies.clear();
@@ -747,6 +752,72 @@ public class Game {
     /** Bu katın kendine özgü hâli; sıradan bir katsa {@code null}. */
     public FloorEvent getEvent() {
         return event;
+    }
+
+    // -------------------------------------------------------- kilitli mahzen
+
+    /** Bu kattaki kilitli mahzen; yoksa {@code null}. */
+    public Vault getVault() {
+        return vault;
+    }
+
+    /**
+     * Oyuncu mahzen kapısının önünde mi.
+     *
+     * <p>Kapı yürünemeyen bir kare, yani üstüne basılamıyor; komşu olmak
+     * yetiyor. Kapı açıldıktan sonra bu soru yanlış cevap vermesin diye
+     * karenin hâlâ kilitli olup olmadığına da bakılıyor.</p>
+     */
+    public boolean isNearVaultDoor() {
+        if (vault == null) {
+            return false;
+        }
+
+        Position door = vault.getDoor();
+        return dungeon.getTile(door.x(), door.y()) == Tile.DOOR_LOCKED
+                && door.manhattanDistance(player.getTile()) <= 1;
+    }
+
+    /** Çantada mahzen anahtarı var mı. */
+    public boolean hasVaultKey() {
+        return inventory.getItems().stream().anyMatch(item -> item.getKind().equals("KEY"));
+    }
+
+    /**
+     * Mahzeni açar: anahtar harcanır, kapı zemine dönüşür.
+     *
+     * <p>Kapı açılınca {@link Tile#FLOOR} oluyor — "açık kapı" diye ayrı bir
+     * tür yok. Anahtar da harcanıyor: ikinci bir mahzeni aynı anahtarla
+     * açmak, anahtarı taşıyanı bulma işini bir kez yapıp bütün koşuya
+     * yaymak olurdu.</p>
+     *
+     * @return mahzen açıldıysa {@code true}
+     */
+    public boolean openVault() {
+        if (isFrozen() || !isNearVaultDoor()) {
+            return false;
+        }
+
+        Item key = inventory.getItems().stream()
+                .filter(item -> item.getKind().equals("KEY"))
+                .findFirst()
+                .orElse(null);
+
+        if (key == null) {
+            messageLog.add(Text.MSG_VAULT_LOCKED.get());
+            return false;
+        }
+
+        inventory.remove(key);
+        Position door = vault.getDoor();
+        dungeon.setTile(door.x(), door.y(), Tile.FLOOR);
+
+        // Kapı kalktı, arkası artık ışık alıyor: görüşü hemen tazeliyoruz ki
+        // hazine bir adım atmayı beklemeden görünsün.
+        refreshVision();
+        sounds.play(SoundEffect.STAIRS);
+        messageLog.addImportant(Text.MSG_VAULT_OPENED.get());
+        return true;
     }
 
     /**
@@ -1269,6 +1340,10 @@ public class Game {
 
         if (isNearShrine()) {
             return touchShrine();
+        }
+
+        if (isNearVaultDoor()) {
+            return openVault();
         }
 
         messageLog.item(Text.MSG_NOTHING_HERE.get());
@@ -1798,6 +1873,7 @@ public class Game {
         merchant = floor.merchant();
         shrine = floor.shrine();
         event = floor.event();
+        vault = floor.vault();
         boss = floor.boss();
 
         enemies.clear();

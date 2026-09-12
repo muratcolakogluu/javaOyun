@@ -28,7 +28,17 @@ public enum Tile {
      * yukarıdaki büyücüye dönüp takımına büyü bastırabiliyorsun. Öncesinde
      * altın yalnızca bulunduğun katta büyücü varsa işe yarıyordu.</p>
      */
-    STAIRS_UP(true, '<');
+    STAIRS_UP(true, '<'),
+
+    /**
+     * Kilitli kapı: arkasında kilitli mahzen var.
+     *
+     * <p>Yürünemiyor, yani açılana kadar bir duvar gibi davranıyor. Açılınca
+     * {@link #FLOOR} oluyor — yani "açık kapı" diye ayrı bir tür yok. Olsaydı
+     * her "yürünebilir mi" sorusunun bir dalı daha olurdu ve açık bir kapının
+     * zeminden farkı yalnızca görüntü olurdu.</p>
+     */
+    DOOR_LOCKED(false, '+');
 
     private final boolean walkable;
     private final char glyph;

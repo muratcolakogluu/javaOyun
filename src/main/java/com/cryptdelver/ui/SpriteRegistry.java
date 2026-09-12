@@ -72,6 +72,7 @@ public class SpriteRegistry {
 
         register("potion", ShapeSprites.potion());
         register("gold", ShapeSprites.gold());
+        register("key", ShapeSprites.key());
 
         // Silah kademeleri: aynı çizim, yükselen kalite hissi renklerde.
         register("sword", ShapeSprites.sword(Color.web("#9a8f7c"), Color.web("#6b5a3c")));

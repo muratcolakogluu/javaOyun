@@ -182,3 +182,14 @@ uretildi: 256x256'ya en yakin komsu ile buyutulup kareye ortalandi,
 sonra Vista bicimi bir ICO'nun icine PNG olarak konuldu. Ureten arac
 scratchpad'de (IconMaker); simge bir kez uretilip depoya konuldugu icin
 paketleme betigi ona ihtiyac duymuyor.
+
+  door_locked.png                     <- doors_leaf_closed
+
+Kilitli mahzenin kapisi. Duvar karosunun ustune biniyor: arkasindaki
+kayanin bir parcasi gibi dursun, haritaya yamanmis bir kapi gibi degil.
+Cercevesi altin ve kesikli -- merdiven cercevesiyle ayni dil: bir kare
+bir sey vaat ediyorsa cercevesi var, kesikli olmasi da kapali oldugunu
+soyluyor.
+
+Anahtarin kendisi resim degil sekil cizimi (ShapeSprites.key): pakette
+anahtar yoktu ve tek bir kare icin yeni bir paket aramak yanlis olurdu.

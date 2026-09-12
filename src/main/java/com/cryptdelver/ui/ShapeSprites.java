@@ -149,6 +149,26 @@ public final class ShapeSprites {
     }
 
     /**
+     * Anahtar: halka, sap ve iki diş.
+     *
+     * <p>Resim paketinde anahtar yoktu ve tek bir kare için yeni bir paket
+     * aramak yanlış olurdu. Şeklin kendisi zaten tanınabilir: yuvarlak baş,
+     * ince gövde, ucunda dişler.</p>
+     */
+    public static Sprite key() {
+        return (gc, cx, cy, size) -> {
+            // Halka: dolu daire üstüne zeminin rengiyle bir delik.
+            fillOval(gc, cx, cy, size, -0.34, -0.16, 0.30, 0.30, Color.web("#e8c46a"));
+            fillOval(gc, cx, cy, size, -0.26, -0.08, 0.14, 0.14, Color.web("#1a1a22"));
+
+            // Gövde ve dişler.
+            fillRect(gc, cx, cy, size, -0.06, -0.05, 0.40, 0.09, Color.web("#e8c46a"));
+            fillRect(gc, cx, cy, size, 0.18, 0.04, 0.07, 0.14, Color.web("#e8c46a"));
+            fillRect(gc, cx, cy, size, 0.30, 0.04, 0.07, 0.10, Color.web("#e8c46a"));
+        };
+    }
+
+    /**
      * Kılıç: çapraz namlu, balçak ve topuz.
      *
      * <p>Renkler parametre: aynı çizim paslı kılıçtan Kript Kılıcı'na kadar

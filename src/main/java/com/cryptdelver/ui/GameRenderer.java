@@ -190,6 +190,12 @@ public class GameRenderer {
     private static final Color HP_TEXT = Color.web("#c9564f");
     private static final Color GOLD_TEXT = Color.web("#e8c46a");
 
+    /** Anahtar taşıyanın tepesindeki işaretin boyu. */
+    private static final double KEEPER_MARK = 14;
+
+    /** Kilitli kapının küçük haritadaki rengi. */
+    private static final Color DOOR_EDGE = Color.web("#c9a227");
+
     /** Kat olayı etiketinin rengi; bölge adından ayrı dursun diye. */
     private static final Color EVENT_LABEL = Color.web("#7fd0c8");
     private static final Color MESSAGE_TEXT = Color.web("#b6b6c8");
@@ -982,6 +988,13 @@ public class GameRenderer {
             if (enemy.isStaggered()) {
                 drawStagger(gc, enemy);
             }
+
+            // Anahtarı kimin taşıdığı görünmeli: görünmezse "kalabalığın
+            // içinden doğru olanı bul" bir hedef değil bir tarama olurdu.
+            if (enemy.hasKey()) {
+                sprites.get("key").draw(gc, enemy.getRenderX() * TILE_SIZE,
+                        enemy.getRenderY() * TILE_SIZE - TILE_SIZE * 0.6, KEEPER_MARK);
+            }
         }
         // İz gövdenin altına: sıçramanın nereden geldiğini gösteriyor ama
         // oyuncunun kendisini gölgelemiyor.
@@ -1224,7 +1237,15 @@ public class GameRenderer {
                 double cy = y * TILE_SIZE + TILE_SIZE / 2.0;
 
                 Tile tile = dungeon.getTile(x, y);
-                if (tile == Tile.WALL) {
+                if (tile == Tile.DOOR_LOCKED) {
+                    // Kapı duvarın üstüne biniyor: arkasındaki kayanın bir
+                    // parçası gibi dursun, haritaya yamanmış bir kapı gibi
+                    // değil. Çerçeve de altın, çünkü orada bir ödül var.
+                    sprites.get(wallNames[variantFor(x, y, wallNames.length)])
+                            .draw(gc, cx, cy, TILE_SIZE);
+                    sprites.get("door_locked").draw(gc, cx, cy, TILE_SIZE);
+                    drawDoorFrame(gc, cx, cy);
+                } else if (tile == Tile.WALL) {
                     sprites.get(wallNames[variantFor(x, y, wallNames.length)])
                             .draw(gc, cx, cy, TILE_SIZE);
 
@@ -2182,12 +2203,30 @@ public class GameRenderer {
                 MINIMAP_SCALE + 2, MINIMAP_SCALE + 2);
     }
 
-    /** Küçük haritada karenin rengi; merdivenler zeminden ayrılıyor. */
+    /**
+     * Kilitli kapının altın çerçevesi.
+     *
+     * <p>Merdiven çerçevesiyle aynı dil: bir kare bir şey <em>vaat ediyorsa</em>
+     * çerçevesi var. Altın rengi ödülü söylüyor, kesikli çizilmesi de
+     * kapalı olduğunu.</p>
+     */
+    private void drawDoorFrame(GraphicsContext gc, double cx, double cy) {
+        double half = TILE_SIZE / 2.0 - 2;
+
+        gc.setStroke(GOLD_TEXT);
+        gc.setLineWidth(1.5);
+        gc.setLineDashes(4, 3);
+        gc.strokeRect(cx - half, cy - half, half * 2, half * 2);
+        gc.setLineDashes(null);
+    }
+
+    /** Küçük haritada karenin rengi; merdivenler ve kilitli kapı zeminden ayrılıyor. */
     private Color minimapColor(Tile tile) {
         return switch (tile) {
             case WALL -> MINIMAP_WALL;
             case STAIRS_DOWN -> STAIRS_EDGE;
             case STAIRS_UP -> UP_STAIRS_EDGE;
+            case DOOR_LOCKED -> DOOR_EDGE;
             case FLOOR -> MINIMAP_FLOOR;
         };
     }
@@ -2500,6 +2539,13 @@ public class GameRenderer {
             hint = Text.HINT_OPEN_SHOP.get();
         } else if (game.isNearShrine() && !game.getShrine().isSpent()) {
             hint = Text.HINT_TOUCH_SHRINE.get();
+        } else if (game.isNearVaultDoor()) {
+            // İpucu anahtarın olup olmadığını söylüyor: kapıya varıp "neden
+            // açılmıyor" diye düşünmek, kuralı mesaj kaydından öğrenmek
+            // olurdu.
+            hint = game.hasVaultKey()
+                    ? Text.HINT_OPEN_VAULT.get()
+                    : Text.HINT_VAULT_LOCKED.get();
         } else {
             return;
         }

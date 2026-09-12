@@ -163,6 +163,20 @@ public class FloorBuilder {
     /** Taş girişten biraz daha uzağa kuruluyor; bulunması da işin parçası. */
     private static final int SHRINE_MIN_DISTANCE = 6;
 
+    /**
+     * Kilitli mahzenin kattan itibaren, sıklığı, zarları ve içeriği.
+     *
+     * <p>Dörtte bir: satıcı ve taştan seyrek, çünkü mahzen daha uzun bir iş —
+     * anahtarı taşıyanı bulmak katın yarısını gezmek demek. Her katta olsaydı
+     * o iş bir alışkanlığa dönerdi.</p>
+     */
+    private static final int VAULT_MIN_DEPTH = 3;
+    private static final double VAULT_CHANCE = 0.25;
+    private static final long VAULT_ROLL_SALT = 0x1D2C6FE1L;
+    private static final long VAULT_LOOT_SALT = 0x6A09E667L;
+    private static final int VAULT_LOOT = 3;
+    private static final int VAULT_GOLD = 90;
+
     /** Kat olaylarının kattan itibaren, sıklığı ve kendi zarı. */
     private static final int EVENT_MIN_DEPTH = 3;
     private static final double EVENT_CHANCE = 0.33;
@@ -351,8 +365,16 @@ public class FloorBuilder {
                         spot -> Shrine.seeded(spot, seed ^ SHRINE_ROLL_SALT))
                 : null;
 
+        // Mahzen kayaya oyuluyor, yani haritayı yalnızca genişletiyor:
+        // hiçbir yürünebilir kare kapanmadığı için merdivenin kapanması
+        // imkânsız. İçindeki ganimet de döşemenin parçası — aynı tohum aynı
+        // mahzeni aynı hazineyle veriyor.
+        Vault vault = hasVault(depth, seed)
+                ? Vault.carve(dungeon, spawn, seed ^ VAULT_ROLL_SALT)
+                : null;
+
         return new Floor(seed, dungeon, spawn, stairs, wizard, merchant, shrine,
-                rollEvent(depth, seed), null, List.of(), List.of());
+                rollEvent(depth, seed), vault, null, List.of(), vaultLoot(vault, depth, seed));
     }
 
     /** Döşemeyi kurup üstüne boss, düşman ve eşyaları dağıtır. */
@@ -390,6 +412,52 @@ public class FloorBuilder {
      * sayısıyla: aynı tohumu aynı şekilde kullansaydık iki zar birbirinin
      * kopyası çıkardı.</p>
      */
+    /**
+     * Bu katta kilitli mahzen var mı.
+     *
+     * <p>Boss katlarında yok: orada zaten büyücü, boss ve kilitli merdiven
+     * var, dördüncü bir hedef katı bir görev listesine çevirirdi. İlk iki
+     * katta da yok — mahzen oyunun temel döngüsüne bir istisna ve istisna
+     * ancak kural öğrenildikten sonra bir şey anlatıyor.</p>
+     */
+    private boolean hasVault(int depth, long seed) {
+        return depth >= VAULT_MIN_DEPTH && !isBossFloor(depth)
+                && diceFor(seed, VAULT_ROLL_SALT).nextDouble() < VAULT_CHANCE;
+    }
+
+    /**
+     * Mahzenin içine konan ganimet.
+     *
+     * <p>Kapıyı açmak bir emek, karşılığı da görünür olmalı: iki nadir eşya
+     * ve bir kese. Zar atılmıyor — mahzeni açan oyuncu boş bir oda bulmamalı,
+     * yoksa bir sonraki mahzeni açmaya değmez.</p>
+     */
+    private List<Item> vaultLoot(Vault vault, int depth, long seed) {
+        if (vault == null) {
+            return List.of();
+        }
+
+        Random dice = diceFor(seed, VAULT_LOOT_SALT);
+        List<Item> loot = new ArrayList<>();
+        List<Position> cells = vault.getInside();
+
+        for (int i = 0; i < cells.size() && i < VAULT_LOOT; i++) {
+            Position cell = cells.get(i);
+            loot.add(i == 0
+                    ? new Gold(cell.x(), cell.y(), VAULT_GOLD)
+                    : rollRareItem(cell, dice));
+        }
+
+        // Son göz bu katta bulunabilecek en iyi parça: mahzen yalnızca
+        // tüketilebilir vermekle kalmasın, takımını da büyütebilsin.
+        if (cells.size() > VAULT_LOOT) {
+            Position cell = cells.get(VAULT_LOOT);
+            loot.add(LootTable.weaponForTier(LootTable.bossTierForDepth(depth),
+                    cell.x(), cell.y()));
+        }
+        return loot;
+    }
+
     /**
      * Bu katın kendine özgü bir hâli var mı, varsa hangisi.
      *
@@ -538,6 +606,13 @@ public class FloorBuilder {
             used.add(floor.shrine().getTile());
         }
 
+        // Mahzenin içi kilitli: oraya düşman doğarsa kapıyı açan oyuncu
+        // hazine yerine bir pusu bulur ve hazine de görünmez olur. Kareleri
+        // kullanılmış işaretlemek ikisini birden çözüyor.
+        if (floor.vault() != null) {
+            used.addAll(floor.vault().getInside());
+        }
+
         List<Enemy> enemies = new ArrayList<>();
         Boss boss = spawnBoss(floor, depth, difficulty);
         if (boss != null) {
@@ -560,8 +635,41 @@ public class FloorBuilder {
             enemies.add(createEnemyForDepth(spot, depth, difficulty));
         }
 
-        return floor.filledWith(boss, enemies,
-                placeItems(spots, used, depth, extraItems(floor.event())));
+        giveKeyTo(enemies, floor.vault());
+
+        // Mahzenin hazinesi döşemeden geliyor; kata dağılan eşyalar onun
+        // üstüne ekleniyor, yerine geçmiyor.
+        List<Item> items = new ArrayList<>(floor.groundItems());
+        items.addAll(placeItems(spots, used, depth, extraItems(floor.event())));
+
+        return floor.filledWith(boss, enemies, items);
+    }
+
+    /**
+     * Anahtarı kattaki bir düşmana verir.
+     *
+     * <p>Elit varsa ona: en sert düşmanın en değerli şeyi taşıması hem
+     * beklenen hem de doğru olan. Elit yoksa sıradan bir düşmana — ama
+     * <em>boss'a asla</em>: bossu geçmek zaten merdivenin şartı, anahtarı da
+     * ona vermek mahzeni "boss'u yen" ödülüne indirgerdi.</p>
+     */
+    private void giveKeyTo(List<Enemy> enemies, Vault vault) {
+        if (vault == null) {
+            return;
+        }
+
+        List<Enemy> candidates = enemies.stream()
+                .filter(enemy -> !(enemy instanceof Boss))
+                .toList();
+        if (candidates.isEmpty()) {
+            return;
+        }
+
+        candidates.stream()
+                .filter(Enemy::isElite)
+                .findFirst()
+                .orElse(candidates.get(random.nextInt(candidates.size())))
+                .giveKey();
     }
 
     /** Boss merdivenin üstünde doğar: geçmek için onu yenmen gerekiyor. */
@@ -763,7 +871,18 @@ public class FloorBuilder {
      * saklayacağına dair kararını zarla almak olurdu.</p>
      */
     private Item rollRareItem(Position spot) {
-        return switch (random.nextInt(4)) {
+        return rollRareItem(spot, random);
+    }
+
+    /**
+     * Verilen zarla nadir eşya seçer.
+     *
+     * <p>Mahzenin içeriği tohumdan çıkıyor, kata dağılanlar ise genel
+     * rastgelelikten: ikisi aynı zarı paylaşamaz, yoksa mahzen artık aynı
+     * tohumla aynı hazineyi vermezdi.</p>
+     */
+    private Item rollRareItem(Position spot, Random dice) {
+        return switch (dice.nextInt(4)) {
             case 0 -> new Bomb(spot.x(), spot.y());
             case 1 -> new HastePotion(spot.x(), spot.y());
             case 2 -> new FuryPotion(spot.x(), spot.y());

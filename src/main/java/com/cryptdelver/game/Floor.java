@@ -30,6 +30,7 @@ import java.util.List;
  * @param merchant kattaki gezgin satıcı; yoksa {@code null}
  * @param shrine kattaki kader taşı; yoksa {@code null}
  * @param event katın kendine özgü hâli; sıradan bir katsa {@code null}
+ * @param vault kilitli mahzen; bu katta yoksa {@code null}
  */
 public record Floor(long seed,
                     Dungeon dungeon,
@@ -39,6 +40,7 @@ public record Floor(long seed,
                     Merchant merchant,
                     Shrine shrine,
                     FloorEvent event,
+                    Vault vault,
                     Boss boss,
                     List<Enemy> enemies,
                     List<Item> groundItems) {
@@ -50,7 +52,7 @@ public record Floor(long seed,
 
     /** Döşemeye boss, düşman ve eşya ekleyip dolu katı verir. */
     Floor filledWith(Boss boss, List<Enemy> enemies, List<Item> groundItems) {
-        return new Floor(seed, dungeon, spawn, stairs, wizard, merchant, shrine, event, boss,
-                enemies, groundItems);
+        return new Floor(seed, dungeon, spawn, stairs, wizard, merchant, shrine, event, vault,
+                boss, enemies, groundItems);
     }
 }
