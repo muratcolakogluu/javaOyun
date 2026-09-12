@@ -62,3 +62,10 @@ geliyor; cozum melodi yazmakti.
 
 Olculen son durum: muzik 180-355 Hz bandinda -38 dB, hit.wav ayni bantta
 -33 dB. Yani muzik efektlerin biraz altinda ve gercekten duyuluyor.
+
+  parry.wav    <- arpeggio({1320, 990}, 0.045)
+
+Savusturma sesi yuksek ve cok kisa iki ping: "tok" bir vurus yerine "cin"
+olmasi onemli, cunku savusturmanin haberi anlik olmali -- dogru ani
+tuttugunu ekrana bakmadan duymalisin. Seviyesi digerlerinin arasinda
+olculdu (tepe 0,148 / rms 0,047; hit 0,197 ve equip 0,141 arasi).

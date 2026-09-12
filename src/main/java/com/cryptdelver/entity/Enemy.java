@@ -41,6 +41,9 @@ public abstract class Enemy extends Combatant implements Actor {
     /** Bu düşmanı elit yapan özellik; sıradansa {@code null}. */
     private EliteTrait elite;
 
+    /** Sersemlik: bittiğinde düşman yeniden hareket ediyor. */
+    private double staggerLeft;
+
     protected Enemy(int tileX, int tileY, Text name, EnemyStats stats, Pathfinder pathfinder) {
         super(tileX, tileY, name, stats.maxHp());
         this.stats = stats;
@@ -148,6 +151,27 @@ public abstract class Enemy extends Combatant implements Actor {
     }
 
     /**
+     * Düşmanı sersemletir: verilen süre boyunca ne yürüyor ne vuruyor.
+     *
+     * <p>Savuşturmanın ödülü bu. Savuşturmak yalnızca vuruşu <em>engelleseydi</em>
+     * bir "hasar almama" tuşu olurdu ve doğru anı tutmanın karşılığı olmazdı.
+     * Sersemlik o anı bir <b>saldırı fırsatına</b> çeviriyor — hem bedava
+     * vuruş, hem arkasına geçmek için vakit.</p>
+     *
+     * <p>Başlamış hazırlık da iptal ediliyor: karşılanan vuruş inmiş
+     * sayılıyor, aynı kol ikinci kez inmiyor.</p>
+     */
+    public void stagger(double seconds) {
+        staggerLeft = Math.max(staggerLeft, seconds);
+        windupLeft = 0;
+    }
+
+    /** Şu an sersemlemiş mi; ekran bunu okuyup işaretini çiziyor. */
+    public boolean isStaggered() {
+        return staggerLeft > 0;
+    }
+
+    /**
      * Şu an vuruşa hazırlanıyor mu.
      *
      * <p>Ekran bunu okuyup işareti çiziyor. Uyarının <em>görülmesi</em>
@@ -189,6 +213,14 @@ public abstract class Enemy extends Combatant implements Actor {
 
         Player player = game.getPlayer();
         if (!isAlive() || !player.isAlive()) {
+            return;
+        }
+
+        // Sersemlik her şeyin önünde: sersemlemiş düşman ne yürüyor ne
+        // vuruyor. Yetenek sayaçları da ilerlemiyor, yoksa boss sersemken
+        // salvo biriktirip ayılınca hepsini birden atardı.
+        if (staggerLeft > 0) {
+            staggerLeft -= delta;
             return;
         }
 

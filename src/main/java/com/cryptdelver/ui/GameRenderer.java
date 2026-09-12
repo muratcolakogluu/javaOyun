@@ -214,6 +214,23 @@ public class GameRenderer {
     private static final int ELITE_RINGS = 3;
     private static final long ELITE_PULSE_MILLIS = 1400;
 
+    /**
+     * Savuşturma yayının yarıçapı (kare boyunun katı) ve genişliği (derece).
+     *
+     * <p>Gövdeden biraz dışarıda ve dar: bir kalkan değil, bir <em>karşılama
+     * anı</em> çiziliyor.</p>
+     */
+    private static final double PARRY_ARC_RADIUS = 0.82;
+    private static final double PARRY_ARC_SPREAD = 110;
+    private static final Color PARRY_ARC = Color.web("#cfe8ff", 0.92);
+
+    /** Sersemlik yıldızları: kaç tane, ne kadar yarıçapta, ne hızda dönüyor. */
+    private static final int STAGGER_STARS = 3;
+    private static final double STAGGER_ORBIT = 9;
+    private static final double STAGGER_STAR_SIZE = 4;
+    private static final long STAGGER_SPIN_MILLIS = 1100;
+    private static final Color STAGGER_STAR = Color.web("#ffe9a8");
+
     /** Açık sırt işaretinin boyu, nefes payı ve nefes süresi. */
     private static final double OPENING_SIZE = 5;
     private static final double OPENING_LIFT = 3;
@@ -315,7 +332,7 @@ public class GameRenderer {
     private static final double HINT_LINE = 26;
 
     /** Tus listesindeki satir sayisi ve araligi; yerlesim hesabi buna dayaniyor. */
-    private static final int KEY_ROWS = 14;
+    private static final int KEY_ROWS = 15;
     private static final double KEY_ROW_SPACING = 21;
 
     /** Baslik isigi: mesale gibi nefes aliyor. */
@@ -907,6 +924,10 @@ public class GameRenderer {
             drawSwing(gc, player);
         }
 
+        if (player.isParrying()) {
+            drawParry(gc, player);
+        }
+
         if (game.getWizard() != null && isSeen(vision, game.getWizard())) {
             drawNpcGlow(gc, game.getWizard(), FORGE_GLOW);
             drawEntity(gc, game.getWizard(), 1.0);
@@ -953,6 +974,10 @@ public class GameRenderer {
             // oluyor ve o kare oyunun söylemek istediği şeyin kendisi.
             if (game.hasOpeningOn(enemy)) {
                 drawOpening(gc, enemy);
+            }
+
+            if (enemy.isStaggered()) {
+                drawStagger(gc, enemy);
             }
         }
         // İz gövdenin altına: sıçramanın nereden geldiğini gösteriyor ama
@@ -1107,6 +1132,7 @@ public class GameRenderer {
                 {Text.KEY_MOVE, Text.KEY_MOVE_WHAT},
                 {Text.KEY_ATTACK, Text.KEY_ATTACK_WHAT},
                 {Text.KEY_DASH, Text.KEY_DASH_WHAT},
+                {Text.KEY_PARRY, Text.KEY_PARRY_WHAT},
                 {Text.KEY_USE, Text.KEY_USE_WHAT},
                 {Text.KEY_DROP, Text.KEY_DROP_WHAT},
                 {Text.KEY_TAKE, Text.KEY_TAKE_WHAT},
@@ -1456,6 +1482,65 @@ public class GameRenderer {
                 player.getRenderY() * TILE_SIZE - radius,
                 radius * 2,
                 radius * 2);
+    }
+
+    /**
+     * Savuşturma penceresi: baktığın yönde beliren ince bir yay.
+     *
+     * <p>Pencere çok kısa (çeyrek saniyeden az), yani ekranda kalıcı bir şey
+     * çizmenin anlamı yok — bir <em>parıltı</em> olması gerekiyor. Yay
+     * baktığın yönde duruyor çünkü karşıladığın şey oradan geliyor: doğru ana
+     * bastığını gövdenin önünde çakan çizgiden anlıyorsun.</p>
+     *
+     * <p>Yön oyuncunun bakışından geliyor ama <b>kural yönü sormuyor</b>:
+     * hangi taraftan gelirse gelsin karşılanıyor. Çizimin yön taşıması bir
+     * söz değil, yalnızca bir hareket duygusu — yönü de kurala bağlamak
+     * ızgara üstünde dört yöne birden bakan bir oyuncuya ikinci bir
+     * nişan alma işi yüklerdi.</p>
+     */
+    private void drawParry(GraphicsContext gc, Player player) {
+        double centerX = player.getRenderX() * TILE_SIZE;
+        double centerY = player.getRenderY() * TILE_SIZE;
+        double radius = TILE_SIZE * PARRY_ARC_RADIUS;
+
+        // Yayın ortası baktığın yön; JavaFX açıları saat yönünün tersine ve
+        // yukarı eksi olduğu için y'nin işareti ters çevriliyor.
+        double facing = Math.toDegrees(Math.atan2(-player.getFacingY(), player.getFacingX()));
+
+        gc.setStroke(PARRY_ARC);
+        gc.setLineWidth(3);
+        gc.strokeArc(centerX - radius, centerY - radius, radius * 2, radius * 2,
+                facing - PARRY_ARC_SPREAD / 2, PARRY_ARC_SPREAD,
+                javafx.scene.shape.ArcType.OPEN);
+    }
+
+    /**
+     * Sersemlemiş düşmanın tepesinde dönen yıldızlar.
+     *
+     * <p>Sersemlik zaten görünüyor — düşman duruyor — ama <em>durmak</em> tek
+     * başına belirsiz: okçu da duruyor, hazırlanan ork da duruyor. Yıldız
+     * başka hiçbir şeyle karışmayan bir işaret ve "şimdi vur" demenin en kısa
+     * yolu.</p>
+     *
+     * <p>Dönüyorlar: duran bir yıldız üçlüsü rozet gibi kalırdı, dönünce
+     * geçici bir hâl oluyor.</p>
+     */
+    private void drawStagger(GraphicsContext gc, Enemy enemy) {
+        double centerX = enemy.getRenderX() * TILE_SIZE;
+        double top = enemy.getRenderY() * TILE_SIZE - TILE_SIZE * 0.55;
+
+        double turn = (System.currentTimeMillis() % STAGGER_SPIN_MILLIS)
+                / (double) STAGGER_SPIN_MILLIS * 2 * Math.PI;
+
+        gc.setFill(STAGGER_STAR);
+        for (int star = 0; star < STAGGER_STARS; star++) {
+            double angle = turn + star * 2 * Math.PI / STAGGER_STARS;
+            double x = centerX + Math.cos(angle) * STAGGER_ORBIT;
+            double y = top + Math.sin(angle) * STAGGER_ORBIT * 0.35;
+
+            gc.fillOval(x - STAGGER_STAR_SIZE / 2, y - STAGGER_STAR_SIZE / 2,
+                    STAGGER_STAR_SIZE, STAGGER_STAR_SIZE);
+        }
     }
 
     /**

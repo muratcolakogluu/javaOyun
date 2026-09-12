@@ -103,6 +103,15 @@ public class Game {
     /** Zindanın sabrı bunun altına inmiyor; geri dönüş cezası da olsa nefes payı kalıyor. */
     private static final double MIN_FLOOR_PATIENCE = 30.0;
 
+    /**
+     * Karşılanan vuruşun ardından düşmanın sersemlediği süre.
+     *
+     * <p>Bir buçuk saniye: iki üç bedava vuruşa ya da arkasına geçmeye
+     * yetiyor, ama dövüşü bitirmeye yetmiyor. Uzun olsaydı savuşturma
+     * "düşmanı kapat" tuşuna dönerdi.</p>
+     */
+    private static final double STAGGER_DURATION = 1.5;
+
     /** Takviyeler kattaki düşman sayısını bu sınırın üstüne çıkarmıyor. */
     private static final int REINFORCE_LIMIT = 24;
 
@@ -1551,6 +1560,11 @@ public class Game {
      * Saldırı kararı düşmanın, hasar hesabı oyunun işi.
      */
     public void enemyAttacksPlayer(Enemy enemy) {
+        if (player.isParrying()) {
+            parry(enemy);
+            return;
+        }
+
         int damage = resolveDamage(enemy, player);
         player.takeDamage(damage);
         messageLog.combat(Text.MSG_PLAYER_HURT.get(enemy.getName(), damage));
@@ -1568,6 +1582,16 @@ public class Game {
      * yakıyor, sekiz kare öteden ok atanı değil.</p>
      */
     public void projectileHitsPlayer(Projectile arrow) {
+        // Ok da savuşturulabiliyor ama atan sersemlemiyor: sekiz kare öteden
+        // birini karşılamak onu dengesinden düşürmez. Aynı kural, farklı
+        // karşılık.
+        if (player.isParrying()) {
+            player.consumeParry();
+            sounds.play(SoundEffect.PARRY);
+            messageLog.combat(Text.MSG_DEFLECTED.get());
+            return;
+        }
+
         Enemy shooter = arrow.getShooter();
         int damage = resolveDamage(shooter, player);
 
@@ -1584,6 +1608,20 @@ public class Game {
      *
      *  killer son vuruşu indiren şeyin adı
      */
+    /**
+     * Karşılanan vuruş: hasar yok, vuran sersemliyor.
+     *
+     * <p>Pencere harcanıyor — bir savuşturma bir vuruşu karşılıyor. Yoksa
+     * kalabalığın ortasında tek bir tuş bütün kalabalığı durdururdu.</p>
+     */
+    private void parry(Enemy enemy) {
+        player.consumeParry();
+        enemy.stagger(STAGGER_DURATION);
+
+        sounds.play(SoundEffect.PARRY);
+        messageLog.combat(Text.MSG_PARRIED.get(enemy.getName()));
+    }
+
     private void announceDeathIfFallen(String killer) {
         if (player.isAlive()) {
             return;

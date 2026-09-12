@@ -202,28 +202,67 @@ class ShrineTest {
             assertTrue(game.getGold() > 0, "Kese dolmali");
         }
 
-        /** F "buradakiyle bir sey yap" tusu; tas da bir "burada". */
+        /**
+         * F "buradakiyle bir sey yap" tusu; tas da bir "burada".
+         *
+         * <p>Kurulum titiz: F'nin sirasi ayagin altindaki esya, buyucu,
+         * satici, sonra tas. Oyuncuyu tasin yanina rastgele bir kareye
+         * koyarsak o kare buyucuye de komsu olabiliyor ve F tezgahi aciyor --
+         * sinav da tasi olcmemis oluyor. O yuzden once F'nin gercekten tasa
+         * gelecegi bir kare ariyoruz.</p>
+         */
         @Test
         @DisplayName("Tasin yaninda F takasi yapiyor")
         void touchingTheStoneTrades() {
-            Dungeon dungeon = new Dungeon(40, 22);
-            dungeon.fill(Tile.FLOOR);
             Player hero = new Player(0, 0);
             Game floors = new Game(List.of(new BspGenerator()), 40, 22, hero);
 
-            for (int attempt = 0; attempt < 60 && floors.getShrine() == null; attempt++) {
+            for (int attempt = 0; attempt < 80; attempt++) {
+                if (standNextToShrine(floors, hero)) {
+                    int before = hero.getMaxHp();
+
+                    assertTrue(floors.interact());
+
+                    assertTrue(hero.getMaxHp() < before, "Bedel odenmeli");
+                    assertTrue(floors.getShrine().isSpent());
+                    return;
+                }
                 floors.regenerateFloor();
             }
-            assertNotNull(floors.getShrine(), "Altmis katta bir tas cikmadi");
+            throw new AssertionError("Tasin yanina temiz bir kare bulunamadi");
+        }
 
-            hero.setTile(floors.getShrine().getTileX() + 1, floors.getShrine().getTileY());
-            floors.pickUp();
-            int before = hero.getMaxHp();
+        /**
+         * Oyuncuyu tasa komsu, baska hicbir tezgaha komsu olmayan bir kareye
+         * koyar ve ayagini bosaltir.
+         *
+         * @return boyle bir kare bulunduysa {@code true}
+         */
+        private boolean standNextToShrine(Game floors, Player hero) {
+            Shrine stone = floors.getShrine();
+            if (stone == null) {
+                return false;
+            }
 
-            assertTrue(floors.interact());
+            for (Position spot : List.of(stone.getTile().offset(1, 0),
+                    stone.getTile().offset(-1, 0),
+                    stone.getTile().offset(0, 1),
+                    stone.getTile().offset(0, -1))) {
 
-            assertTrue(hero.getMaxHp() < before, "Bedel odenmeli");
-            assertTrue(floors.getShrine().isSpent());
+                if (!floors.getDungeon().isWalkable(spot.x(), spot.y())) {
+                    continue;
+                }
+
+                hero.setTile(spot);
+                if (floors.isNearWizard() || floors.isNearMerchant()) {
+                    continue;
+                }
+
+                // Ayagin altindaki esya F'nin ilk isi; once orayi bosaltiyoruz.
+                floors.pickUp();
+                return floors.itemsUnderfoot().isEmpty();
+            }
+            return false;
         }
     }
 

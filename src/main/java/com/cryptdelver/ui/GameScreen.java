@@ -421,6 +421,13 @@ public class GameScreen {
                     game.getPlayer().requestDash();
                 }
             }
+            // R savuşturma: Q'nun hemen yanında ve tezgâhta bir işi yok, yani
+            // F ve Q'daki gibi çift anlam taşımasına gerek kalmadı.
+            case R -> {
+                if (!game.isFrozen()) {
+                    game.getPlayer().requestParry();
+                }
+            }
             case MINUS, SUBTRACT -> changeVolume(-Settings.VOLUME_STEP);
             case PLUS, ADD, EQUALS -> changeVolume(Settings.VOLUME_STEP);
             case M -> toggleMute();

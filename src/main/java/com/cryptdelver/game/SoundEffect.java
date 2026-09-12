@@ -18,6 +18,9 @@ public enum SoundEffect {
     /** Oyuncu hasar aldı. */
     HURT("hurt"),
 
+    /** Gelen vuruş savuşturuldu: çelik çeliğe. */
+    PARRY("parry"),
+
     /** Bir düşman öldü. */
     KILL("kill"),
 

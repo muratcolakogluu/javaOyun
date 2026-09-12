@@ -66,6 +66,22 @@ public class Player extends Combatant implements Actor {
     /** Sicrama izinin ekranda kalma suresi. */
     private static final double DASH_TRAIL_DURATION = 0.22;
 
+    /**
+     * Savuşturmanın açık kaldığı süre ve iki deneme arasındaki bekleme.
+     *
+     * <p>Pencere kısa, bekleme de kısa. Bu bilinçli bir tercih:
+     * savuşturma bir <b>zamanlama</b> becerisi, bir kaynak değil. Kaçış
+     * adımının beklemesi uzun çünkü o bir hamle — üç kare yer değiştirmek.
+     * Savuşturma ise refleks: bedeli, ıskalayınca vuruşu yemek.</p>
+     *
+     * <p>Uzun bekleme koysaydım ekranda bir gösterge daha gerekirdi
+     * ("hazır mıyım") ve karakter paneli zaten dolu. Kısa bekleme aynı
+     * soruyu ortadan kaldırıyor: neredeyse her zaman hazırsın, mesele
+     * doğru anı tutmak.</p>
+     */
+    private static final double PARRY_WINDOW = 0.22;
+    private static final double PARRY_COOLDOWN = 0.9;
+
     /** Tek karede işlenecek azami adım; takılma durumunda sonsuz döngüyü keser. */
     private static final int MAX_STEPS_PER_FRAME = 8;
 
@@ -79,6 +95,9 @@ public class Player extends Combatant implements Actor {
     private double swingTimer;
     private double hasteTimer;
     private double furyTimer;
+    private boolean parryRequested;
+    private double parryTimer;
+    private double parryCooldown;
     private boolean dashRequested;
     private double dashCooldown;
     private double dashTrail;
@@ -312,6 +331,9 @@ public class Player extends Combatant implements Actor {
         dashCooldown = 0;
         dashTrail = 0;
         dashRequested = false;
+        parryTimer = 0;
+        parryCooldown = 0;
+        parryRequested = false;
         attackRequested = false;
         setMoveInput(0, 0);
         face(1, 0);
@@ -326,10 +348,20 @@ public class Player extends Combatant implements Actor {
         furyTimer = Math.max(0, furyTimer - delta);
         dashCooldown = Math.max(0, dashCooldown - delta);
         dashTrail = Math.max(0, dashTrail - delta);
+        parryTimer = Math.max(0, parryTimer - delta);
+        parryCooldown = Math.max(0, parryCooldown - delta);
 
         if (!isAlive()) {
             return;
         }
+
+        // Savuşturma her şeyden önce: aynı karede hem kalkan kaldırıp hem
+        // vurmak, ikisini de bedava yapmak olurdu.
+        if (parryRequested && parryCooldown <= 0) {
+            parryTimer = PARRY_WINDOW;
+            parryCooldown = PARRY_COOLDOWN;
+        }
+        parryRequested = false;
 
         // Sicrama yurumeden once: ayni karede hem sicrayip hem adim atmak
         // gidisi iki kat gosterirdi.
@@ -347,6 +379,41 @@ public class Player extends Combatant implements Actor {
             swingTimer = SWING_DURATION;
         }
         attackRequested = false;
+    }
+
+    // --------------------------------------------------------- savuşturma
+
+    /**
+     * Savuşturma tuşuna basıldığını bildirir.
+     *
+     * <p>Sıçrama ve vuruş gibi: tuş yalnızca <em>istek</em> bırakıyor, işi
+     * bir sonraki {@link #update} halletsin diye. Böylece aynı karede iki kez
+     * basmak iki savuşturma açmıyor ve girdi ile kural aynı yerde
+     * buluşuyor.</p>
+     */
+    public void requestParry() {
+        parryRequested = true;
+    }
+
+    /**
+     * Şu an gelen bir vuruşu karşılayabilir mi.
+     *
+     * <p>Oyunun sorduğu tek soru bu: düşmanın kolu indiği anda pencere açık
+     * mıydı.</p>
+     */
+    public boolean isParrying() {
+        return parryTimer > 0;
+    }
+
+    /**
+     * Açık pencereyi kapatır; savuşturulan her vuruş bir pencere harcıyor.
+     *
+     * <p>Yoksa tek bir savuşturma, pencere boyunca gelen bütün vuruşları
+     * birden karşılardı — kalabalığın ortasında bir tuş bütün kalabalığı
+     * durdururdu.</p>
+     */
+    public void consumeParry() {
+        parryTimer = 0;
     }
 
     // ------------------------------------------------------- geçici etkiler
