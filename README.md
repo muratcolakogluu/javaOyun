@@ -183,3 +183,24 @@ paketinden (CC-0). Hangi dosyanın nereden geldiği ve neden o seçimin yapıld�
 Ses efektleri ve müzik sentezlenerek üretildi — hazır dosya kullanılmadı.
 Üretim araçları ve ölçümler `src/main/resources/assets/sound/KAYNAK.txt`
 içinde.
+
+---
+
+## Lisans
+
+Bu oyunun kodu **GNU GPL-3.0** ile lisanslı; tam metin [`LICENSE`](LICENSE)
+dosyasında. Kısaca: kullanabilir, değiştirebilir, dağıtabilirsin — ama
+dağıttığın sürümü de aynı lisansla ve kaynak koduyla birlikte vermen
+gerekiyor. Kod kapalı bir üründe kullanılamaz.
+
+Kodun dışındaki iki şeyin lisansı ayrı:
+
+- **Sprite'lar** 0x72'nin paketinden ve CC-0 (kamu malı), yani onların yeniden
+  dağıtımı bir şart getirmiyor.
+- **Windows paketi** (`paket\CryptDelver.zip`) içinde bir OpenJDK çalışma
+  zamanı taşıyor; o da GPLv2 + Classpath Exception ile lisanslı. Zip'i
+  dağıtmak bu yüzden sorun değil, ama dağıttığını bilmek iyi.
+
+Kaynak dosyalarının başına tek tek lisans başlığı koymadım: 85 dosyaya
+tekrarlanan bir blok, okunurluktan aldığı kadarını hukuken geri vermiyor.
+`LICENSE` dosyası ve buradaki beyan lisansı belirlemek için yeterli.

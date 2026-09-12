@@ -16,6 +16,8 @@ import javafx.stage.Stage;
 /**
  * Uygulamanın giriş noktası.
  *
+ * <p>Lisans: GNU GPL-3.0 — bkz. deponun kökündeki {@code LICENSE}.</p>
+ *
  * <p>Tek işi parçaları birbirine bağlamak: üreticileri seç, oyun durumunu kur,
  * ekrana ver. Oyun kuralları {@code game}, harita {@code world}, çizim ise
  * {@code ui} paketinde; bu sınıf hepsini tanır ama onlar birbirini tanımaz.</p>
