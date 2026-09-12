@@ -14,3 +14,6 @@ target/
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# Paketleme ciktilari
+paket/

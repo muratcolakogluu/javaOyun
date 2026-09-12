@@ -176,3 +176,9 @@ zindanin kendi malzemesi, yani haritaya yamanmis gibi durmuyor. Isigi
 mor -- iki tezgah sicak renkte yaniyor cunku ikisi de altin istiyor, tas
 baska bir sey istiyor ve rengi de onu soyluyor. Verdikten sonra soluk
 griye donuyor: haritada hala gorunuyor ama artik cagirmiyor.
+
+Paketlenen oyunun simgesi (dagitim/cryptdelver.ico) player_f0'dan
+uretildi: 256x256'ya en yakin komsu ile buyutulup kareye ortalandi,
+sonra Vista bicimi bir ICO'nun icine PNG olarak konuldu. Ureten arac
+scratchpad'de (IconMaker); simge bir kez uretilip depoya konuldugu icin
+paketleme betigi ona ihtiyac duymuyor.

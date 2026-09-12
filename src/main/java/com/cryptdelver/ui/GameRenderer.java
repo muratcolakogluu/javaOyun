@@ -278,10 +278,16 @@ public class GameRenderer {
      *
      * <p>Menü satırlarından seyrek: her satırın altında bir açıklama var ve
      * ana menüdeki aralıkla yazılar birbirine giriyordu.</p>
+     *
+     * <p>Açıklamanın satıra uzaklığı, seçili satırın <em>çerçevesinin</em>
+     * yarı yüksekliğinden ({@value #MENU_ROW_HEIGHT}/2) belirgin biçimde
+     * büyük olmak zorunda. Önce 24 idi ve çerçevenin alt kenarı yazının
+     * üstüne oturuyordu: seçili satırda açıklama kutunun içinden çıkıyormuş
+     * gibi duruyordu.</p>
      */
-    private static final double PATH_ROW_SPACING = 74;
-    private static final double PATH_DESCRIPTION_GAP = 24;
-    private static final double PATH_TITLE_GAP = 44;
+    private static final double PATH_ROW_SPACING = 82;
+    private static final double PATH_DESCRIPTION_GAP = 34;
+    private static final double PATH_TITLE_GAP = 46;
 
     private static final double MENU_FRAME_WIDTH = 720;
 
